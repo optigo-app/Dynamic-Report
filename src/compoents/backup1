@@ -1,0 +1,2131 @@
+// newwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+// http://localhost:3000/samplegrid13/?yc=e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==&sv=1
+// http://localhost:3000/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
+
+// http://localhost:3000/?sv=/e3tsaXZlMS5vcHRpZ29hcHBzLmNvbX19e3syMH19e3tlbHZlZXN0ZXJ9fXt7aGVubnlzfX0=/2&ifid=WorkerReportPro&pid=18223    elvesteer
+
+import React, { useEffect, useState, useRef } from "react";
+import Box from "@mui/material/Box";
+import { DataGrid } from "@mui/x-data-grid";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import "./Spliter.css";
+import { Button, CircularProgress } from "@mui/material";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
+import CustomTextField from "../text-field";
+import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { IoRefreshCircle } from "react-icons/io5";
+import AllEmployeeDataReport from "./AllEmployeeDataReport/AllEmployeeDataReport";
+import DualDatePicker from "../DatePicker/DualDatePicker";
+let popperPlacement = "bottom-start";
+
+const months = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const generateMonthYearOptions = () => {
+  const currentDate = new Date();
+
+  const options = [
+    {
+      label: "Today",
+      value: "today",
+    },
+    {
+      label: "Yesterday",
+      value: "yesterday",
+    },
+  ];
+
+  for (let i = 0; i < 13; i++) {
+    const date = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - i,
+      1
+    );
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    options.push({
+      label: `${months[month]} - ${year}`,
+      value: `${month + 1}-${year}`,
+    });
+  }
+
+  return options;
+};
+
+export default function Spliter({ isLoadingNew }) {
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [paneWidths, setPaneWidths] = useState(["15%", "15%", "70%"]);
+  const [isLoading, setIsLoading] = React.useState(isLoadingNew);
+  const [showDepartment, setShowDepartment] = useState(true);
+
+  const containerRef = useRef();
+
+  const handleDrag = (index, e) => {
+    const startX = e.clientX;
+    const startWidths = [...paneWidths.map((w) => parseFloat(w))];
+    const containerWidth = containerRef.current.offsetWidth;
+
+    const onMouseMove = (moveEvent) => {
+      const delta = moveEvent.clientX - startX;
+      const percentDelta = (delta / containerWidth) * 100;
+
+      const newWidths = [...startWidths];
+      newWidths[index] = Math.max(5, startWidths[index] + percentDelta);
+      newWidths[index + 1] = Math.max(5, startWidths[index + 1] - percentDelta);
+      const total = newWidths.reduce((a, b) => a + b, 0);
+
+      if (total <= 100) {
+        setPaneWidths(newWidths.map((w) => `${w}%`));
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  const [expandedEmployee, setExpandedEmployee] = useState(null);
+  const [allEmployeeData, setAllEmployeeData] = useState([]);
+  const [locationSummaryData, setLocationSummaryData] = useState([]);
+  const [groupedDepartments, setGroupedDepartments] = useState([]);
+  const [groupedEmployeeData, setGroupedEmployeeData] = useState([]);
+  const [startDate, setStartDate] = useState();
+  const [endDate, setEndDate] = useState();
+  const [AllFinalData, setFinalData] = useState();
+  const [selectedValue, setSelectedValue] = useState("yesterday");
+
+  const options = generateMonthYearOptions();
+
+  useEffect(() => {
+    if (options.length > 0 && !selectedValue) {
+      setSelectedValue(options[0].value); // Auto-select top Month-Year
+    }
+  }, [options]);
+
+  useEffect(() => {
+    const formatDate = (date) =>
+      `${String(date.getMonth() + 1).padStart(2, "0")}/${String(
+        date.getDate()
+      ).padStart(2, "0")}/${date.getFullYear()}`;
+
+    if (selectedValue === "today") {
+      const today = new Date();
+      const formatted = formatDate(today);
+      setStartDate(formatted);
+      setEndDate(formatted);
+      fetchData(formatted, formatted);
+    } else if (selectedValue === "yesterday") {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const formatted = formatDate(yesterday);
+      setStartDate(formatted);
+      setEndDate(formatted);
+      fetchData(formatted, formatted);
+    } else if (selectedValue) {
+      const [month, year] = selectedValue.split("-").map(Number);
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
+      const formattedStart = formatDate(startDate);
+      const formattedEnd = formatDate(endDate);
+      setStartDate(formattedStart);
+      setEndDate(formattedEnd);
+      fetchData(formattedStart, formattedEnd);
+    }
+  }, [selectedValue]);
+
+  const fetchData = async (stat, end) => {
+    setIsLoading(true);
+    const body = {
+      con: '{"id":"","mode":"workerwithoutfinding","appuserid":"amrut@eg.com"}',
+      p: `{"fdate":"${stat}","tdate":"${end}"}`,
+      f: "Task Management (taskmaster)",
+    };
+
+    try {
+      const fetchedData = await GetWorkerData(body);
+      setFinalData(fetchedData?.Data);
+
+      const { rd, rd1 } = fetchedData?.Data || {};
+
+      if (rd1?.length != 0) {
+        if (Array.isArray(rd) && Array.isArray(rd1)) {
+          const keyMap = Object.entries(rd[0]).reduce((acc, [numKey, name]) => {
+            acc[numKey] = name.toLowerCase();
+            return acc;
+          }, {});
+
+          const mergedData = rd1.map((record) => {
+            const mapped = {};
+            for (const [key, value] of Object.entries(record)) {
+              const newKey = keyMap[key] || key;
+              mapped[newKey] = value;
+            }
+            return mapped;
+          });
+          setAllEmployeeData(mergedData);
+          GetTotlaData(mergedData);
+        } else {
+          console.warn("Unexpected rd/rd1 format:", { rd, rd1 });
+        }
+      } else {
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
+
+  const GetTotlaData = (allEmployeeData) => {
+    if (allEmployeeData.length === 0) return;
+    const summaryMap = new Map();
+    allEmployeeData.forEach((item) => {
+      const { location, netretunwt, netissuewt, losswt, lossper, deptid } =
+        item;
+
+      if (!summaryMap.has(location)) {
+        summaryMap.set(location, {
+          location,
+          deptid,
+          totalIssue: 0,
+          totalReturn: 0,
+          totalLoss: 0,
+          lossperSum: 0,
+          _count: 0,
+        });
+      }
+
+      const existing = summaryMap.get(location);
+      existing.totalIssue += netissuewt || 0;
+      existing.totalReturn += netretunwt || 0;
+      existing.totalLoss += losswt || 0;
+      existing.lossperSum += lossper || 0;
+      existing._count += 1;
+    });
+
+    const locationSummary = Array.from(summaryMap.values()).map((loc) => ({
+      location: loc.location,
+      deptid: loc.deptid,
+      netissuewt: Number(loc.totalIssue.toFixed(2)),
+      netretunwt:
+        loc.totalIssue !== 0
+          ? Number(((loc.totalLoss / loc.totalIssue) * 100).toFixed(2))
+          : 0,
+      losswt: Number(loc.totalLoss.toFixed(2)),
+      lossper: Number((loc.lossperSum / loc._count).toFixed(2)),
+    }));
+
+    setLocationSummaryData(locationSummary);
+
+    handleSelectLocation(locationSummary[0].location, allEmployeeData);
+    handleSelecEmployee(locationSummary[0].location, allEmployeeData);
+  };
+
+  const handleToggle = (location) => {
+    setExpandedEmployee((prev) => (prev === location ? null : location));
+  };
+
+  const handleSelectLocation = (location, allEmployeeData) => {
+    setSelectedLocation(location);
+    const filtered = allEmployeeData.filter((emp) => emp.location === location);
+    const deptMap = new Map();
+    filtered.forEach((item) => {
+      const { deptid, deptname, netissuewtfm, netretunwtfm, losswt, lossper } =
+        item;
+      if (!deptMap.has(deptid)) {
+        deptMap.set(deptid, {
+          deptid,
+          deptname,
+          netissuewtfm: 0,
+          netretunwtfm: 0,
+          losswt: 0,
+          lossper: 0,
+          _count: 0,
+        });
+      }
+
+      const dept = deptMap.get(deptid);
+      dept.netissuewtfm += netissuewtfm || 0;
+      dept.netretunwtfm += netretunwtfm || 0;
+      dept.losswt += losswt || 0;
+      dept.lossper += lossper || 0;
+      dept._count += 1;
+    });
+
+    const grouped = Array.from(deptMap.values()).map((dept) => ({
+      ...dept,
+      netissuewtfm: Number(dept.netissuewtfm.toFixed(2)),
+      netretunwtfm: Number(dept.netretunwtfm.toFixed(2)),
+      losswt: Number(dept.losswt.toFixed(2)),
+      lossper: Number((dept.lossper / dept._count).toFixed(2)),
+    }));
+
+    setGroupedDepartments(grouped);
+    setSelectedDepartment(grouped[0].deptname);
+    setExpandedEmployee(location);
+    setIsLoading(false);
+  };
+  const handleSelecEmployee = (location, allEmployeeData) => {
+    setSelectedLocation(location);
+
+    const filtered = allEmployeeData.filter((emp) => emp.location === location);
+    const employeeMap = new Map();
+
+    filtered.forEach((item) => {
+      const { employeename, netissuewtfm, netretunwt, losswt, lossper } = item;
+
+      if (!employeeMap.has(employeename)) {
+        employeeMap.set(employeename, {
+          employeename,
+          netissuewtfm: 0,
+          netretunwt: 0,
+          losswt: 0,
+          lossper: 0,
+          _count: 0,
+        });
+      }
+
+      const emp = employeeMap.get(employeename);
+      emp.netissuewtfm += netissuewtfm || 0;
+      emp.netretunwt += netretunwt || 0;
+      emp.losswt += losswt || 0;
+      emp.lossper += lossper || 0;
+      emp._count += 1;
+    });
+
+    const grouped = Array.from(employeeMap.values()).map((emp) => ({
+      ...emp,
+      netissuewtfm: Number(emp.netissuewtfm.toFixed(2)),
+      netretunwt: Number(emp.netretunwt.toFixed(2)),
+      losswt: Number(emp.losswt.toFixed(2)),
+      lossper: Number((emp.lossper / emp._count).toFixed(2)),
+    }));
+
+    setGroupedEmployeeData(grouped);
+    setSelectedEmployee(grouped[0]?.employeename);
+    setExpandedEmployee(location);
+    setIsLoading(false);
+  };
+
+  // const handleSelecEmployee = (location, allEmployeeData) => {
+  //   setSelectedLocation(location);
+  //   const filtered = allEmployeeData.filter((emp) => emp.location === location);
+  //   const deptMap = new Map();
+  //   filtered.forEach((item) => {
+  //     const {
+  //       deptid,
+  //       employeename,
+  //       netissuewtfm,
+  //       netretunwt,
+  //       losswt,
+  //       lossper,
+  //     } = item;
+  //     if (!deptMap.has(deptid)) {
+  //       deptMap.set(deptid, {
+  //         deptid,
+  //         employeename,
+  //         netissuewtfm: 0,
+  //         netretunwt: 0,
+  //         losswt: 0,
+  //         lossper: 0,
+  //         _count: 0,
+  //       });
+  //     }
+
+  //     const dept = deptMap.get(deptid);
+  //     dept.netissuewtfm += netissuewtfm || 0;
+  //     dept.netretunwt += netretunwt || 0;
+  //     dept.losswt += losswt || 0;
+  //     dept.lossper += lossper || 0;
+  //     dept._count += 1;
+  //   });
+
+  //   const grouped = Array.from(deptMap.values()).map((dept) => ({
+  //     ...dept,
+  //     netissuewtfm: Number(dept.netissuewtfm.toFixed(2)),
+  //     netretunwt: Number(dept.netretunwt.toFixed(2)),
+  //     losswt: Number(dept.losswt.toFixed(2)),
+  //     lossper: Number((dept.lossper / dept._count).toFixed(2)),
+  //   }));
+
+  //   setGroupedEmployeeData(grouped);
+  //   setSelectedEmployee(grouped[0].employeename);
+  //   setExpandedEmployee(location);
+  //   setIsLoading(false);
+  // };
+
+  const [isRefreshEnabled, setIsRefreshEnabled] = useState(false);
+  const startEnableTimer = () => {
+    setIsRefreshEnabled(false); // disable right away
+    setTimeout(() => {
+      setIsRefreshEnabled(true); // enable after 2 mins
+    }, 2 * 60 * 1000); // 2 minutes in ms
+  };
+  useEffect(() => {
+    startEnableTimer();
+  }, []);
+  const handleRefresh = () => {
+    if (!isRefreshEnabled) return;
+    window.location.reload();
+    startEnableTimer();
+  };
+
+  const handleToggleNew = () => {
+    GetTotlaData(allEmployeeData);
+    setShowDepartment(!showDepartment);
+  };
+
+const [filterState , setFilterState] = useState({ dateRange: { startDate: null, endDate: null }, })
+
+
+  console.log("showDepartment spli", groupedDepartments);
+  console.log("groupedEmployeeData spli", groupedEmployeeData);
+
+  console.log("filterState", filterState?.dateRange);
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      {isLoading && (
+        <div className="loader-overlay">
+          <CircularProgress className="loadingBarManage" />
+        </div>
+      )}
+      <Box
+        sx={{ height: "100vh", display: "flex", flexDirection: "row" }}
+        ref={containerRef}
+      >
+        <div className="pane" style={{ width: paneWidths[0] }}>
+          <div style={{ padding: "8px" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "15px",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <DualDatePicker  filterState={filterState} setFilterState={setFilterState}/>
+              <select
+                value={selectedValue}
+                onChange={(e) => setSelectedValue(e.target.value)}
+                className="select_month_dropDown"
+              >
+                <option value="">Select Month - Year</option>
+                {options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+
+              
+              <IoRefreshCircle
+                onClick={handleRefresh}
+                style={{
+                  color: "rebeccapurple",
+                  fontSize: "29px",
+                  cursor: isRefreshEnabled ? "pointer" : "not-allowed",
+                  opacity: isRefreshEnabled ? 1 : 0.5,
+                }}
+              />
+            </div>
+            <div className="employee-list">
+              {locationSummaryData?.length != 0
+                ? locationSummaryData.map((emp) => {
+                    const isExpanded = expandedEmployee === emp.location;
+                    return (
+                      <div
+                        key={emp.location}
+                        className={
+                          selectedLocation == emp.location
+                            ? "employee_card_selected"
+                            : "employee-card"
+                        }
+                      >
+                        <div
+                          className="employee-header"
+                          onClick={() => {
+                            handleToggle(emp.location);
+                            handleSelectLocation(emp.location, allEmployeeData);
+                            handleSelecEmployee(emp.location, allEmployeeData);
+                          }}
+                        >
+                          <div className="location_first">
+                            <span
+                              className={
+                                selectedLocation == emp.location &&
+                                "location_top_name"
+                              }
+                            >
+                              {emp.location}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "15px",
+                                alignItems: "center",
+                              }}
+                            >
+                              {/* <Button
+                            className="location_select_button"
+                            onClick={() => handleSelectLocation(emp.location)}
+                          >
+                            Select
+                          </Button> */}
+                              {/* <span className="arrow-icon">
+                                {isExpanded ? (
+                                  <FaChevronUp
+                                    style={{
+                                      color:
+                                        selectedLocation == emp.location &&
+                                        "white",
+                                    }}
+                                  />
+                                ) : (
+                                  <FaChevronDown
+                                    style={{
+                                      color:
+                                        selectedLocation == emp.location &&
+                                        "white",
+                                    }}
+                                  />
+                                )}
+                              </span> */}
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "15px",
+                              marginTop: "10px",
+                            }}
+                          >
+                            <p
+                              className={
+                                selectedLocation == emp.location
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Loss :- <b>{emp?.losswt?.toFixed(3)} gm</b>
+                            </p>
+                            <p
+                              className={
+                                selectedLocation == emp.location
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Loss :- <b>{emp?.lossper?.toFixed(2)} %</b>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`employee-details ${
+                            isExpanded ? "expanded" : ""
+                          }`}
+                        >
+                          {isExpanded && (
+                            <>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "15px",
+                                }}
+                              >
+                                <p
+                                  className={
+                                    selectedLocation == emp.location
+                                      ? "employee_detail_title"
+                                      : "employee_detail"
+                                  }
+                                  style={{ width: "50%" }}
+                                >
+                                  Issue Wt(F+M):-{" "}
+                                  <b>{emp?.netissuewt?.toFixed(3)}</b>
+                                </p>
+                                <p
+                                  className={
+                                    selectedLocation == emp.location
+                                      ? "employee_detail_title"
+                                      : "employee_detail"
+                                  }
+                                  style={{ width: "50%" }}
+                                >
+                                  Return Wt(F+M):-{" "}
+                                  <b>{emp?.netretunwt?.toFixed(3)}</b>
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                : !isLoading && (
+                    <div
+                      style={{
+                        height: "60vh",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <p style={{ fontWeight: 600, fontSize: "17px" }}>
+                        No Location Available
+                      </p>
+                      <p style={{ fontWeight: 600, color: "#7a7676" }}>
+                        Select Month & Year
+                      </p>
+                    </div>
+                  )}
+            </div>
+          </div>
+        </div>
+
+        {paneWidths[1] !== "0%" && (
+          <>
+            <div className="splitter" onMouseDown={(e) => handleDrag(0, e)} />
+            <div className="pane" style={{ width: paneWidths[1] }}>
+              <div style={{ padding: "8px" }}>
+                <div className="toggle-wrapper">
+                  {!isLoading && (
+                    <div className="slider-container" onClick={handleToggleNew}>
+                      <div
+                        className={`active-indicator ${
+                          showDepartment ? "left" : "right"
+                        }`}
+                      ></div>
+                      <div className={`panel department-panel`}>
+                        <h2>Department</h2>
+                      </div>
+                      <div className={`panel employee-panel`}>
+                        <h2>Employee</h2>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="employee-list">
+                  {showDepartment ? (
+                    <>
+                      {groupedDepartments?.length != 0
+                        ? groupedDepartments.map((emp) => {
+                            const isExpanded =
+                              expandedEmployee === emp.deptname;
+                            return (
+                              <div
+                                key={emp.location}
+                                className={
+                                  selectedDepartment == emp.deptname
+                                    ? "employee_card_selected"
+                                    : "employee-card"
+                                }
+                              >
+                                <div
+                                  className="employee-header"
+                                  onClick={() => {
+                                    handleToggle(emp.deptname);
+                                    setSelectedDepartment(emp.deptname);
+                                  }}
+                                >
+                                  <div className="location_first">
+                                    <span
+                                      className={
+                                        selectedDepartment == emp.deptname &&
+                                        "location_top_name"
+                                      }
+                                    >
+                                      {emp.deptname}
+                                    </span>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "15px",
+                                      marginTop: "10px",
+                                    }}
+                                  >
+                                    <p
+                                      className={
+                                        selectedDepartment == emp.deptname
+                                          ? "employee_detail_title"
+                                          : "employee_detail"
+                                      }
+                                      style={{ width: "50%" }}
+                                    >
+                                      Loss :-{" "}
+                                      <b>{emp?.losswt?.toFixed(3)} gm</b>
+                                    </p>
+                                    <p
+                                      className={
+                                        selectedDepartment == emp.deptname
+                                          ? "employee_detail_title"
+                                          : "employee_detail"
+                                      }
+                                      style={{ width: "50%" }}
+                                    >
+                                      Loss :-{" "}
+                                      <b>{emp?.lossper?.toFixed(2)} %</b>
+                                    </p>
+                                  </div>
+                                </div>
+                                <div
+                                  className={`employee-details ${
+                                    isExpanded ? "expanded" : ""
+                                  }`}
+                                >
+                                  {isExpanded && (
+                                    <>
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          gap: "15px",
+                                        }}
+                                      >
+                                        <p
+                                          className={
+                                            selectedDepartment == emp.deptname
+                                              ? "employee_detail_title"
+                                              : "employee_detail"
+                                          }
+                                          style={{ width: "50%" }}
+                                        >
+                                          Issue Wt(F+M):-{" "}
+                                          <b>{emp?.netissuewtfm?.toFixed(3)}</b>
+                                        </p>
+                                        <p
+                                          className={
+                                            selectedDepartment == emp.deptname
+                                              ? "employee_detail_title"
+                                              : "employee_detail"
+                                          }
+                                          style={{ width: "50%" }}
+                                        >
+                                          Return Wt(F+M):-{" "}
+                                          <b>{emp?.netretunwtfm?.toFixed(3)}</b>
+                                        </p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        : !isLoading && (
+                            <div
+                              style={{
+                                height: "62vh",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                              }}
+                            >
+                              <p style={{ fontWeight: 600 }}>
+                                No Department Available
+                              </p>
+                            </div>
+                          )}
+                    </>
+                  ) : (
+                    <>
+                      {groupedEmployeeData?.length != 0
+                        ? groupedEmployeeData.map((emp) => {
+                            const isExpanded =
+                              expandedEmployee === emp.employeename;
+                            return (
+                              <div
+                                key={emp.employeename}
+                                className={
+                                  selectedEmployee == emp.employeename
+                                    ? "employee_card_selected"
+                                    : "employee-card"
+                                }
+                              >
+                                <div
+                                  className="employee-header"
+                                  onClick={() => {
+                                    handleToggle(emp.employeename);
+                                    setSelectedEmployee(emp.employeename);
+                                  }}
+                                >
+                                  <div className="location_first">
+                                    <span
+                                      className={
+                                        selectedEmployee == emp.employeename &&
+                                        "location_top_name"
+                                      }
+                                    >
+                                      {emp.employeename}
+                                    </span>
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      gap: "15px",
+                                      marginTop: "10px",
+                                    }}
+                                  >
+                                    <p
+                                      className={
+                                        selectedEmployee == emp.employeename
+                                          ? "employee_detail_title"
+                                          : "employee_detail"
+                                      }
+                                      style={{ width: "50%" }}
+                                    >
+                                      Loss :-{" "}
+                                      <b>{emp?.losswt?.toFixed(3)} gm</b>
+                                    </p>
+                                    <p
+                                      className={
+                                        selectedEmployee == emp.employeename
+                                          ? "employee_detail_title"
+                                          : "employee_detail"
+                                      }
+                                      style={{ width: "50%" }}
+                                    >
+                                      Loss :-{" "}
+                                      <b>{emp?.lossper?.toFixed(2)} %</b>
+                                    </p>
+                                  </div>
+                                </div>
+                                <div
+                                  className={`employee-details ${
+                                    isExpanded ? "expanded" : ""
+                                  }`}
+                                >
+                                  {isExpanded && (
+                                    <>
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          gap: "15px",
+                                        }}
+                                      >
+                                        <p
+                                          className={
+                                            selectedEmployee == emp.employeename
+                                              ? "employee_detail_title"
+                                              : "employee_detail"
+                                          }
+                                          style={{ width: "50%" }}
+                                        >
+                                          Issue Wt(F+M):-{" "}
+                                          <b>{emp?.netissuewtfm?.toFixed(3)}</b>
+                                        </p>
+                                        <p
+                                          className={
+                                            selectedEmployee == emp.employeename
+                                              ? "employee_detail_title"
+                                              : "employee_detail"
+                                          }
+                                          style={{ width: "50%" }}
+                                        >
+                                          Return Wt(F+M):-{" "}
+                                          <b>{emp?.netretunwtfm?.toFixed(3)}</b>
+                                        </p>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        : !isLoading && (
+                            <div
+                              style={{
+                                height: "62vh",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                              }}
+                            >
+                              <p style={{ fontWeight: 600 }}>
+                                No Employee Available
+                              </p>
+                            </div>
+                          )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {selectedLocation &&
+          selectedEmployee &&
+          selectedDepartment &&
+          paneWidths[2] !== "0%" && (
+            <>
+              <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
+              <div className="pane" style={{ width: paneWidths[2] }}>
+                <AllEmployeeDataReport
+                  selectedLocation={selectedLocation}
+                  selectedDepartment={selectedDepartment}
+                  AllFinalData={AllFinalData}
+                  endDate={endDate}
+                  startDate={startDate}
+                  selectedEmployee={selectedEmployee}
+                  showDepartment={showDepartment}
+                />
+              </div>
+            </>
+          )}
+      </Box>
+    </LocalizationProvider>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // http://localhost:3000/samplegrid13/?yc=e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==&sv=1
+// // http://localhost:3000/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
+// import React, { useEffect, useState, useRef } from "react";
+// import Box from "@mui/material/Box";
+// import { DataGrid } from "@mui/x-data-grid";
+// import { LocalizationProvider } from "@mui/x-date-pickers";
+// import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+// import "./Spliter.css";
+// import { Button, CircularProgress } from "@mui/material";
+// import "react-datepicker/dist/react-datepicker.css";
+// import DatePicker from "react-datepicker";
+// import CustomTextField from "../text-field";
+// import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
+// import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+// import AllEmployeeDataReport from "./AllEmployeeDataReport/AllEmployeeDataReport";
+// let popperPlacement = "bottom-start";
+
+// const months = [
+//   "January",
+//   "February",
+//   "March",
+//   "April",
+//   "May",
+//   "June",
+//   "July",
+//   "August",
+//   "September",
+//   "October",
+//   "November",
+//   "December",
+// ];
+
+// const generateMonthYearOptions = () => {
+//   const currentDate = new Date();
+//   const options = [];
+//   for (let i = 0; i < 13; i++) {
+//     const date = new Date(
+//       currentDate.getFullYear(),
+//       currentDate.getMonth() - i,
+//       1
+//     );
+//     const month = date.getMonth(); // 0-indexed
+//     const year = date.getFullYear();
+//     options.push({
+//       label: `${months[month]} - ${year}`,
+//       value: `${month + 1}-${year}`, // e.g., 4-2025
+//     });
+//   }
+
+//   return options;
+// };
+
+// export default function Spliter({ isLoadingNew }) {
+//   const [selectedLocation, setSelectedLocation] = useState(null);
+//   const [selectedDepartment, setSelectedDepartment] = useState(null);
+//   const [select, setFilteredEmployees] = useState([]);
+//   const [paneWidths, setPaneWidths] = useState(["15%", "15%", "70%"]);
+//   const [isLoading, setIsLoading] = React.useState(isLoadingNew);
+//   const containerRef = useRef();
+//   const handleDrag = (index, e) => {
+//     const startX = e.clientX;
+//     const startWidths = [...paneWidths.map((w) => parseFloat(w))];
+//     const containerWidth = containerRef.current.offsetWidth;
+
+//     const onMouseMove = (moveEvent) => {
+//       const delta = moveEvent.clientX - startX;
+//       const percentDelta = (delta / containerWidth) * 100;
+
+//       const newWidths = [...startWidths];
+//       newWidths[index] = Math.max(5, startWidths[index] + percentDelta);
+//       newWidths[index + 1] = Math.max(5, startWidths[index + 1] - percentDelta);
+//       const total = newWidths.reduce((a, b) => a + b, 0);
+
+//       if (total <= 100) {
+//         setPaneWidths(newWidths.map((w) => `${w}%`));
+//       }
+//     };
+
+//     const onMouseUp = () => {
+//       document.removeEventListener("mousemove", onMouseMove);
+//       document.removeEventListener("mouseup", onMouseUp);
+//     };
+
+//     document.addEventListener("mousemove", onMouseMove);
+//     document.addEventListener("mouseup", onMouseUp);
+//   };
+
+//   const [expandedEmployee, setExpandedEmployee] = useState(null);
+//   const [allEmployeeData, setAllEmployeeData] = useState([]);
+//   const [locationSummaryData, setLocationSummaryData] = useState([]);
+//   const [groupedDepartments, setGroupedDepartments] = useState([]);
+//   const [startDate, setStartDate] = useState();
+//   const [endDate, setEndDate] = useState();
+//   const [AllFinalData, setFinalData] = useState();
+//   const [selectedValue, setSelectedValue] = useState("");
+
+//   const options = generateMonthYearOptions();
+
+//   useEffect(() => {
+//     if (options.length > 0 && !selectedValue) {
+//       setSelectedValue(options[0].value); // Auto-select top Month-Year
+//     }
+//   }, [options]);
+
+//   useEffect(() => {
+//     if (selectedValue) {
+//       const [month, year] = selectedValue.split("-").map(Number);
+//       const startDate = new Date(year, month - 1, 1);
+//       const endDate = new Date(year, month, 0);
+
+//       const formatDate = (date) =>
+//         `${String(date.getMonth() + 1).padStart(2, "0")}/${String(
+//           date.getDate()
+//         ).padStart(2, "0")}/${date.getFullYear()}`;
+
+//       setStartDate(formatDate(startDate));
+//       setEndDate(formatDate(endDate));
+//     } else {
+//       const [month, year] = options[0].value.split("-").map(Number);
+//       const startDate = new Date(year, month - 1, 1);
+//       const endDate = new Date(year, month, 0);
+
+//       const formatDate = (date) =>
+//         `${String(date.getMonth() + 1).padStart(2, "0")}/${String(
+//           date.getDate()
+//         ).padStart(2, "0")}/${date.getFullYear()}`;
+
+//       setStartDate(formatDate(startDate));
+//       setEndDate(formatDate(endDate));
+//       fetchData(formatDate(startDate), formatDate(endDate));
+//     }
+//   }, [selectedValue]);
+
+//   const fetchData = async (stat, end) => {
+//     setIsLoading(true);
+//     const body = {
+//       con: '{"id":"","mode":"workerwithoutfinding","appuserid":"amrut@eg.com"}',
+//       p: `{"fdate":"${stat}","tdate":"${end}"}`,
+//       f: "Task Management (taskmaster)",
+//     };
+
+//     try {
+//       const fetchedData = await GetWorkerData(body);
+//       setFinalData(fetchedData?.Data);
+
+//       const { rd, rd1 } = fetchedData?.Data || {};
+
+//       if (Array.isArray(rd) && Array.isArray(rd1)) {
+//         const keyMap = Object.entries(rd[0]).reduce((acc, [numKey, name]) => {
+//           acc[numKey] = name.toLowerCase();
+//           return acc;
+//         }, {});
+
+//         const mergedData = rd1.map((record) => {
+//           const mapped = {};
+//           for (const [key, value] of Object.entries(record)) {
+//             const newKey = keyMap[key] || key;
+//             mapped[newKey] = value;
+//           }
+//           return mapped;
+//         });
+//         setAllEmployeeData(mergedData);
+//         setIsLoading(false); // Always unset loading regardless of error or success
+//       } else {
+//         console.warn("Unexpected rd/rd1 format:", { rd, rd1 });
+//       }
+//     } catch (error) {
+//       console.error("Fetch error:", error);
+//     }
+//   };
+
+//   useEffect(() => {
+//     if (allEmployeeData.length === 0) return;
+//     const summaryMap = new Map();
+//     allEmployeeData.forEach((item) => {
+//       const {
+//         location,
+//         grossissuewt,
+//         grossnetretunwt,
+//         losswt,
+//         lossper,
+//         deptid,
+//       } = item;
+//       if (!summaryMap.has(location)) {
+//         summaryMap.set(location, {
+//           location,
+//           deptid,
+//           grossissuewt: 0,
+//           grossnetretunwt: 0,
+//           losswt: 0,
+//           lossper: 0,
+//           _count: 0,
+//         });
+//       }
+
+//       const existing = summaryMap.get(location);
+//       existing.grossissuewt += grossissuewt || 0;
+//       existing.grossnetretunwt += grossnetretunwt || 0;
+//       existing.losswt += losswt || 0;
+//       existing.lossper += lossper || 0;
+//       existing._count += 1;
+//       summaryMap.set(location, existing);
+//     });
+
+//     const locationSummary = Array.from(summaryMap.values()).map((loc) => ({
+//       location: loc.location,
+//       deptid: loc.deptid,
+//       grossissuewt: Number(loc.grossissuewt.toFixed(2)),
+//       grossnetretunwt: Number(loc.grossnetretunwt.toFixed(2)),
+//       losswt: Number(loc.losswt.toFixed(2)),
+//       lossper: Number((loc.lossper / loc._count).toFixed(2)),
+//     }));
+
+//     setLocationSummaryData(locationSummary);
+//   }, [allEmployeeData]);
+
+//   const handleToggle = (location) => {
+//     setExpandedEmployee((prev) => (prev === location ? null : location));
+//   };
+
+//   const handleSelectLocation = (location) => {
+//     setSelectedLocation(location);
+//     localStorage.setItem("selectedLocation", location);
+//     const filtered = allEmployeeData.filter((emp) => emp.location === location);
+//     const deptMap = new Map();
+//     filtered.forEach((item) => {
+//       const {
+//         deptid,
+//         deptname,
+//         grossissuewt,
+//         grossnetretunwt,
+//         losswt,
+//         lossper,
+//       } = item;
+//       if (!deptMap.has(deptid)) {
+//         deptMap.set(deptid, {
+//           deptid,
+//           deptname,
+//           grossissuewt: 0,
+//           grossnetretunwt: 0,
+//           losswt: 0,
+//           lossper: 0,
+//           _count: 0,
+//         });
+//       }
+
+//       const dept = deptMap.get(deptid);
+//       dept.grossissuewt += grossissuewt || 0;
+//       dept.grossnetretunwt += grossnetretunwt || 0;
+//       dept.losswt += losswt || 0;
+//       dept.lossper += lossper || 0;
+//       dept._count += 1;
+//     });
+
+//     const grouped = Array.from(deptMap.values()).map((dept) => ({
+//       ...dept,
+//       grossissuewt: Number(dept.grossissuewt.toFixed(2)),
+//       grossnetretunwt: Number(dept.grossnetretunwt.toFixed(2)),
+//       losswt: Number(dept.losswt.toFixed(2)),
+//       lossper: Number((dept.lossper / dept._count).toFixed(2)),
+//     }));
+
+//     setGroupedDepartments(grouped);
+//     setExpandedEmployee(location);
+//   };
+
+//   if (locationSummaryData.length > 0) {
+//     handleSelectLocation(locationSummaryData[0].location);
+//   }
+
+//   useEffect(() => {
+//     if (groupedDepartments.length > 0 && !selectedDepartment) {
+//       setSelectedDepartment(groupedDepartments[0].deptname);
+//     }
+//   }, [groupedDepartments]);
+
+//   // if (isLoading) {
+//   //   return <div>Loading...</div>;
+//   // }
+
+//   return (
+//     <LocalizationProvider dateAdapter={AdapterDateFns}>
+//       {isLoading && (
+//         <div className="loader-overlay">
+//           <CircularProgress className="loadingBarManage" />
+//         </div>
+//       )}
+//       <Box
+//         sx={{ height: "100vh", display: "flex", flexDirection: "row" }}
+//         ref={containerRef}
+//       >
+//         <div className="pane" style={{ width: paneWidths[0] }}>
+//           <div style={{ padding: "8px" }}>
+//             <div style={{ display: "flex", gap: "15px" }}>
+//               <select
+//                 value={selectedValue}
+//                 onChange={(e) => setSelectedValue(e.target.value)}
+//                 className="select_month_dropDown"
+//               >
+//                 <option value="">Select Month - Year</option>
+//                 {options.map((opt) => (
+//                   <option key={opt.value} value={opt.value}>
+//                     {opt.label}
+//                   </option>
+//                 ))}
+//               </select>
+//             </div>
+//             <div className="employee-list">
+//               {locationSummaryData?.length != 0
+//                 ? locationSummaryData.map((emp) => {
+//                     const isExpanded = expandedEmployee === emp.location;
+//                     return (
+//                       <div
+//                         key={emp.location}
+//                         className={
+//                           selectedLocation == emp.location
+//                             ? "employee_card_selected"
+//                             : "employee-card"
+//                         }
+//                       >
+//                         <div
+//                           className="employee-header"
+//                           onClick={() => {
+//                             handleToggle(emp.location);
+//                             handleSelectLocation(emp.location);
+//                           }}
+//                         >
+//                           <div className="location_first">
+//                             <span
+//                               className={
+//                                 selectedLocation == emp.location &&
+//                                 "location_top_name"
+//                               }
+//                             >
+//                               {emp.location}
+//                             </span>
+//                             <div
+//                               style={{
+//                                 display: "flex",
+//                                 gap: "15px",
+//                                 alignItems: "center",
+//                               }}
+//                             >
+//                               {/* <Button
+//                             className="location_select_button"
+//                             onClick={() => handleSelectLocation(emp.location)}
+//                           >
+//                             Select
+//                           </Button> */}
+//                               <span className="arrow-icon">
+//                                 {isExpanded ? (
+//                                   <FaChevronUp
+//                                     style={{
+//                                       color:
+//                                         selectedLocation == emp.location &&
+//                                         "white",
+//                                     }}
+//                                   />
+//                                 ) : (
+//                                   <FaChevronDown
+//                                     style={{
+//                                       color:
+//                                         selectedLocation == emp.location &&
+//                                         "white",
+//                                     }}
+//                                   />
+//                                 )}
+//                               </span>
+//                             </div>
+//                           </div>
+//                           <div
+//                             style={{
+//                               display: "flex",
+//                               gap: "15px",
+//                               marginTop: "10px",
+//                             }}
+//                           >
+//                             <p
+//                               className={
+//                                 selectedLocation == emp.location
+//                                   ? "employee_detail_title"
+//                                   : "employee_detail"
+//                               }
+//                               style={{ width: "50%" }}
+//                             >
+//                               Issue Wt(F+M):- <b>{emp?.grossissuewt}</b>
+//                             </p>
+//                             <p
+//                               className={
+//                                 selectedLocation == emp.location
+//                                   ? "employee_detail_title"
+//                                   : "employee_detail"
+//                               }
+//                               style={{ width: "50%" }}
+//                             >
+//                               Return Wt(F+M):- <b>{emp?.grossnetretunwt}</b>
+//                             </p>
+//                           </div>
+//                         </div>
+
+//                         <div
+//                           className={`employee-details ${
+//                             isExpanded ? "expanded" : ""
+//                           }`}
+//                         >
+//                           {isExpanded && (
+//                             <>
+//                               <div style={{ display: "flex", gap: "15px" }}>
+//                                 <p
+//                                   className={
+//                                     selectedLocation == emp.location &&
+//                                     "employee_detail_title"
+//                                   }
+//                                   style={{ width: "50%" }}
+//                                 >
+//                                   Loss Wt:- <b>{emp?.losswt}</b>
+//                                 </p>
+//                                 <p
+//                                   className={
+//                                     selectedLocation == emp.location &&
+//                                     "employee_detail_title"
+//                                   }
+//                                   style={{ width: "50%" }}
+//                                 >
+//                                   Loss %:- <b>{emp?.lossper}</b>
+//                                 </p>
+//                               </div>
+//                             </>
+//                           )}
+//                         </div>
+//                       </div>
+//                     );
+//                   })
+//                 : !isLoading && (
+//                     <div
+//                       style={{
+//                         height: "60vh",
+//                         display: "flex",
+//                         justifyContent: "center",
+//                         alignItems: "center",
+//                         flexDirection: "column",
+//                       }}
+//                     >
+//                       <p style={{ fontWeight: 600, fontSize: "17px" }}>
+//                         No Location Available
+//                       </p>
+//                       <p style={{ fontWeight: 600, color: "#7a7676" }}>
+//                         Select Month & Year
+//                       </p>
+//                     </div>
+//                   )}
+//             </div>
+//           </div>
+//         </div>
+
+//         {paneWidths[1] !== "0%" && (
+//           <>
+//             <div className="splitter" onMouseDown={(e) => handleDrag(0, e)} />
+//             <div className="pane" style={{ width: paneWidths[1] }}>
+//               <div style={{ padding: "8px" }}>
+//                 {!isLoading && (
+//                   <p className="slipter_department">Departments</p>
+//                 )}
+//                 <div className="employee-list">
+//                   {groupedDepartments?.length != 0
+//                     ? groupedDepartments.map((emp) => {
+//                         const isExpanded = expandedEmployee === emp.deptname;
+//                         return (
+//                           <div
+//                             key={emp.location}
+//                             className={
+//                               selectedDepartment == emp.deptname
+//                                 ? "employee_card_selected"
+//                                 : "employee-card"
+//                             }
+//                           >
+//                             <div
+//                               className="employee-header"
+//                               onClick={() => {
+//                                 handleToggle(emp.deptname);
+//                                 setSelectedDepartment(emp.deptname);
+//                               }}
+//                             >
+//                               <div className="location_first">
+//                                 <span
+//                                   className={
+//                                     selectedDepartment == emp.deptname &&
+//                                     "location_top_name"
+//                                   }
+//                                 >
+//                                   {emp.deptname}
+//                                 </span>
+//                                 <div
+//                                   style={{
+//                                     display: "flex",
+//                                     gap: "15px",
+//                                     alignItems: "center",
+//                                   }}
+//                                 >
+//                                   {/* <Button
+//                                 className="location_select_button"
+//                                 onClick={() =>
+//                                   setSelectedDepartment(emp.deptname)
+//                                 }
+//                               >
+//                                 Select
+//                               </Button> */}
+//                                   <span className="arrow-icon">
+//                                     {isExpanded ? (
+//                                       <FaChevronUp
+//                                         style={{
+//                                           color:
+//                                             selectedDepartment ==
+//                                               emp.deptname && "white",
+//                                         }}
+//                                       />
+//                                     ) : (
+//                                       <FaChevronDown
+//                                         style={{
+//                                           color:
+//                                             selectedDepartment ==
+//                                               emp.deptname && "white",
+//                                         }}
+//                                       />
+//                                     )}
+//                                   </span>
+//                                 </div>
+//                               </div>
+//                               <div
+//                                 style={{
+//                                   display: "flex",
+//                                   gap: "15px",
+//                                   marginTop: "10px",
+//                                 }}
+//                               >
+//                                 <p
+//                                   className={
+//                                     selectedDepartment == emp.deptname
+//                                       ? "employee_detail_title"
+//                                       : "employee_detail"
+//                                   }
+//                                   style={{ width: "50%" }}
+//                                 >
+//                                   Issue Wt(F+M):- <b>{emp?.grossissuewt}</b>
+//                                 </p>
+//                                 <p
+//                                   className={
+//                                     selectedDepartment == emp.deptname
+//                                       ? "employee_detail_title"
+//                                       : "employee_detail"
+//                                   }
+//                                   style={{ width: "50%" }}
+//                                 >
+//                                   Return Wt(F+M):- <b>{emp?.grossnetretunwt}</b>
+//                                 </p>
+//                               </div>
+//                             </div>
+//                             <div
+//                               className={`employee-details ${
+//                                 isExpanded ? "expanded" : ""
+//                               }`}
+//                             >
+//                               {isExpanded && (
+//                                 <>
+//                                   <div style={{ display: "flex", gap: "15px" }}>
+//                                     <p
+//                                       className={
+//                                         selectedDepartment == emp.deptname &&
+//                                         "employee_detail_title"
+//                                       }
+//                                       style={{ width: "50%" }}
+//                                     >
+//                                       Loss Wt:- <b>{emp?.losswt}</b>
+//                                     </p>
+//                                     <p
+//                                       className={
+//                                         selectedDepartment == emp.deptname &&
+//                                         "employee_detail_title"
+//                                       }
+//                                       style={{ width: "50%" }}
+//                                     >
+//                                       Loss %:- <b>{emp?.lossper}</b>
+//                                     </p>
+//                                   </div>
+//                                 </>
+//                               )}
+//                             </div>
+//                           </div>
+//                         );
+//                       })
+//                     : !isLoading && (
+//                         <div
+//                           style={{
+//                             height: "62vh",
+//                             display: "flex",
+//                             justifyContent: "center",
+//                             alignItems: "center",
+//                           }}
+//                         >
+//                           <p style={{ fontWeight: 600 }}>
+//                             No Department Available
+//                           </p>
+//                         </div>
+//                       )}
+//                 </div>
+//               </div>
+//             </div>
+//           </>
+//         )}
+
+//         {paneWidths[2] !== "0%" && (
+//           <>
+//             <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
+//             <div className="pane" style={{ width: paneWidths[2] }}>
+//               <AllEmployeeDataReport
+//                 selectedLocation={selectedLocation}
+//                 selectedDepartment={selectedDepartment}
+//                 AllFinalData={AllFinalData}
+//                 endDate={endDate}
+//                 startDate={startDate}
+//               />
+//             </div>
+//           </>
+//         )}
+//       </Box>
+//     </LocalizationProvider>
+//   );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// http://localhost:3000/samplegrid13/?yc=e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==&sv=1
+import React, { useEffect, useState } from "react";
+import Box from "@mui/material/Box";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import "./Spliter.css";
+import { GetWorkerData } from "../API/GetWorkerData/GetWorkerData";
+
+export default function Spliter() {
+  const [expandedEmployee, setExpandedEmployee] = useState(null);
+  const [allEmployeeData, setAllEmployeeData] = useState([]);
+  const [locationSummaryData, setLocationSummaryData] = useState([]);
+  const [filteredCombinedSummary, setFilteredCombinedSummary] = useState(null);
+  const [groupedDepartments, setGroupedDepartments] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const body = {
+        con: '{"id":"","mode":"workerwithoutfinding","appuserid":"amrut@eg.com"}',
+        p: '{"fdate":"04/01/2025","tdate":"04/09/2025"}',
+        f: "Task Management (taskmaster)",
+      };
+      try {
+        const fetchedData = await GetWorkerData(body);
+        const { rd, rd1 } = fetchedData?.Data || {};
+        if (Array.isArray(rd) && Array.isArray(rd1)) {
+          const keyMap = Object.entries(rd[0]).reduce((acc, [numKey, name]) => {
+            acc[numKey] = name.toLowerCase();
+            return acc;
+          }, {});
+          const mergedData = rd1.map((record) => {
+            const mapped = {};
+            for (const [key, value] of Object.entries(record)) {
+              const newKey = keyMap[key] || key;
+              mapped[newKey] = value;
+            }
+            return mapped;
+          });
+          setAllEmployeeData(mergedData);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (allEmployeeData.length === 0) return;
+    const summaryMap = new Map();
+    allEmployeeData.forEach((item) => {
+      const {
+        location,
+        grossissuewt,
+        grossnetretunwt,
+        losswt,
+        lossper,
+        deptid,
+      } = item;
+      if (!summaryMap.has(location)) {
+        summaryMap.set(location, {
+          location,
+          deptid,
+          grossissuewt: 0,
+          grossnetretunwt: 0,
+          losswt: 0,
+          lossper: 0,
+          _count: 0,
+        });
+      }
+
+      const existing = summaryMap.get(location);
+      existing.grossissuewt += grossissuewt || 0;
+      existing.grossnetretunwt += grossnetretunwt || 0;
+      existing.losswt += losswt || 0;
+      existing.lossper += lossper || 0;
+      existing._count += 1;
+
+      summaryMap.set(location, existing);
+    });
+
+    const locationSummary = Array.from(summaryMap.values()).map((loc) => ({
+      location: loc.location,
+      deptid: loc.deptid,
+      grossissuewt: Number(loc.grossissuewt.toFixed(2)),
+      grossnetretunwt: Number(loc.grossnetretunwt.toFixed(2)),
+      losswt: Number(loc.losswt.toFixed(2)),
+      lossper: Number((loc.lossper / loc._count).toFixed(2)),
+    }));
+
+    setLocationSummaryData(locationSummary);
+  }, [allEmployeeData]);
+
+  const handleToggle = (location) => {
+    setExpandedEmployee((prev) => (prev === location ? null : location));
+  };
+
+  const handleSelectLocation = (location) => {
+    localStorage.setItem("selectedLocation", location);
+    const filtered = allEmployeeData.filter((emp) => emp.location === location);
+    const firstRecord = filtered[0] || {};
+
+    // Group by deptid
+    const deptMap = new Map();
+    filtered.forEach((item) => {
+      const {
+        deptid,
+        deptname,
+        grossissuewt,
+        grossnetretunwt,
+        losswt,
+        lossper,
+      } = item;
+      if (!deptMap.has(deptid)) {
+        deptMap.set(deptid, {
+          deptid,
+          deptname,
+          grossissuewt: 0,
+          grossnetretunwt: 0,
+          losswt: 0,
+          lossper: 0,
+          _count: 0,
+        });
+      }
+
+      const dept = deptMap.get(deptid);
+      dept.grossissuewt += grossissuewt || 0;
+      dept.grossnetretunwt += grossnetretunwt || 0;
+      dept.losswt += losswt || 0;
+      dept.lossper += lossper || 0;
+      dept._count += 1;
+    });
+
+    const grouped = Array.from(deptMap.values()).map((dept) => ({
+      ...dept,
+      grossissuewt: Number(dept.grossissuewt.toFixed(2)),
+      grossnetretunwt: Number(dept.grossnetretunwt.toFixed(2)),
+      losswt: Number(dept.losswt.toFixed(2)),
+      lossper: Number((dept.lossper / dept._count).toFixed(2)),
+    }));
+
+    setGroupedDepartments(grouped);
+
+    // Optional: Set combined summary for UI
+    let total = {
+      location,
+      grossissuewt: 0,
+      grossnetretunwt: 0,
+      losswt: 0,
+      lossper: 0,
+      deptid: firstRecord.deptid || "N/A",
+      employeecode: firstRecord.employeecode || "N/A",
+      deptname: firstRecord.deptname || "N/A",
+      _count: filtered.length,
+    };
+
+    filtered.forEach((item) => {
+      total.grossissuewt += item.grossissuewt || 0;
+      total.grossnetretunwt += item.grossnetretunwt || 0;
+      total.losswt += item.losswt || 0;
+      total.lossper += item.lossper || 0;
+    });
+
+    total.grossissuewt = Number(total.grossissuewt.toFixed(2));
+    total.grossnetretunwt = Number(total.grossnetretunwt.toFixed(2));
+    total.losswt = Number(total.losswt.toFixed(2));
+    total.lossper = Number((total.lossper / total._count).toFixed(2));
+    setFilteredCombinedSummary(total);
+    setExpandedEmployee(location);
+  };
+  const handleMoreView = (name) => {
+    console.log("More View clicked for:", name);
+  };
+  const months = [
+    { name: "January", number: 1 },
+    { name: "February", number: 2 },
+    { name: "March", number: 3 },
+    { name: "April", number: 4 },
+    { name: "May", number: 5 },
+    { name: "June", number: 6 },
+    { name: "July", number: 7 },
+    { name: "August", number: 8 },
+    { name: "September", number: 9 },
+    { name: "October", number: 10 },
+    { name: "November", number: 11 },
+    { name: "December", number: 12 },
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
+
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+
+  const handleGoClick = () => {
+    if (selectedMonth && selectedYear) {
+      const month = parseInt(selectedMonth);
+      const year = parseInt(selectedYear);
+
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0); // 0th day of next month gives last day of current month
+
+      const formatDate = (date) =>
+        `${String(date.getMonth() + 1).padStart(2, "0")}/${String(
+          date.getDate()
+        ).padStart(2, "0")}/${date.getFullYear()}`;
+
+      console.log("Start Date :-", formatDate(startDate));
+      console.log("End Date   :-", formatDate(endDate));
+    } else {
+      alert("Please select both month and year.");
+    }
+  };
+
+  return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
+      <Box
+        sx={{
+          height: "100vh",
+          width: "100%",
+          overflowY: "auto",
+          padding: "20px",
+        }}
+      >
+        <div style={{ display: "flex", gap: "15px" }}>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="select_month_dropDown"
+          >
+            <option value="">Select Month</option>
+            {months.map((m) => (
+              <option key={m.number} value={m.number}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="select_month_dropDown"
+          >
+            <option value="">Select Year</option>
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          <button onClick={handleGoClick} className="Search_button">
+            Go
+          </button>
+        </div>
+        <div className="employee-list">
+          {locationSummaryData.map((emp) => {
+            const isExpanded = expandedEmployee === emp.location;
+            const isFilteredData =
+              filteredCombinedSummary?.location === emp.location;
+
+            return (
+              <div key={emp.location} className="employee-card">
+                <div
+                  className="employee-header"
+                  onClick={() => handleToggle(emp.location)}
+                >
+                  <div className="location_first">
+                    <span>{emp.location}</span>
+                    <button
+                      className="location_select_button"
+                      onClick={() => handleSelectLocation(emp.location)}
+                    >
+                      Select
+                    </button>
+                    <span className="arrow-icon">
+                      {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "15px" }}>
+                    <p>Issue Wt:- {emp?.grossissuewt}</p>
+                    <p>Return Wt:- {emp?.grossnetretunwt}</p>
+                  </div>
+                </div>
+
+                <div
+                  className={`employee-details ${isExpanded ? "expanded" : ""}`}
+                >
+                  {isExpanded && (
+                    <>
+                      <div style={{ display: "flex", gap: "15px" }}>
+                        <p>Loss Wt:- {emp?.lossper}</p>
+                        <p>Loss %:- {emp?.losswt}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Box>
+    </LocalizationProvider>
+  );
+}
+
+// import React, { useEffect, useState, useRef } from "react";
+// import Box from "@mui/material/Box";
+// import { DataGrid } from "@mui/x-data-grid";
+// import { LocalizationProvider } from "@mui/x-date-pickers";
+// import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+// import "./Spliter.css";
+// import { Button } from "@mui/material";
+// import "react-datepicker/dist/react-datepicker.css";
+// import DatePicker from "react-datepicker";
+// import CustomTextField from "../text-field";
+
+// let popperPlacement = "bottom-start";
+
+// export default function Spliter() {
+//   const [employeeDataSpliter, setEmployeeDataSpliter] = useState([[], []]);
+//   const [selectedLocation, setSelectedLocation] = useState(null);
+//   const [selectedDepartment, setSelectedDepartment] = useState(null);
+//   const [filteredDepartments, setFilteredDepartments] = useState([]);
+//   const [filteredEmployees, setFilteredEmployees] = useState([]);
+//   const [paneWidths, setPaneWidths] = useState(["100%", "0%", "0%"]);
+
+//   const [toDate, setToDate] = useState(null);
+//   const [fromDate, setFromDate] = useState(null);
+
+//   const containerRef = useRef();
+
+//   useEffect(() => {
+//     fetch(
+//       "https://livenx.optigoapps.com/api/cron/data/v1/daily/MpokYYYPX1vHC8wjWHVNImcJ8p3Glr9t/2"
+//     )
+//       .then((res) => res.json())
+//       .then((data) => setEmployeeDataSpliter(data))
+//       .catch(() => setEmployeeDataSpliter([[], []]));
+//   }, []);
+
+//   const handleLocationClick = (location) => {
+//     setSelectedLocation(location);
+//     setSelectedDepartment(null);
+//     const departments = [
+//       ...new Set(
+//         employeeDataSpliter
+//           .flat()
+//           .filter((emp) => emp.Location === location)
+//           .map((emp) => emp.INV_MeterialAssignEmp_DeptName)
+//           .filter(Boolean)
+//       ),
+//     ];
+//     setFilteredDepartments(departments);
+//     setFilteredEmployees([]);
+//     setPaneWidths(["50%", "50%", "0%"]);
+//   };
+
+//   const handleDepartmentClick = (department) => {
+//     setSelectedDepartment(department);
+//     const employees = employeeDataSpliter
+//       .flat()
+//       .filter(
+//         (emp) =>
+//           emp.Location === selectedLocation &&
+//           emp.INV_MeterialAssignEmp_DeptName === department
+//       )
+//       .map((emp, i) => ({ id: i + 1, ...emp }));
+//     setFilteredEmployees(employees);
+//     setPaneWidths(["15%", "15%", "70%"]);
+//   };
+
+//   const handleDrag = (index, e) => {
+//     const startX = e.clientX;
+//     const startWidths = [...paneWidths.map((w) => parseFloat(w))];
+//     const containerWidth = containerRef.current.offsetWidth;
+
+//     const onMouseMove = (moveEvent) => {
+//       const delta = moveEvent.clientX - startX;
+//       const percentDelta = (delta / containerWidth) * 100;
+
+//       const newWidths = [...startWidths];
+//       newWidths[index] = Math.max(5, startWidths[index] + percentDelta);
+//       newWidths[index + 1] = Math.max(5, startWidths[index + 1] - percentDelta);
+//       const total = newWidths.reduce((a, b) => a + b, 0);
+
+//       if (total <= 100) {
+//         setPaneWidths(newWidths.map((w) => `${w}%`));
+//       }
+//     };
+
+//     const onMouseUp = () => {
+//       document.removeEventListener("mousemove", onMouseMove);
+//       document.removeEventListener("mouseup", onMouseUp);
+//     };
+
+//     document.addEventListener("mousemove", onMouseMove);
+//     document.addEventListener("mouseup", onMouseUp);
+//   };
+
+//   const locationRows = [
+//     ...new Set(
+//       employeeDataSpliter
+//         .flat()
+//         .map((e) => e.Location)
+//         .filter(Boolean)
+//     ),
+//   ].map((loc, i) => ({ id: i + 1, location: loc }));
+
+//   const departmentRows = filteredDepartments.map((dept, i) => ({
+//     id: i + 1,
+//     department: dept,
+//   }));
+
+//   const employeeColumns = [
+//     { field: "EmployeeName", headerName: "Name", width: 200 },
+//     { field: "EmployeeCode", headerName: "Code", width: 100 },
+//     { field: "NetIssueWt", headerName: "Net Issue Wt", width: 150 },
+//     { field: "NetRetunWt", headerName: "Net Return Wt", width: 150 },
+//     { field: "LossWt", headerName: "Loss Wt", width: 100 },
+//     { field: "LossPer", headerName: "Loss %", width: 100 },
+//     { field: "jobCount", headerName: "Job Count", width: 100 },
+//   ];
+
+//   console.log("locationRowslocationRows", locationRows);
+
+//   const handleOnChangeRange = (dates) => {
+//     const [start, end] = dates;
+//     setFromDate(start);
+//     setToDate(end);
+//   };
+
+//   return (
+//     <LocalizationProvider dateAdapter={AdapterDateFns}>
+//       <Box
+//         sx={{ height: "100vh", display: "flex", flexDirection: "row" }}
+//         ref={containerRef}
+//       >
+//         <div className="pane" style={{ width: paneWidths[0] }}>
+//           <DatePicker
+//             selectsRange
+//             showYearDropdown
+//             showMonthDropdown
+//             monthsShown={2}
+//             endDate={toDate}
+//             selected={fromDate}
+//             startDate={fromDate}
+//             shouldCloseOnSelect={false}
+//             id="date-range-picker-months"
+//             onChange={handleOnChangeRange}
+//             customInput={
+//               <CustomTextField
+//                 customBorderColor="rgba(47, 43, 61, 0.2)"
+//                 borderoutlinedColor="#00CFE8"
+//                 customTextColor="#2F2B3DC7"
+//                 customFontSize="0.8125rem"
+//                 label="Select Date"
+//               />
+//             }
+//             popperPlacement={popperPlacement}
+//             dateFormat="dd-MM-yyyy"
+//             placeholderText={"dd-mm-yyyy dd-mm-yyyy"}
+//             className="rangeDatePicker"
+//           />
+
+//           <h3>Locations :- {selectedLocation}</h3>
+//           <div className="department_show_div">
+//             {locationRows?.map((data, index) => (
+//               <Button
+//                 key={index}
+//                 className="departmentNameShow"
+//                 onClick={() => {
+//                   handleLocationClick(data?.location);
+//                 }}
+//               >
+//                 {data?.location}
+//               </Button>
+//             ))}
+//           </div>
+//         </div>
+
+//         {paneWidths[1] !== "0%" && (
+//           <>
+//             <div className="splitter" onMouseDown={(e) => handleDrag(0, e)} />
+//             <div className="pane" style={{ width: paneWidths[1] }}>
+//               <h3>Departments :- {selectedDepartment}</h3>
+//               <DataGrid
+//                 rows={departmentRows}
+//                 columns={[
+//                   { field: "id", headerName: "No", width: 80 },
+//                   {
+//                     field: "department",
+//                     headerName: "Department",
+//                     width: 160,
+//                     renderCell: (params) => (
+//                       <a
+//                         href="#"
+//                         onClick={(e) => {
+//                           e.preventDefault();
+//                           handleDepartmentClick(params.value);
+//                         }}
+//                       >
+//                         {params.value}
+//                       </a>
+//                     ),
+//                   },
+//                 ]}
+//                 className="dataGrid_spliterView"
+//               />
+//             </div>
+//           </>
+//         )}
+
+//         {paneWidths[2] !== "0%" && (
+//           <>
+//             <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
+//             <div className="pane" style={{ width: paneWidths[2] }}>
+//               <h3>Employee Data</h3>
+//               <p>
+//                 Showing data for: <strong>{selectedLocation}</strong> -{" "}
+//                 <strong>{selectedDepartment}</strong>
+//               </p>
+//               <div style={{ height: "80vh", width: "100%" }}>
+//                 <DataGrid
+//                   rows={filteredEmployees}
+//                   columns={employeeColumns}
+//                   pageSize={15}
+//                 />
+//               </div>
+//             </div>
+//           </>
+//         )}
+//       </Box>
+//     </LocalizationProvider>
+//   );
+// }
