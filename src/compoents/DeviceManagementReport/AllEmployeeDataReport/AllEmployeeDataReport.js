@@ -514,9 +514,7 @@ export default function AllEmployeeDataReport({
   }, [filters, commonSearch, fromDate, toDate, columns, selectedColors]);
 
   const handleLogoutDevice = async (id) => {
-    const url = searchParams.get("sv");
     const sp = searchParams.get("sp");
-    const afterSlash = url?.split("/") || [];
 
     const mode = isDeleteModel ? "DeviceDelete" : "DeviceForceLogOut";
     const soketMode = isDeleteModel ? "AccountDeleted" : "ForceLogout";
@@ -529,8 +527,6 @@ export default function AllEmployeeDataReport({
     try {
       const response = await GetWorkerData(
         body,
-        afterSlash[1],
-        afterSlash[2],
         sp
       );
       if (response?.Data?.rd[0]?.msg === "Success") {
@@ -551,15 +547,10 @@ export default function AllEmployeeDataReport({
       p: `{\"AppDevRowId\":${row.Id},\"CustomerBindTypeId\":${newBindId}}`,
       f: "Task Management (taskmaster)",
     };
-    const url = searchParams.get("sv");
     const sp = searchParams.get("sp");
-    const afterSlash = url?.split("/") || [];
-
     try {
       const response = await GetWorkerData(
         body,
-        afterSlash[1],
-        afterSlash[2],
         sp
       );
       if (response?.Data?.rd[0]?.msg === "Success") {
@@ -590,15 +581,10 @@ export default function AllEmployeeDataReport({
       f: "Task Management (taskmaster)",
     };
 
-    const url = searchParams.get("sv");
     const sp = searchParams.get("sp");
-    const afterSlash = url?.split("/") || [];
-
     try {
       const fetchedData = await GetWorkerData(
         body,
-        afterSlash[1],
-        afterSlash[2],
         sp
       );
 

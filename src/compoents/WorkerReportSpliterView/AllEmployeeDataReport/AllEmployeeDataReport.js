@@ -754,6 +754,7 @@ export default function AllEmployeeDataReport({
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
   };
+  
   const renderSummary = () => {
     const summaryColumns = columns.filter((col) => {
       const columnData = Object.values(allColumData).find(

@@ -83,18 +83,18 @@ const MyComponent = () => {
           alert("This is testing for socket");
           break;
         case "devicedisabled":
-          alert("This is testing for deviceDisabled");
+          // alert("This is testing for deviceDisabled");
           break;
         case "deviceenabled":
-          alert("This is testing for deviceenabled");
+          // alert("This is testing for deviceenabled");
           break;
         case "forcelogout":
-          alert("This is testing for forcelogout");
+          // alert("This is testing for forcelogout");
           break;
         case "accountdeleted":
-          alert("This is testing for accountdeleted");
+          // alert("This is testing for accountdeleted");
         case "customerbindchanged":
-          alert("This is testing for customerbindchanged");
+          // alert("This is testing for customerbindchanged");
           break;
         case "metal":
           alert("Metal change happened");
