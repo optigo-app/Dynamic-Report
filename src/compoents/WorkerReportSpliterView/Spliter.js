@@ -976,7 +976,7 @@ export default function Spliter({ isLoadingNew }) {
                     </>
                   )}
                 </div>
-
+                
                 {locationSummaryData?.length != 0 && (
                   <div
                     style={{

@@ -28,7 +28,7 @@ import {
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
-import { MdExpandMore, MdOpenInFull } from "react-icons/md";
+import { MdDelete, MdExpandMore, MdOpenInFull } from "react-icons/md";
 import CustomTextField from "../../text-field/index";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -45,6 +45,7 @@ import { useSetRecoilState } from "recoil";
 import CustomerBind from "./CustomerBind.json";
 import { deviceOnorOff } from "../../../Recoil/atom";
 import { useDeviceStatus } from "../../../DeviceStatusContext";
+import { IoMdLogOut } from "react-icons/io";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -275,11 +276,12 @@ export default function AllEmployeeDataReport({
             Title: employeeSummary.deactiveDevices,
             summaryTitle: "Deactive Devices",
           },
-          {
-            field: "packages",
-            Title: employeeSummary.packages.join(", "),
-            summaryTitle: "Packages",
-          },
+          // ,
+          // {
+          //   field: "packages",
+          //   Title: employeeSummary.packages.join(", "),
+          //   summaryTitle: "Packages",
+          // },
           {
             field: "appNames",
             Title: employeeSummary.appNames.join(", "),
@@ -472,7 +474,7 @@ export default function AllEmployeeDataReport({
                       setIsDeleteMode(true);
                     }}
                   >
-                    Delete
+                    <MdDelete style={{color: 'white', fontSize: '25px'}}/>
                   </Button>
                 </div>
               );
@@ -491,7 +493,7 @@ export default function AllEmployeeDataReport({
                       setIsDeleteMode(false);
                     }}
                   >
-                    Logout
+                    <IoMdLogOut style={{color: 'white', fontSize: '25px'}}/>
                   </Button>
                 </div>
               );
@@ -579,9 +581,10 @@ export default function AllEmployeeDataReport({
                 }
                 size="small"
                 fullWidth
+                className="MenuSelectItem"
               >
                 {CustomerBind.map((item) => (
-                  <MenuItem key={item.id} value={item.id}>
+                  <MenuItem key={item.id} value={item.id} className="MenuSelectItem_select">
                     {item.name}
                   </MenuItem>
                 ))}

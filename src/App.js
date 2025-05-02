@@ -9,7 +9,7 @@ function App() {
   return (
     <RecoilRoot>
       <DeviceStatusProvider>
-        <BrowserRouter basename="/testreport">
+        <BrowserRouter >
           <ConnectionManager />
           <GridMain />
         </BrowserRouter>
@@ -20,5 +20,6 @@ function App() {
 
 export default App;
 
+// basename="/testreport"
 // "homepage": "/testreport",
 
