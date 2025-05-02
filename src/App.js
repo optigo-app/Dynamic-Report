@@ -6,7 +6,6 @@ import ConnectionManager from "./API/SoketConnection/ConnectionManager";
 import { DeviceStatusProvider } from "./DeviceStatusContext";
 
 function App() {
-  console.log("App.js");
   return (
     <RecoilRoot>
       <DeviceStatusProvider>

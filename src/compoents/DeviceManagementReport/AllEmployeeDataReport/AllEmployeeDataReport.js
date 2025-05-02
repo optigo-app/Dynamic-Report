@@ -148,6 +148,185 @@ export default function AllEmployeeDataReport({
   const [lastUpdated, setLastUpdated] = React.useState("");
   const gridRef = React.useRef(null);
 
+  const useDeviceSummary = (AllFinalData) => {
+    const [summary, setSummary] = React.useState({
+      totalDevices: 0,
+      activeDevices: 0,
+      deactiveDevices: 0,
+      upcomingExpiryDevices: 0,
+      enableCount: 0,
+      disableCount: 0,
+    });
+
+    React.useEffect(() => {
+      const records = AllFinalData?.rd1 || [];
+      const now = new Date();
+      const fifteenDaysLater = new Date(now);
+      fifteenDaysLater.setDate(now.getDate() + 15);
+
+      let activeCount = 0;
+      let deactiveCount = 0;
+      let upcomingExpiryCount = 0;
+      let enable = 0;
+      let disable = 0;
+
+      for (const record of records) {
+        const status = record["5"];
+        const access = record["6"];
+        const expiryDateStr = record["17"];
+
+        if (status === "Active") activeCount++;
+        if (status === "DeActive") deactiveCount++;
+
+        if (access === 1) enable++;
+        if (access === 0) disable++;
+
+        if (expiryDateStr) {
+          const expiryDate = new Date(expiryDateStr);
+          if (expiryDate >= now && expiryDate <= fifteenDaysLater) {
+            upcomingExpiryCount++;
+          }
+        }
+      }
+
+      setSummary({
+        totalDevices: records.length,
+        activeDevices: activeCount,
+        deactiveDevices: deactiveCount,
+        upcomingExpiryDevices: upcomingExpiryCount,
+        enableCount: enable,
+        disableCount: disable,
+      });
+    }, [AllFinalData]);
+
+    return summary;
+  };
+  const summary = useDeviceSummary(AllFinalData);
+
+  const records = AllFinalData?.rd1 || [];
+  const employeeSummary = {
+    connectedDevices: records.filter((r) => r["4"]).length,
+    activeDevices: records.filter((r) => r["5"] === "Active").length,
+    deactiveDevices: records.filter((r) => r["5"] === "DeActive").length,
+    packages: [...new Set(records.map((r) => r["9"]).filter(Boolean))],
+    appNames: [...new Set(records.map((r) => r["1"]).filter(Boolean))],
+  };
+
+  const deviceSummary = {
+    activeDevices: records.filter((r) => r["5"] === "Active").length,
+    deactiveDevices: records.filter((r) => r["5"] === "DeActive").length,
+    connectedDevices: records.filter((r) => r["4"]).length,
+    timeLeft: [...new Set(records.map((r) => r["15"]).filter(Boolean))].join(
+      ", "
+    ),
+    connectedApps: [
+      ...new Set(records.map((r) => r["1"]).filter(Boolean)),
+    ].join(", "),
+  };
+
+  const summaryArray =
+    selectedFileter === "App"
+      ? [
+          {
+            field: "totalDevices",
+            Title: summary.totalDevices,
+            summaryTitle: "Total Devices",
+          },
+          {
+            field: "activeDevices",
+            Title: summary.activeDevices,
+            summaryTitle: "Active Devices",
+          },
+          {
+            field: "deactiveDevices",
+            Title: summary.deactiveDevices,
+            summaryTitle: "Deactive Devices",
+          },
+          {
+            field: "upcomingExpiryDevices",
+            Title: summary.upcomingExpiryDevices,
+            summaryTitle: "Expiring Soon",
+          },
+          {
+            field: "enableCount",
+            Title: summary.enableCount,
+            summaryTitle: "Enabled",
+          },
+          {
+            field: "disableCount",
+            Title: summary.disableCount,
+            summaryTitle: "Disabled",
+          },
+        ]
+      : selectedFileter === "Employee"
+      ? [
+          {
+            field: "connectedDevices",
+            Title: employeeSummary.connectedDevices,
+            summaryTitle: "Connected Devices",
+          },
+          {
+            field: "activeDevices",
+            Title: employeeSummary.activeDevices,
+            summaryTitle: "Active Devices",
+          },
+          {
+            field: "deactiveDevices",
+            Title: employeeSummary.deactiveDevices,
+            summaryTitle: "Deactive Devices",
+          },
+          {
+            field: "packages",
+            Title: employeeSummary.packages.join(", "),
+            summaryTitle: "Packages",
+          },
+          {
+            field: "appNames",
+            Title: employeeSummary.appNames.join(", "),
+            summaryTitle: "Apps",
+          },
+        ]
+      : selectedFileter === "Device"
+      ? [
+          {
+            field: "activeDevices",
+            Title: deviceSummary.activeDevices,
+            summaryTitle: "Active Devices",
+          },
+          {
+            field: "deactiveDevices",
+            Title: deviceSummary.deactiveDevices,
+            summaryTitle: "Deactive Devices",
+          },
+          {
+            field: "connectedDevices",
+            Title: deviceSummary.connectedDevices,
+            summaryTitle: "Connected Devices",
+          },
+          {
+            field: "timeLeft",
+            Title: deviceSummary.timeLeft,
+            summaryTitle: "Time Left",
+          },
+          {
+            field: "connectedApps",
+            Title: deviceSummary.connectedApps,
+            summaryTitle: "App Names",
+          },
+        ]
+      : [];
+
+  /*
+{
+  totalDevices: 3,
+  activeDevices: 1,
+  deactiveDevices: 2,
+  upcomingExpiryDevices: 3,
+  enableCount: 3,
+  disableCount: 0
+}
+*/
+
   const APICall = () => {
     setIsLoading(true);
     const { rd, rd1 } = AllFinalData || {};
@@ -376,7 +555,6 @@ export default function AllEmployeeDataReport({
   }, [allColumData]);
 
   React.useEffect(() => {
-    console.log("allRowData ", allRowData);
     setColumns((prev) =>
       prev.map((col) => {
         if (col.field === "Access") {
@@ -415,6 +593,8 @@ export default function AllEmployeeDataReport({
       })
     );
   }, [allColumData, allRowData]);
+
+  console.log("AllFinalData ", AllFinalData);
 
   const handleCellClick = (params) => {
     setSelectedEmployeeName(params?.row?.employeename);
@@ -525,10 +705,7 @@ export default function AllEmployeeDataReport({
       f: "Task Management (taskmaster)",
     };
     try {
-      const response = await GetWorkerData(
-        body,
-        sp
-      );
+      const response = await GetWorkerData(body, sp);
       if (response?.Data?.rd[0]?.msg === "Success") {
         setShowSuccess(true);
         setTimeout(() => {
@@ -549,10 +726,7 @@ export default function AllEmployeeDataReport({
     };
     const sp = searchParams.get("sp");
     try {
-      const response = await GetWorkerData(
-        body,
-        sp
-      );
+      const response = await GetWorkerData(body, sp);
       if (response?.Data?.rd[0]?.msg === "Success") {
         setAllRowData((prevData) => {
           return prevData.map((r) => {
@@ -583,10 +757,7 @@ export default function AllEmployeeDataReport({
 
     const sp = searchParams.get("sp");
     try {
-      const fetchedData = await GetWorkerData(
-        body,
-        sp
-      );
+      const fetchedData = await GetWorkerData(body, sp);
 
       if (fetchedData?.Data.rd[0]?.msg === "Success") {
         setAllRowData((prevData) => {
@@ -897,71 +1068,14 @@ export default function AllEmployeeDataReport({
   };
 
   const renderSummary = () => {
-    const summaryColumns = columns.filter((col) => {
-      const columnData = Object.values(allColumData).find(
-        (data) => data.field === col.field
-      );
-      return columnData?.summary;
-    });
-
     return (
       <div className="summaryBox">
-        {summaryColumns.map((col) => {
-          let calculatedValue = 0;
-
-          if (col.field === "lossperfm") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else if (col.field === "lossper") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.netretunwtfm) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else if (col.field === "losspergross") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else {
-            calculatedValue =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row[col.field]) || 0),
-                0
-              ) || 0;
-          }
+        {summaryArray?.map((col) => {
           return (
             <div className="summaryItem" key={col.field}>
               <div className="AllEmploe_boxViewTotal">
                 <div>
-                  <p className="AllEmplo_boxViewTotalValue">
-                    {calculatedValue.toFixed(col?.summuryValueKey)}
-                  </p>
+                  <p className="AllEmplo_boxViewTotalValue">{col?.Title}</p>
                   <p className="boxViewTotalTitle">{col.summaryTitle}</p>
                 </div>
               </div>
@@ -1118,7 +1232,7 @@ export default function AllEmployeeDataReport({
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
-        className="worker_AllEmoployee_mainGridView"
+        className="DeviceAllData_mainGridView"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
         ref={gridContainerRef}
       >

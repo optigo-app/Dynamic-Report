@@ -754,7 +754,7 @@ export default function AllEmployeeDataReport({
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
   };
-  
+
   const renderSummary = () => {
     const summaryColumns = columns.filter((col) => {
       const columnData = Object.values(allColumData).find(
@@ -775,12 +775,13 @@ export default function AllEmployeeDataReport({
                 0
               ) || 0;
 
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+            const totalNetReturnWt = filteredRows?.reduce(
+              (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
+              0
+            ); // prevent division by 0
+            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
+            calculatedValue =
+              calculatedValue1 == Infinity ? 0 : calculatedValue1;
           } else if (col.field === "lossper") {
             const totalLossWt =
               filteredRows?.reduce(
@@ -792,8 +793,11 @@ export default function AllEmployeeDataReport({
               filteredRows?.reduce(
                 (sum, row) => sum + (parseFloat(row.netretunwtfm) || 0),
                 0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+              ) || 0; // prevent division by 0
+            // calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
+            calculatedValue =
+              calculatedValue1 == Infinity ? 0 : calculatedValue1;
           } else if (col.field === "losspergross") {
             const totalLossWt =
               filteredRows?.reduce(
@@ -805,8 +809,10 @@ export default function AllEmployeeDataReport({
               filteredRows?.reduce(
                 (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
                 0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+              ) || 0; // prevent division by 0
+            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
+            calculatedValue =
+              calculatedValue1 == Infinity ? 0 : calculatedValue1;
           } else {
             calculatedValue =
               filteredRows?.reduce(
