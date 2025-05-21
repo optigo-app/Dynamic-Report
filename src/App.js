@@ -1,25 +1,36 @@
 import { RecoilRoot } from "recoil";
 import "./App.css";
 import GridMain from "./GridMain";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useSearchParams } from "react-router-dom";
 import ConnectionManager from "./API/SoketConnection/ConnectionManager";
 import { DeviceStatusProvider } from "./DeviceStatusContext";
 
-function App() {
+function AppWrapper() {
   return (
     <RecoilRoot>
       <DeviceStatusProvider>
-        <BrowserRouter >
-          <ConnectionManager />
-          <GridMain />
+        <BrowserRouter>
+          <App />
         </BrowserRouter>
       </DeviceStatusProvider>
     </RecoilRoot>
   );
 }
 
-export default App;
+function App() {
+  const [searchParams] = useSearchParams();
+  const pid = searchParams.get("pid");
+
+  return (
+    <>
+      {pid === "18233" && <ConnectionManager />}
+      <GridMain />
+    </>
+  );
+}
+
+export default AppWrapper;
+
 
 // basename="/testreport"
 // "homepage": "/testreport",
-

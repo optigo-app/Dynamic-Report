@@ -45,6 +45,38 @@
     },
     {
       "colid": 1,
+      "headerName": "customer code",
+      "field": "customercode",
+      "Width": 90,
+      "Align": "center",
+      "hrefLink": "",
+      "ColumShow": true,
+      "ColumFilter": false,
+      "NormalFilter": false,
+      "DateRangeFilter": false,
+      "multiSelection": false,
+      "RangeFilter": false,
+      "ColumNumberSetting": 1,
+      "ColumAlign": "center",
+      "ColumTitleCapital": false,
+      "ColumTitleSmall": false,
+      "FontSize": "12px",
+      "borderRadius": "0px",
+      "color": "",
+      "backgroundColor": "",
+      "summary": false,
+      "columAscendion": false,
+      "columDescending": false,
+      "suggestionFilter": false,
+      "selectDropdownFilter": false,
+      "proiorityFilter": false,
+      "copyButton": false,
+      "EditData": false,
+      "summaryTitle": "",
+      "summuryValueKey": 0
+    },
+    {
+      "colid": 1,
       "headerName": "compnyStock",
       "field": "iscompanystock",
       "Width": 90,
@@ -138,8 +170,7 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 3,
@@ -171,8 +202,7 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 4,
@@ -204,8 +234,7 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 5,
@@ -237,8 +266,7 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 6,
@@ -270,8 +298,7 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 6,
@@ -303,8 +330,7 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 6,
@@ -336,8 +362,7 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 6,
@@ -369,12 +394,43 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
     },
     {
       "colid": 6,
-      "headerName": "Metal Type / Purity / Color",
+      "headerName": "Metal Type",
+      "field": "metaltype",
+      "Width": 150,
+      "Align": "left",
+      "ColumAlign": "left",
+      "hrefLink": "",
+      "ColumShow": true,
+      "ColumFilter": true,
+      "NormalFilter": true,
+      "DateRangeFilter": false,
+      "multiSelection": false,
+      "RangeFilter": false,
+      "suggestionFilter": false,
+      "selectDropdownFilter": false,
+      "ColumNumberSetting": 7,
+      "ColumTitleCapital": false,
+      "ColumTitleSmall": false,
+      "FontSize": "12px",
+      "borderRadius": "0px",
+      "color": "",
+      "backgroundColor": "",
+      "summary": false,
+      "columAscendion": false,
+      "columDescending": false,
+      "proiorityFilter": true,
+      "copyButton": false,
+      "EditData": false,
+      "summaryTitle": "",
+      "summuryValueKey": 0
+    },
+    {
+      "colid": 6,
+      "headerName": "Metal Purity",
       "field": "metalpurity",
       "Width": 150,
       "Align": "left",
@@ -402,8 +458,39 @@
       "copyButton": false,
       "EditData": false,
       "summaryTitle": "",
-      "summuryValueKey": 0,
-      "GrupChekBox": true
+      "summuryValueKey": 0
+    },
+    {
+      "colid": 6,
+      "headerName": "Color",
+      "field": "metalcolor",
+      "Width": 150,
+      "Align": "left",
+      "ColumAlign": "left",
+      "hrefLink": "",
+      "ColumShow": true,
+      "ColumFilter": true,
+      "NormalFilter": true,
+      "DateRangeFilter": false,
+      "multiSelection": false,
+      "RangeFilter": false,
+      "suggestionFilter": false,
+      "selectDropdownFilter": false,
+      "ColumNumberSetting": 7,
+      "ColumTitleCapital": false,
+      "ColumTitleSmall": false,
+      "FontSize": "12px",
+      "borderRadius": "0px",
+      "color": "",
+      "backgroundColor": "",
+      "summary": false,
+      "columAscendion": false,
+      "columDescending": false,
+      "proiorityFilter": true,
+      "copyButton": false,
+      "EditData": false,
+      "summaryTitle": "",
+      "summuryValueKey": 0
     },
     {
       "colid": 7,

@@ -143,6 +143,7 @@ export default function JobCompletion() {
   const [endDate, setEndDate] = useState();
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
+  const [sortModel, setSortModel] = useState([]);
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
@@ -206,6 +207,7 @@ export default function JobCompletion() {
     try {
       const fetchedData = await GetWorkerData(body, sp);
       setAllRowData(fetchedData?.Data?.rd1);
+      // setAllRowData(fetchedData?.Data?.rd1?.slice(0, 100));
       setAllColumIdWiseName(fetchedData?.Data?.rd);
       setMasterKeyData(OtherKeyData?.rd);
       setAllColumData(OtherKeyData?.rd1);
@@ -259,8 +261,8 @@ export default function JobCompletion() {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               {col.GrupChekBox && (
                 <Checkbox
-                  checked={grupEnChekBox[col.field] ?? true} // 👉 Correct binding to grupEnChekBox
-                  onChange={() => handleGrupEnChekBoxChange(col.field)} // 👉 Correct handler
+                  checked={grupEnChekBox[col.field] ?? true}
+                  onChange={() => handleGrupEnChekBoxChange(col.field)}
                   size="small"
                   sx={{ p: 0 }}
                 />
@@ -320,12 +322,14 @@ export default function JobCompletion() {
                 </a>
               );
             } else if (col.dateColumn == true) {
-              const date = new Date(params.value);
-              const formattedDate = date.toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              });
+              const formattedDate =
+                params.value && !isNaN(new Date(params.value).getTime())
+                  ? new Date(params.value).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "";
               return (
                 <span
                   style={{
@@ -354,7 +358,17 @@ export default function JobCompletion() {
           },
         };
       });
-    setColumns(columnData);
+
+      const srColumn = {
+        field: "srNo",
+        headerName: "Sr#",
+        width: 70,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) =>
+          params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+      };
+      setColumns([srColumn, ...columnData]);
   }, [allColumData, grupEnChekBox]);
 
   useEffect(() => {
@@ -362,7 +376,7 @@ export default function JobCompletion() {
     const defaultChecked = {};
     Object.values(allColumData).forEach((col) => {
       if (col.GrupChekBox) {
-        defaultChecked[col.field] = true; // ✅ By default checked if GrupChekBox is true
+        defaultChecked[col.field] = true;
       }
     });
 
@@ -471,10 +485,11 @@ export default function JobCompletion() {
       }
 
       if (isMatch && filterState && selectedDateColumn) {
-        const rowDate = new Date(row[selectedDateColumn]);
-        const parsedStart = new Date(startDate);
-        const parsedEnd = new Date(endDate);
-      
+        const toDateOnly = (d) => new Date(new Date(d).toDateString());
+        const rowDate = toDateOnly(row[selectedDateColumn]);
+        const parsedStart = toDateOnly(startDate);
+        const parsedEnd = toDateOnly(endDate);
+
         if (
           isNaN(rowDate.getTime()) ||
           rowDate < parsedStart ||
@@ -483,7 +498,6 @@ export default function JobCompletion() {
           isMatch = false;
         }
       }
-      
 
       if (isMatch && commonSearch) {
         const searchText = commonSearch.toLowerCase();
@@ -494,16 +508,32 @@ export default function JobCompletion() {
           isMatch = false;
         }
       }
-
       return isMatch;
     });
+
+    if (sortModel.length > 0) {
+      const { field, sort } = sortModel[0];
+      newFilteredRows.sort((a, b) => {
+        if (a[field] == null) return 1;
+        if (b[field] == null) return -1;
+
+        const aVal =
+          typeof a[field] === "string" ? a[field].toLowerCase() : a[field];
+        const bVal =
+          typeof b[field] === "string" ? b[field].toLowerCase() : b[field];
+
+        if (aVal > bVal) return sort === "asc" ? 1 : -1;
+        if (aVal < bVal) return sort === "asc" ? -1 : 1;
+        return 0;
+      });
+    }
 
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
     setFilteredRows(rowsWithSrNo);
-  }, [filters, commonSearch, columns, startDate, selectedColors]);
+  }, [filters, commonSearch, columns, startDate, selectedColors , selectedDateColumn]);
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
@@ -759,23 +789,25 @@ export default function JobCompletion() {
               gap: "4px",
             }}
           >
-            {uniqueValues.map((value) => (
-              <label key={value}>
-                <input
-                  type="checkbox"
-                  value={value}
-                  checked={(filters[col.field] || []).includes(value)}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      col.field,
-                      { value, checked: e.target.checked },
-                      "MultiSelection"
-                    )
-                  }
-                />
-                {value}
-              </label>
-            ))}
+            {uniqueValues
+              .filter((value) => value.trim() !== "") // Exclude empty or whitespace-only strings
+              .map((value) => (
+                <label key={value}>
+                  <input
+                    type="checkbox"
+                    value={value}
+                    checked={(filters[col.field] || []).includes(value)}
+                    onChange={(e) =>
+                      handleFilterChange(
+                        col.field,
+                        { value, checked: e.target.checked },
+                        "MultiSelection"
+                      )
+                    }
+                  />
+                  {value}
+                </label>
+              ))}
           </AccordionDetails>
         </Accordion>
       </div>
@@ -789,7 +821,6 @@ export default function JobCompletion() {
   };
 
   const handleClose = () => setOpen(false);
-
   const [sideFilterOpen, setSideFilterOpen] = useState(false);
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
@@ -1120,7 +1151,7 @@ export default function JobCompletion() {
               <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
                 Open Filter
               </button>
-              <FormControl size="small" sx={{ minWidth: 200, margin: '0px' }}>
+              <FormControl size="small" sx={{ minWidth: 200, margin: "0px" }}>
                 <InputLabel>Date Column</InputLabel>
                 <Select
                   label="Date Column"
@@ -1377,6 +1408,8 @@ export default function JobCompletion() {
             <DataGrid
               rows={filteredRows ?? []}
               columns={columns ?? []}
+              sortModel={sortModel}
+              onSortModelChange={(model) => setSortModel(model)}
               pageSize={pageSize}
               autoHeight={false}
               columnBuffer={17}
@@ -1460,3 +1493,495 @@ export default function JobCompletion() {
     </DragDropContext>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// // http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18234
+
+// import React, { useState, useEffect, useRef } from "react";
+// import Box from "@mui/material/Box";
+// import { DataGrid } from "@mui/x-data-grid";
+// import "./JobCompletion.scss";
+// import DatePicker from "react-datepicker";
+// import "react-datepicker/dist/react-datepicker.css";
+// import {
+//   Checkbox,
+//   FormControl,
+//   InputLabel,
+//   MenuItem,
+//   Select,
+// } from "@mui/material";
+// import OtherKeyData from "./JobCompletion.json";
+// import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+// import DualDatePicker from "../DatePicker/DualDatePicker";
+// import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
+// import { useSearchParams } from "react-router-dom";
+
+// const formatToMMDDYYYY = (date) => {
+//   const d = new Date(date);
+//   return `${(d.getMonth() + 1).toString().padStart(2, "0")}/${d
+//     .getDate()
+//     .toString()
+//     .padStart(2, "0")}/${d.getFullYear()}`;
+// };
+
+// export default function JobCompletion() {
+//   const [isLoading, setIsLoading] = useState(false);
+//   const [open, setOpen] = useState(false);
+//   const [selectedColors, setSelectedColors] = useState([]);
+//   const [columns, setColumns] = useState([]);
+//   const [masterKeyData, setMasterKeyData] = useState();
+//   const [allColumIdWiseName, setAllColumIdWiseName] = useState();
+//   const [allColumData, setAllColumData] = useState();
+//   const [allRowData, setAllRowData] = useState();
+//   const [checkedColumns, setCheckedColumns] = useState({});
+//   const [selectedDepartmentId, setSelectedDepartmentId] = useState();
+//   const [selectedEmployeeCode, setSelectedEmployeeCode] = useState();
+//   const [lastUpdated, setLastUpdated] = useState("");
+//   const gridRef = useRef(null);
+//   const [searchParams] = useSearchParams();
+//   const [startDate, setStartDate] = useState();
+//   const [endDate, setEndDate] = useState();
+//   const [status500, setStatus500] = useState(false);
+//   const [commonSearch, setCommonSearch] = useState("");
+//   const [sortModel, setSortModel] = useState([]);
+//   const [filterState, setFilterState] = useState({
+//     dateRange: { startDate: null, endDate: null },
+//   });
+
+//   const [grupEnChekBox, setGrupEnChekBox] = useState({
+//     empbarcode: true,
+//     dept: true,
+//   });
+
+//   useEffect(() => {
+//     const now = new Date();
+//     const formattedDate = formatToMMDDYYYY(now);
+//     setFilterState({
+//       dateRange: {
+//         startDate: now,
+//         endDate: now,
+//       },
+//     });
+//     setStartDate(formattedDate);
+//     setEndDate(formattedDate);
+//     fetchData(formattedDate, formattedDate);
+//   }, []);
+
+//   useEffect(() => {
+//     const { startDate: s, endDate: e } = filterState.dateRange;
+//     if (s && e) {
+//       const formattedStart = formatToMMDDYYYY(new Date(s));
+//       const formattedEnd = formatToMMDDYYYY(new Date(e));
+//       setStartDate(formattedStart);
+//       setEndDate(formattedEnd);
+//       fetchData(formattedStart, formattedEnd);
+//     }
+//   }, [filterState.dateRange]);
+
+//   useEffect(() => {
+//     setTimeout(() => {
+//       const items = document.querySelectorAll(
+//         ".MuiButtonBase-root.MuiListItem-root.MuiListItem-gutters.MuiListItem-padding.MuiListItem-button"
+//       );
+//       items.forEach((item) => {
+//         const textElement = item.querySelector(".MuiListItemText-root");
+//         if (textElement) {
+//           const text = textElement.textContent.trim();
+//           if (text === "Last Year" || text === "This Year") {
+//             item.style.display = "none";
+//           }
+//         }
+//       });
+//     }, 100);
+//   }, []);
+
+//   const fetchData = async (stat, end) => {
+//     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+//     const sp = searchParams.get("sp");
+//     setIsLoading(true);
+//     const body = {
+//       con: `{"id":"","mode":"jobcompletionlead","appuserid":"${AllData?.uid}"}`,
+//       p: `{"fdate":"${stat}","tdate":"${end}"}`,
+//       f: "Task Management (taskmaster)",
+//     };
+//     try {
+//       const fetchedData = await GetWorkerData(body, sp);
+//       setAllRowData(fetchedData?.Data?.rd1);
+//       // setAllRowData(fetchedData?.Data?.rd1?.slice(0, 100));
+//       setAllColumIdWiseName(fetchedData?.Data?.rd);
+//       setMasterKeyData(OtherKeyData?.rd);
+//       setAllColumData(OtherKeyData?.rd1);
+//       setStatus500(false);
+//       setIsLoading(false);
+//     } catch (error) {
+//       setStatus500(true);
+//       setIsLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
+//     const now = new Date();
+//     const formatNumber = (n) => n.toString().padStart(2, "0");
+
+//     const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
+//       now.getMonth() + 1
+//     )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
+//       now.getMinutes()
+//     )}:${formatNumber(now.getSeconds())}`;
+
+//     setLastUpdated(formattedDate);
+//   }, []);
+
+//   useEffect(() => {
+//     if (allColumData) {
+//       const initialCheckedColumns = {};
+//       Object?.values(allColumData)?.forEach((col) => {
+//         initialCheckedColumns[col.field] = col.ColumShow;
+//       });
+//     }
+//   }, [allColumData]);
+
+//   const handleGrupEnChekBoxChange = (field) => {
+//     setGrupEnChekBox((prev) => ({
+//       ...prev,
+//       [field]: !prev[field],
+//     }));
+//   };
+
+//   useEffect(() => {
+//     if (!allColumData) return;
+//     const columnData = Object?.values(allColumData)
+//       ?.filter((col) => col.ColumShow)
+//       ?.map((col, index) => {
+//         const isPriorityFilter = col.proiorityFilter === true;
+//         return {
+//           field: col.field,
+//           headerName: (
+//             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+//               {col.GrupChekBox && (
+//                 <Checkbox
+//                   checked={grupEnChekBox[col.field] ?? true}
+//                   onChange={() => handleGrupEnChekBoxChange(col.field)}
+//                   size="small"
+//                   sx={{ p: 0 }}
+//                 />
+//               )}
+//               {col.headerName}
+//             </div>
+//           ),
+//           width: col.Width,
+//           align: col.ColumAlign || "left",
+//           headerAlign: col.Align,
+//           filterable: col.ColumFilter,
+//           headerNamesingle: col.headerName,
+//           suggestionFilter: col.suggestionFilter,
+//           hrefLink: col.HrefLink,
+//           summuryValueKey: col.summuryValueKey,
+//           summaryTitle: col.summaryTitle,
+//           ToFixedValue: col.ToFixedValue,
+//           filterTypes: [
+//             col.NormalFilter && "NormalFilter",
+//             col.DateRangeFilter && "DateRangeFilter",
+//             col.MultiSelection && "MultiSelection",
+//             col.RangeFilter && "RangeFilter",
+//             col.SuggestionFilter && "suggestionFilter",
+//             col.selectDropdownFilter && "selectDropdownFilter",
+//           ].filter(Boolean),
+
+//           renderCell: (params) => {
+//             if (col.ToFixedValue) {
+//               return (
+//                 <p
+//                   style={{
+//                     fontSize: col.FontSize || "inherit",
+//                   }}
+//                 >
+//                   {params.value?.toFixed(col.ToFixedValue)}
+//                 </p>
+//               );
+//             } else if (col.dateColumn == true) {
+//               const formattedDate =
+//                 params.value && !isNaN(new Date(params.value).getTime())
+//                   ? new Date(params.value).toLocaleDateString("en-GB", {
+//                       day: "2-digit",
+//                       month: "short",
+//                       year: "numeric",
+//                     })
+//                   : "";
+//               return (
+//                 <span
+//                   style={{
+//                     fontSize: col.FontSize || "inherit",
+//                   }}
+//                 >
+//                   {formattedDate}
+//                 </span>
+//               );
+//             } else {
+//               return (
+//                 <span
+//                   style={{
+//                     color: col.Color || "inherit",
+//                     backgroundColor: col.BackgroundColor || "inherit",
+//                     fontSize: col.FontSize || "inherit",
+//                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+//                     padding: "5px 20px",
+//                     borderRadius: col.BorderRadius,
+//                   }}
+//                 >
+//                   {params.value}
+//                 </span>
+//               );
+//             }
+//           },
+//         };
+//       });
+//     const srColumn = {
+//       field: "srNo",
+//       headerName: "Sr#",
+//       width: 70,
+//       sortable: false,
+//       filterable: false,
+//       renderCell: (params) =>
+//         params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+//     };
+//     setColumns([srColumn, ...columnData]);
+//   }, [allColumData, grupEnChekBox]);
+
+//   useEffect(() => {
+//     if (!allColumData) return;
+//     const defaultChecked = {};
+//     Object.values(allColumData).forEach((col) => {
+//       if (col.GrupChekBox) {
+//         defaultChecked[col.field] = true;
+//       }
+//     });
+
+//     setCheckedColumns(defaultChecked);
+//   }, [allColumData]);
+
+//   const handleCellClick = (params) => {
+//     setSelectedDepartmentId(params?.row?.deptid);
+//     setSelectedEmployeeCode(params?.row?.employeecode);
+//     setOpen(true);
+//   };
+
+//   const originalRows =
+//     allColumIdWiseName &&
+//     allRowData?.map((row, index) => {
+//       const formattedRow = {};
+//       Object.keys(row).forEach((key) => {
+//         formattedRow[allColumIdWiseName[0][key]] = row[key];
+//       });
+//       return { id: index, ...formattedRow };
+//     });
+
+//   const [dateColumnOptions, setDateColumnOptions] = useState([]);
+//   const [selectedDateColumn, setSelectedDateColumn] = useState("");
+
+//   useEffect(() => {
+//     if (allColumData) {
+//       const dateCols = allColumData.filter((col) => col.dateColumn === true);
+//       setDateColumnOptions(
+//         dateCols.map((col) => ({
+//           field: col.field,
+//           label: col.headerName,
+//         }))
+//       );
+
+//       if (dateCols.length > 0) {
+//         setSelectedDateColumn(dateCols[0].field); // default selection
+//       }
+//     }
+//   }, [allColumData]);
+
+//   const [pageSize, setPageSize] = useState(10);
+//   const [filteredRows, setFilteredRows] = useState(originalRows);
+//   const [filters, setFilters] = useState({});
+
+//   useEffect(() => {
+//     const newFilteredRows = originalRows?.filter((row) => {
+//       let isMatch = true;
+
+//       for (const filterField of Object.keys(filters)) {
+//         const filterValue = filters[filterField];
+//         if (!filterValue || filterValue.length === 0) continue;
+
+//         const rawRowValue = row[filterField];
+
+//         if (filterField.includes("_min") || filterField.includes("_max")) {
+//           const baseField = filterField.replace("_min", "").replace("_max", "");
+//           const rowValue = parseFloat(row[baseField]);
+//           if (isNaN(rowValue)) {
+//             isMatch = false;
+//             break;
+//           }
+//           if (
+//             filterField.includes("_min") &&
+//             parseFloat(filterValue) > rowValue
+//           ) {
+//             isMatch = false;
+//             break;
+//           }
+//           if (
+//             filterField.includes("_max") &&
+//             parseFloat(filterValue) < rowValue
+//           ) {
+//             isMatch = false;
+//             break;
+//           }
+//         } else if (Array.isArray(filterValue)) {
+//           if (!filterValue.includes(rawRowValue)) {
+//             isMatch = false;
+//             break;
+//           }
+//         } else {
+//           const rowValue = rawRowValue?.toString().toLowerCase() || "";
+//           const filterValueLower = filterValue.toLowerCase();
+//           if (rowValue !== filterValueLower) {
+//             isMatch = false;
+//             break;
+//           }
+//         }
+//       }
+
+//       if (isMatch && selectedColors.length > 0 && row.PriorityId) {
+//         if (!selectedColors.includes(row.PriorityId)) {
+//           isMatch = false;
+//         }
+//       }
+
+//       if (isMatch && filterState && selectedDateColumn) {
+//         const toDateOnly = (d) => new Date(new Date(d).toDateString());
+//         const rowDate = toDateOnly(row[selectedDateColumn]);
+//         const parsedStart = toDateOnly(startDate);
+//         const parsedEnd = toDateOnly(endDate);
+
+//         if (
+//           isNaN(rowDate.getTime()) ||
+//           rowDate < parsedStart ||
+//           rowDate > parsedEnd
+//         ) {
+//           isMatch = false;
+//         }
+//       }
+
+//       if (isMatch && commonSearch) {
+//         const searchText = commonSearch.toLowerCase();
+//         const hasMatch = Object.values(row).some((value) =>
+//           value?.toString().toLowerCase().includes(searchText)
+//         );
+//         if (!hasMatch) {
+//           isMatch = false;
+//         }
+//       }
+
+//       return isMatch;
+//     });
+
+//     if (sortModel.length > 0) {
+//       const { field, sort } = sortModel[0];
+//       newFilteredRows.sort((a, b) => {
+//         if (a[field] == null) return 1;
+//         if (b[field] == null) return -1;
+
+//         const aVal =
+//           typeof a[field] === "string" ? a[field].toLowerCase() : a[field];
+//         const bVal =
+//           typeof b[field] === "string" ? b[field].toLowerCase() : b[field];
+
+//         if (aVal > bVal) return sort === "asc" ? 1 : -1;
+//         if (aVal < bVal) return sort === "asc" ? -1 : 1;
+//         return 0;
+//       });
+//     }
+
+//     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
+//       ...row,
+//       srNo: index + 1,
+//     }));
+//     setFilteredRows(rowsWithSrNo);
+//   }, [
+//     filters,
+//     commonSearch,
+//     columns,
+//     startDate,
+//     selectedColors,
+//     selectedDateColumn,
+//     sortModel,
+//   ]);
+
+//   const onDragEnd = () => {};
+//   return (
+//     <DragDropContext onDragEnd={onDragEnd}>
+//       <FormControl size="small" sx={{ minWidth: 200, margin: "0px" }}>
+//         <InputLabel>Date Column</InputLabel>
+//         <Select
+//           label="Date Column"
+//           value={selectedDateColumn}
+//           onChange={(e) => setSelectedDateColumn(e.target.value)}
+//         >
+//           {dateColumnOptions.map((col) => (
+//             <MenuItem key={col.field} value={col.field}>
+//               {col.label}
+//             </MenuItem>
+//           ))}
+//         </Select>
+//       </FormControl>
+//       <DualDatePicker
+//         filterState={filterState}
+//         setFilterState={setFilterState}
+//         validDay={186}
+//         validMonth={6}
+//       />
+
+//       <div
+//         ref={gridRef}
+//         style={{ height: "calc(100vh - 180px)", margin: "5px" }}
+//       >
+//         <DataGrid
+//           rows={filteredRows ?? []}
+//           columns={columns ?? []}
+//           sortModel={sortModel}
+//           onSortModelChange={(model) => setSortModel(model)}
+//           pageSize={pageSize}
+//           autoHeight={false}
+//           columnBuffer={17}
+//           localeText={{ noRowsLabel: "No Data" }}
+//           initialState={{
+//             columns: {
+//               columnVisibilityModel: {
+//                 status: false,
+//                 traderName: false,
+//               },
+//             },
+//           }}
+//           onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+//           rowsPerPageOptions={[5, 10, 15, 25, 50]}
+//           className="simpleGridView"
+//           pagination
+//           sx={{
+//             "& .MuiDataGrid-menuIcon": {
+//               display: "none",
+//             },
+//             marginLeft: 2,
+//             marginRight: 2,
+//             marginBottom: 2,
+//           }}
+//         />
+//       </div>
+//     </DragDropContext>
+//   );
+// }

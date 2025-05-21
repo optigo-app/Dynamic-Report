@@ -46,19 +46,16 @@
     width: 100% !important;
   }
 
-  .MenuSelectItem{
+  .MenuSelectItem {
     padding: 10px !important;
-    .MuiSelect-select{
+    .MuiSelect-select {
       padding: 0px !important;
       display: flex;
       font-size: 13px !important;
+      width: 90px !important;
     }
   }
-  .MenuSelectItem_select{
-    .MuiInputBase-inputSizeSmall{
-      padding: 0px !important;
-    }
-  }
+
   .simpleGridView {
     box-shadow: 0 0.1875rem 0.75rem 0 rgba(47, 43, 61, 0.14);
     background-color: white;
@@ -70,7 +67,7 @@
 
   .FiletrBtnOpen {
     height: 40px;
-    width: 130px;
+    width: 100px;
     border-radius: 3px;
     background-color: rgb(222 212 212);
     border: none;
@@ -108,11 +105,10 @@
     color: white !important;
   }
 
-  .row_delete_button{
+  .row_delete_button {
     height: 35px;
     width: 60px;
     border-radius: 3px;
-    background-color: rgb(244 77 35);
     border: none;
     outline: none;
     cursor: pointer;
@@ -122,11 +118,10 @@
     color: white !important;
   }
 
-  .row_logout_button{
+  .row_logout_button {
     height: 35px;
     width: 60px;
     border-radius: 3px;
-    background-color: rgb(244 77 35);
     border: none;
     outline: none;
     cursor: pointer;
@@ -140,13 +135,6 @@
     margin: 20px !important;
   }
 
-  .gridMetalComboMain {
-    display: flex !important;
-    flex-direction: column !important;
-    max-height: 340px;
-    overflow: auto;
-    scrollbar-width: thin;
-  }
 
   .mainName {
     height: 20px;
@@ -271,7 +259,7 @@
     background-color: rgb(250 77 77);
     color: white;
     font-size: 16px;
-    width: 150px;
+    width: 100px;
     height: 40px;
     font-weight: 500;
     border: none;
@@ -379,7 +367,6 @@
     max-height: 500px !important;
   }
 
-
   .success-message {
     position: fixed;
     top: 0;
@@ -393,7 +380,9 @@
     font-weight: bold;
     animation: slideInOut 3s ease-in-out forwards;
   }
-  
+
+ 
+
   @keyframes slideInOut {
     0% {
       transform: translate(-50%, -100%);
@@ -412,6 +401,36 @@
       opacity: 0;
     }
   }
-  
-  
+}
+
+.MenuSelectItem_select {
+  font-size: 12px !important;
+  .MuiInputBase-inputSizeSmall {
+    padding: 0px !important;
+  }
+}
+
+.Deafult_Pin_main {
+  display: flex;
+  flex-direction: column;
+  margin: 0px 20px 10px;
+  align-items: center;
+  .Save_btn {
+    width: 100% !important;
+    height: 35px;
+    width: 300px;
+    margin: 20px;
+    background-color: rgb(112, 98, 238) !important;
+    color: white;
+  }
+}
+
+
+
+.gridMetalComboMain {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 340px;
+  overflow: auto;
+  scrollbar-width: thin;
 }

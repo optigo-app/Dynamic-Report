@@ -182,6 +182,7 @@ export default function StcokReport() {
         endDate: now,
       },
     });
+
     setStartDate(formattedDate);
     setEndDate(formattedDate);
     fetchData(formattedDate, formattedDate);
@@ -201,7 +202,6 @@ export default function StcokReport() {
   const fetchData = async (stat, end) => {
     const sp = searchParams.get("sp");
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
-
     setIsLoading(true);
     const body = {
       con: `{"id":"","mode":"StockReport","appuserid":"${AllData?.uid}"}`,
@@ -228,7 +228,6 @@ export default function StcokReport() {
   useEffect(() => {
     const now = new Date();
     const formatNumber = (n) => n.toString().padStart(2, "0");
-
     const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
       now.getMonth() + 1
     )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
@@ -318,30 +317,11 @@ export default function StcokReport() {
                   {formattedDate}
                 </span>
               );
-            } else if (col.field === "metalpurity") {
-              const Purity = params.row.metalpurity || ""; // Ensure that surname exists
-              const Color = params.row.metalcolor || ""; // Ensure that name exists
-              const type = params.row.metaltype || ""; // Ensure that name exists
-              return (
-                <span
-                  style={{
-                    color: col.Color || "inherit",
-                    backgroundColor: col.BackgroundColor || "inherit",
-                    fontSize: col.FontSize || "inherit",
-                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
-                    borderRadius: col.BorderRadius,
-                  }}
-                >
-                  {`${type} ${Purity} / ${Color}`}
-                </span>
-              );
             }
-            // else if (col.field === "diawt") {
-            //   console.log("PcsPcsPcsPcsPcsPcs cc", params.row);
-            //   const Wt = params.row.diawt || ""; // Ensure that surname exists
-            //   const Pcs = params.row.diapcs || ""; // Ensure that name exists
-
+            //  else if (col.field === "metalpurity") {
+            //   const Purity = params.row.metalpurity || "";
+            //   const Color = params.row.metalcolor || ""; // Ensure that name exists
+            //   const type = params.row.metaltype || ""; // Ensure that name exists
             //   return (
             //     <span
             //       style={{
@@ -353,42 +333,7 @@ export default function StcokReport() {
             //         borderRadius: col.BorderRadius,
             //       }}
             //     >
-            //       {`${Wt} wt`} / {`${Pcs}`}
-            //     </span>
-            //   );
-            // } else if (col.field === "cswt") {
-            //   const Wt = params.row.cswt || ""; // Ensure that surname exists
-            //   const Pcs = params.row.cswt || ""; // Ensure that name exists
-            //   return (
-            //     <span
-            //       style={{
-            //         color: col.Color || "inherit",
-            //         backgroundColor: col.BackgroundColor || "inherit",
-            //         fontSize: col.FontSize || "inherit",
-            //         textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-            //         padding: "5px",
-            //         borderRadius: col.BorderRadius,
-            //       }}
-            //     >
-            //       {`${Wt} / ${Pcs}`}
-            //     </span>
-            //   );
-            // }
-            // else if (col.field === "miscwt") {
-            //   const Wt = params.row.miscwt || ""; // Ensure that surname exists
-            //   const Pcs = params.row.miscpcs || ""; // Ensure that name exists
-            //   return (
-            //     <span
-            //       style={{
-            //         color: col.Color || "inherit",
-            //         backgroundColor: col.BackgroundColor || "inherit",
-            //         fontSize: col.FontSize || "inherit",
-            //         textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-            //         padding: "5px",
-            //         borderRadius: col.BorderRadius,
-            //       }}
-            //     >
-            //       {`${Wt} / ${Pcs}`}
+            //       {`${type} ${Purity} / ${Color}`}
             //     </span>
             //   );
             // }
@@ -441,119 +386,127 @@ export default function StcokReport() {
     setOpen(true);
   };
 
-  console.log("allRowDataallRowDataallRowData", allRowData);
-
-  // const originalRows =
-  //   allColumIdWiseName &&
-  //   allRowData?.map((row, index) => {
-  //     const formattedRow = {};
-  //     Object.keys(row).forEach((key) => {
-  //       formattedRow[allColumIdWiseName[0][key]] = row[key];
-  //     });
-  //     return { id: index, ...formattedRow };
-  //   });
-
-  const originalRows = useMemo(() => {
-    if (!allColumIdWiseName || !allRowData) return [];
-
-    const filteredRawData = showOnlyCompanyStock
-      ? allRowData.filter((row) => row["3"] === 1 || row["3"] === "1")
-      : allRowData;
-
-    return filteredRawData.map((row, index) => {
+  const originalRows =
+    allColumIdWiseName &&
+    allRowData?.map((row, index) => {
       const formattedRow = {};
       Object.keys(row).forEach((key) => {
         formattedRow[allColumIdWiseName[0][key]] = row[key];
       });
       return { id: index, ...formattedRow };
     });
-  }, [allColumIdWiseName, allRowData, showOnlyCompanyStock]);
 
-  console.log("originalRowsoriginalRowsoriginalRows", originalRows);
+  // const originalRows = useMemo(() => {
+  //   if (!allColumIdWiseName || !allRowData) return [];
+
+  //   const filteredRawData = showOnlyCompanyStock
+  //     ? allRowData.filter((row) => row["3"] === 1 || row["3"] === "1")
+  //     : allRowData;
+
+  //   return filteredRawData.map((row, index) => {
+  //     const formattedRow = {};
+  //     Object.keys(row).forEach((key) => {
+  //       formattedRow[allColumIdWiseName[0][key]] = row[key];
+  //     });
+  //     return { id: index, ...formattedRow };
+  //   });
+  // }, [allColumIdWiseName, allRowData, showOnlyCompanyStock]);
 
   const [pageSize, setPageSize] = useState(10);
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
 
   useEffect(() => {
+    console.log("originalRows", originalRows);
     const newFilteredRows = originalRows?.filter((row) => {
-      const passesFilters = Object.keys(filters).every((filterField) => {
-        if (!filters[filterField] || filters[filterField].length === 0)
-          return true;
+      let isMatch = true;
 
+      for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
+        if (!filterValue || filterValue.length === 0) continue;
 
-        if (Array.isArray(filterValue)) {
-          return filterValue.includes(row[filterField]);
-        }
+        const rawRowValue = row[filterField];
 
         if (filterField.includes("_min") || filterField.includes("_max")) {
           const baseField = filterField.replace("_min", "").replace("_max", "");
           const rowValue = parseFloat(row[baseField]);
-          if (isNaN(rowValue)) return false;
-          if (filterField.includes("_min") && filterValue) {
-            if (rowValue < parseFloat(filterValue)) return false;
+          if (isNaN(rowValue)) {
+            isMatch = false;
+            break;
           }
-          if (filterField.includes("_max") && filterValue) {
-            if (rowValue > parseFloat(filterValue)) return false;
+          if (
+            filterField.includes("_min") &&
+            parseFloat(filterValue) > rowValue
+          ) {
+            isMatch = false;
+            break;
           }
-
-          return true;
+          if (
+            filterField.includes("_max") &&
+            parseFloat(filterValue) < rowValue
+          ) {
+            isMatch = false;
+            break;
+          }
+        } else if (Array.isArray(filterValue)) {
+          if (!filterValue.includes(rawRowValue)) {
+            isMatch = false;
+            break;
+          }
+        } else {
+          const rowValue = rawRowValue?.toString().toLowerCase() || "";
+          const filterValueLower = filterValue.toLowerCase();
+          if (rowValue !== filterValueLower) {
+            isMatch = false;
+            break;
+          }
         }
+      }
 
-        const rowValue = row[filterField] ? row[filterField].toString() : "";
-        return rowValue.toLowerCase().includes(filterValue.toLowerCase());
-      });
-
-      if (selectedColors.length > 0 && row.PriorityId) {
+      if (isMatch && selectedColors.length > 0 && row.PriorityId) {
         if (!selectedColors.includes(row.PriorityId)) {
-          return false; // If the row's PriorityId doesn't match selected color filter
+          isMatch = false;
         }
       }
 
-      if (passesFilters && fromDate && toDate) {
-        const dateColumn = columns.find(
-          (col) =>
-            col.filterTypes && col.filterTypes.includes("DateRangeFilter")
-        );
-        if (dateColumn) {
-          const rowDate = new Date(row[dateColumn.field]);
-          if (rowDate >= fromDate && rowDate <= toDate) {
-            return true;
-          }
-          return false;
+      if (isMatch && filterState) {
+        const toDateOnly = (d) => new Date(new Date(d).toDateString());
+        const rowDate = toDateOnly(row["entrydate"]);
+        const parsedStart = toDateOnly(startDate);
+        const parsedEnd = toDateOnly(endDate);
+
+        console.log('rowDate' , rowDate);
+        console.log('parsedStart' , parsedStart);
+        console.log('parsedEnd' , parsedEnd);
+        
+        if (
+          isNaN(rowDate.getTime()) ||
+          rowDate < parsedStart ||
+          rowDate > parsedEnd
+        ) {
+          isMatch = false;
         }
       }
 
-      // if (passesFilters && filterState.dateRange.startDate && filterState.dateRange.endDate) {
-      //   const rowEntryDate = new Date(row.entrydate);
-      //   const startDate = new Date(filterState.dateRange.startDate);
-      //   const endDate = new Date(filterState.dateRange.endDate);
-
-      //   if (!(rowEntryDate >= startDate && rowEntryDate <= endDate)) {
-      //     return false;
-      //   }
-      // }
-
-      if (passesFilters) {
-        return Object.values(row).some((value) =>
-          value?.toString()?.toLowerCase().includes(commonSearch?.toLowerCase())
+      if (isMatch && commonSearch) {
+        const searchText = commonSearch.toLowerCase();
+        const hasMatch = Object.values(row).some((value) =>
+          value?.toString().toLowerCase().includes(searchText)
         );
+        if (!hasMatch) {
+          isMatch = false;
+        }
       }
-      return false;
+      return isMatch;
     });
-
-    // setFilteredRows(newFilteredRows);
     const groupedRows = groupRows(newFilteredRows, grupEnChekBox);
-
     const rowsWithSrNo = groupedRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
     console.log("rowsWithSrNorowsWithSrNo", rowsWithSrNo);
-
     setFilteredRows(rowsWithSrNo);
-  }, [filters, commonSearch, fromDate, toDate, columns]);
+  }, [filters, commonSearch, startDate, endDate, columns]);
   // }, [filters, originalRows, commonSearch, fromDate, toDate, columns, filterState.dateRange,]);
 
   const handleFilterChange = (field, value, filterType) => {
@@ -1273,27 +1226,27 @@ export default function StcokReport() {
                   />
 
                   {/* <CustomTextField
-                  select
-                  fullWidth
-                  value={filters.someField || ""}
-                  onChange={(e) => handleFilterChange(e.target.value)}
-                  customBorderColor="rgba(47, 43, 61, 0.2)"
-                  borderoutlinedColor="#00CFE8"
-                  customTextColor="#2F2B3DC7"
-                  customFontSize="0.8125rem"
-                  size="small"
-                  className="selectDropDownMain"
-                  variant="filled"
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {masterData.rd3.map((item) => (
-                    <MenuItem key={item.id} value={item.name}>
-                      {item.name}
-                    </MenuItem>
-                  ))}
-                </CustomTextField> */}
+                      select
+                      fullWidth
+                      value={filters.someField || ""}
+                      onChange={(e) => handleFilterChange(e.target.value)}
+                      customBorderColor="rgba(47, 43, 61, 0.2)"
+                      borderoutlinedColor="#00CFE8"
+                      customTextColor="#2F2B3DC7"
+                      customFontSize="0.8125rem"
+                      size="small"
+                      className="selectDropDownMain"
+                      variant="filled"
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {masterData.rd3.map((item) => (
+                        <MenuItem key={item.id} value={item.name}>
+                          {item.name}
+                        </MenuItem>
+                      ))}
+                    </CustomTextField> */}
 
                   <button
                     onClick={handleSave}
@@ -1373,7 +1326,7 @@ export default function StcokReport() {
               </button>
             )} */}
 
-              <label
+              {/* <label
                 style={{
                   marginBottom: "10px",
                   fontWeight: 600,
@@ -1386,7 +1339,7 @@ export default function StcokReport() {
                   onChange={(e) => setShowOnlyCompanyStock(e.target.checked)}
                 />
                 Show Only Company Stock
-              </label>
+              </label> */}
 
               <CustomTextField
                 type="text"

@@ -260,7 +260,6 @@ export default function SingleEmployeeWiseData({
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px 20px",
                     borderRadius: col.BorderRadius,
                   }}
                 >

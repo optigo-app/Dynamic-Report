@@ -24,7 +24,7 @@ const formatToMMDDYYYY = (date) => {
 export default function DeviceSpliter({ isLoadingNew }) {
   const [selectedLocation, setSelectedLocation] = useState("HO");
   const [selectedDepartment, setSelectedDepartment] = useState(null);
-  const [paneWidths, setPaneWidths] = useState(["18%", "18%", "74%"]);
+  const [paneWidths, setPaneWidths] = useState(["15%", "15%", "70%"]);
   const [isLoading, setIsLoading] = React.useState(isLoadingNew);
   const [status500, setStatus500] = useState(false);
   const [selectedFileter, setSelectedFilter] = useState("App");
@@ -87,13 +87,12 @@ export default function DeviceSpliter({ isLoadingNew }) {
       };
       const fetchedData = await GetWorkerData(body, sp);
       const { rd, rd1, rd2 } = fetchedData?.Data || {};
+      setFinalData(fetchedData?.Data);
       sessionStorage.setItem("soketVariable", JSON.stringify(rd2));
-
       if (!Array.isArray(rd) || !Array.isArray(rd1) || rd1.length === 0) {
         setIsLoading(false);
         return;
       }
-      setFinalData(fetchedData?.Data);
       const keyMap = Object.entries(rd[0] || {}).reduce(
         (acc, [numKey, name]) => {
           acc[numKey] = name.toLowerCase();
@@ -128,7 +127,6 @@ export default function DeviceSpliter({ isLoadingNew }) {
         ];
       }
 
-      // Prepare final grouped data
       const filteredData = filtered.map((item) => ({
         app:
           selectedFileter === "App"
@@ -171,9 +169,10 @@ export default function DeviceSpliter({ isLoadingNew }) {
   }, []);
 
   const handleRefresh = () => {
-    if (!isRefreshEnabled) return;
-    window.location.reload();
-    startEnableTimer();
+    // if (!isRefreshEnabled) return;
+    fetchData();
+    // window.location.reload();
+    // startEnableTimer();
   };
 
   return (
@@ -208,8 +207,10 @@ export default function DeviceSpliter({ isLoadingNew }) {
                     style={{
                       color: "rebeccapurple",
                       fontSize: "29px",
-                      cursor: isRefreshEnabled ? "pointer" : "not-allowed",
-                      opacity: isRefreshEnabled ? 1 : 0.5,
+                      cursor: "pointer",
+                      // cursor: isRefreshEnabled ? "pointer" : "not-allowed",
+                      // opacity: isRefreshEnabled ? 1 : 0.5,
+                      opacity: 1,
                     }}
                   />
                 </div>
@@ -411,21 +412,19 @@ export default function DeviceSpliter({ isLoadingNew }) {
           </>
         )}
 
-        {selectedDepartment &&
-          AllFinalData &&
-          selectedFileter &&
-          paneWidths[2] !== "0%" && (
-            <>
-              <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
-              <div className="pane" style={{ width: paneWidths[2] }}>
-                <AllEmployeeDataReport
-                  selectedFilterCategory={selectedDepartment}
-                  selectedFileter={selectedFileter}
-                  AllFinalData={AllFinalData}
-                />
-              </div>
-            </>
-          )}
+        {console.log("dddddddddddddddddddd", AllFinalData)}
+        {AllFinalData && paneWidths[2] !== "0%" && (
+          <>
+            <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
+            <div className="pane" style={{ width: paneWidths[2] }}>
+              <AllEmployeeDataReport
+                selectedFilterCategory={selectedDepartment ?? ""}
+                selectedFileter={selectedFileter ?? ""}
+                AllFinalData={AllFinalData ?? ""}
+              />
+            </div>
+          </>
+        )}
 
         {status500 && (
           <div

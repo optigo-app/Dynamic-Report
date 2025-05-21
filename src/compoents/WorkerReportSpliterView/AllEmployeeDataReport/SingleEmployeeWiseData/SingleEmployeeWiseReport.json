@@ -108,7 +108,7 @@
     },
     {
       "colid": 3,
-      "headerName": "Job No.",
+      "headerName": "Job# / Batch#",
       "field": "serialjobno",
       "Width": 150,
       "Align": "center",

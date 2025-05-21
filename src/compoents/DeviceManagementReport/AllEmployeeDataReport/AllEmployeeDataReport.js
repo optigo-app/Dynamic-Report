@@ -46,6 +46,9 @@ import CustomerBind from "./CustomerBind.json";
 import { deviceOnorOff } from "../../../Recoil/atom";
 import { useDeviceStatus } from "../../../DeviceStatusContext";
 import { IoMdLogOut } from "react-icons/io";
+import { MdFormatClear } from "react-icons/md";
+import { MdOutlineFilterAlt } from "react-icons/md";
+import { MdOutlineFilterAltOff } from "react-icons/md";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -122,6 +125,7 @@ export default function AllEmployeeDataReport({
   const [showImageView, setShowImageView] = React.useState(false);
   const [selectedColors, setSelectedColors] = React.useState([]);
   const [openPopup, setOpenPopup] = React.useState(false);
+  const [openDefaultPin, setOpenDefaultpin] = React.useState(false);
   const [isChecked, setIsChecked] = React.useState(false);
   const [columns, setColumns] = React.useState([]);
   const [openPDate, setOpenPDate] = React.useState(false);
@@ -160,7 +164,7 @@ export default function AllEmployeeDataReport({
     });
 
     React.useEffect(() => {
-      const records = AllFinalData?.rd1 || [];
+      const records = AllFinalData || [];
       const now = new Date();
       const fifteenDaysLater = new Date(now);
       fifteenDaysLater.setDate(now.getDate() + 15);
@@ -172,9 +176,9 @@ export default function AllEmployeeDataReport({
       let disable = 0;
 
       for (const record of records) {
-        const status = record["5"];
-        const access = record["6"];
-        const expiryDateStr = record["17"];
+        const status = record["Status"];
+        const access = record["Access"]; // fixed here
+        const expiryDateStr = record["Expirydate"]; // fixed here
 
         if (status === "Active") activeCount++;
         if (status === "DeActive") deactiveCount++;
@@ -202,7 +206,6 @@ export default function AllEmployeeDataReport({
 
     return summary;
   };
-  const summary = useDeviceSummary(AllFinalData);
 
   const records = AllFinalData?.rd1 || [];
   const employeeSummary = {
@@ -224,6 +227,111 @@ export default function AllEmployeeDataReport({
       ...new Set(records.map((r) => r["1"]).filter(Boolean)),
     ].join(", "),
   };
+
+  /*
+{
+  totalDevices: 3,
+  activeDevices: 1,
+  deactiveDevices: 2,
+  upcomingExpiryDevices: 3,
+  enableCount: 3,
+  disableCount: 0
+}
+*/
+
+  const APICall = () => {
+    setIsLoading(true);
+    const { rd, rd1 } = AllFinalData || {};
+    if (!rd || !rd1) {
+      console.warn("Invalid data format");
+      return;
+    }
+
+    let filteredData = [];
+    let filteredDataColumKey = [];
+    
+    switch (selectedFileter) {
+      case "App":
+        console.log("originalRowsoriginalRows", filteredData ,selectedFilterCategory , selectedFileter, AllFinalData);
+        filteredData = rd1.filter(
+          (entry) => entry["1"] === selectedFilterCategory
+        );
+        if (selectedFilterCategory === "Admin app") {
+          filteredDataColumKey = OtherKeyDataAdmin?.rd1;
+        } else if (selectedFilterCategory === "Sales rep app") {
+          filteredDataColumKey = OtherKeyDataSales?.rd1;
+        } else if (selectedFilterCategory === "ExpressApp") {
+          filteredDataColumKey = OtherKeyDataSales?.rd1;
+        } else {
+          filteredDataColumKey = OtherKeyDataIcate?.rd1;
+        }
+        break;
+      case "Employee":
+        filteredData = rd1.filter(
+          (entry) => entry["10"] === selectedFilterCategory
+        );
+        filteredDataColumKey = OtherKeyData?.rd1;
+        break;
+
+      case "Device":
+        filteredData = rd1.filter(
+          (entry) => entry["3"] === selectedFilterCategory
+        );
+        filteredDataColumKey = OtherKeyData?.rd1;
+        break;
+
+      default:
+        console.warn("Unknown filter type");
+    }
+
+    setMasterKeyData(OtherKeyData?.rd);
+    setAllColumData(filteredDataColumKey);
+    setAllColumIdWiseName(AllFinalData?.rd);
+    setAllRowData(filteredData);
+    setIsLoading(false);
+  };
+
+  React.useEffect(() => {
+    APICall();
+  }, [selectedFileter, selectedFilterCategory, AllFinalData]);
+
+  React.useEffect(() => {
+    const now = new Date();
+    const formatNumber = (n) => n.toString().padStart(2, "0");
+
+    const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
+      now.getMinutes()
+    )}:${formatNumber(now.getSeconds())}`;
+
+    setLastUpdated(formattedDate);
+  }, []);
+
+  React.useEffect(() => {
+    if (allColumData) {
+      const initialCheckedColumns = {};
+      Object?.values(allColumData)?.forEach((col) => {
+        initialCheckedColumns[col.field] = col.ColumShow;
+      });
+      setCheckedColumns(initialCheckedColumns);
+    }
+  }, [allColumData]);
+
+  const originalRows =
+    allColumIdWiseName &&
+    allRowData?.map((row, index) => {
+      const formattedRow = {};
+      Object.keys(row).forEach((key) => {
+        formattedRow[allColumIdWiseName[0][key]] = row[key];
+      });
+      return { id: index, ...formattedRow };
+    });
+
+  const [pageSize, setPageSize] = React.useState(10);
+  const [filteredRows, setFilteredRows] = React.useState(originalRows);
+  const [filters, setFilters] = React.useState({});
+  const summary = useDeviceSummary(filteredRows);
 
   const summaryArray =
     selectedFileter === "App"
@@ -318,109 +426,6 @@ export default function AllEmployeeDataReport({
         ]
       : [];
 
-  /*
-{
-  totalDevices: 3,
-  activeDevices: 1,
-  deactiveDevices: 2,
-  upcomingExpiryDevices: 3,
-  enableCount: 3,
-  disableCount: 0
-}
-*/
-
-  const APICall = () => {
-    setIsLoading(true);
-    const { rd, rd1 } = AllFinalData || {};
-    if (!rd || !rd1) {
-      console.warn("Invalid data format");
-      return;
-    }
-
-    let filteredData = [];
-    let filteredDataColumKey = [];
-
-    switch (selectedFileter) {
-      case "App":
-        filteredData = rd1.filter(
-          (entry) => entry["1"] === selectedFilterCategory
-        );
-        if (selectedFilterCategory === "Admin app") {
-          filteredDataColumKey = OtherKeyDataAdmin?.rd1;
-        } else if (selectedFilterCategory === "Sales rep app") {
-          filteredDataColumKey = OtherKeyDataSales?.rd1;
-        } else if (selectedFilterCategory === "ExpressApp") {
-          filteredDataColumKey = OtherKeyDataSales?.rd1;
-        } else {
-          filteredDataColumKey = OtherKeyDataIcate?.rd1;
-        }
-        break;
-      case "Employee":
-        filteredData = rd1.filter(
-          (entry) => entry["10"] === selectedFilterCategory
-        );
-        filteredDataColumKey = OtherKeyData?.rd1;
-        break;
-
-      case "Device":
-        filteredData = rd1.filter(
-          (entry) => entry["3"] === selectedFilterCategory
-        );
-        filteredDataColumKey = OtherKeyData?.rd1;
-        break;
-
-      default:
-        console.warn("Unknown filter type");
-    }
-
-    setMasterKeyData(OtherKeyData?.rd);
-    setAllColumData(filteredDataColumKey);
-    setAllColumIdWiseName(AllFinalData?.rd);
-    setAllRowData(filteredData);
-    setIsLoading(false);
-  };
-
-  React.useEffect(() => {
-    APICall();
-  }, [selectedFileter, selectedFilterCategory]);
-
-  React.useEffect(() => {
-    const now = new Date();
-    const formatNumber = (n) => n.toString().padStart(2, "0");
-
-    const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
-      now.getMonth() + 1
-    )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
-      now.getMinutes()
-    )}:${formatNumber(now.getSeconds())}`;
-
-    setLastUpdated(formattedDate);
-  }, []);
-
-  React.useEffect(() => {
-    if (allColumData) {
-      const initialCheckedColumns = {};
-      Object?.values(allColumData)?.forEach((col) => {
-        initialCheckedColumns[col.field] = col.ColumShow;
-      });
-      setCheckedColumns(initialCheckedColumns);
-    }
-  }, [allColumData]);
-
-  const originalRows =
-    allColumIdWiseName &&
-    allRowData?.map((row, index) => {
-      const formattedRow = {};
-      Object.keys(row).forEach((key) => {
-        formattedRow[allColumIdWiseName[0][key]] = row[key];
-      });
-      return { id: index, ...formattedRow };
-    });
-
-  const [pageSize, setPageSize] = React.useState(10);
-  const [filteredRows, setFilteredRows] = React.useState(originalRows);
-  const [filters, setFilters] = React.useState({});
-
   React.useEffect(() => {
     if (!allColumData) return;
     const columnData = Object?.values(allColumData)
@@ -474,7 +479,9 @@ export default function AllEmployeeDataReport({
                       setIsDeleteMode(true);
                     }}
                   >
-                    <MdDelete style={{color: 'white', fontSize: '25px'}}/>
+                    <MdDelete
+                      style={{ color: "rgb(238, 37, 37)", fontSize: "25px" }}
+                    />
                   </Button>
                 </div>
               );
@@ -493,7 +500,9 @@ export default function AllEmployeeDataReport({
                       setIsDeleteMode(false);
                     }}
                   >
-                    <IoMdLogOut style={{color: 'white', fontSize: '25px'}}/>
+                    <IoMdLogOut
+                      style={{ color: "rgb(238, 37, 37)", fontSize: "25px" }}
+                    />
                   </Button>
                 </div>
               );
@@ -584,7 +593,11 @@ export default function AllEmployeeDataReport({
                 className="MenuSelectItem"
               >
                 {CustomerBind.map((item) => (
-                  <MenuItem key={item.id} value={item.id} className="MenuSelectItem_select">
+                  <MenuItem
+                    key={item.id}
+                    value={item.id}
+                    className="MenuSelectItem_select"
+                  >
                     {item.name}
                   </MenuItem>
                 ))}
@@ -696,7 +709,7 @@ export default function AllEmployeeDataReport({
     setFilteredRows(rowsWithSrNo);
   }, [filters, commonSearch, fromDate, toDate, columns, selectedColors]);
 
-  const handleLogoutDevice = async (id) => {
+  const handleLogoutDevice = async (Row) => {
     const sp = searchParams.get("sp");
 
     const mode = isDeleteModel ? "DeviceDelete" : "DeviceForceLogOut";
@@ -704,7 +717,7 @@ export default function AllEmployeeDataReport({
 
     const body = {
       con: `{"id":"","mode":"${mode}","appuserid":"amrut@eg.com"}`,
-      p: `{\"AppDevRowId\":${id}}`,
+      p: `{\"AppDevRowId\":${Row?.Id}}`,
       f: "Task Management (taskmaster)",
     };
     try {
@@ -714,7 +727,16 @@ export default function AllEmployeeDataReport({
         setTimeout(() => {
           setShowSuccess(false);
         }, 5000);
-        setDeviceStatus(soketMode);
+        setDeviceStatus({
+          type: soketMode,
+          timestamp: Date.now(),
+          uniqueId: Row?.UniqueID,
+        });
+        if (isDeleteModel) {
+          setFilteredRows((prevRows) =>
+            prevRows.filter((r) => r.Id !== Row.Id)
+          );
+        }
       }
     } catch (err) {
       console.error("Error updating customer bind:", err);
@@ -742,7 +764,11 @@ export default function AllEmployeeDataReport({
             return r;
           });
         });
-        setDeviceStatus("CustomerBindChanged");
+        setDeviceStatus({
+          type: "CustomerBindChanged",
+          timestamp: Date.now(),
+          uniqueId: row?.UniqueID,
+        });
       }
     } catch (err) {
       console.error("Error updating customer bind:", err);
@@ -750,6 +776,7 @@ export default function AllEmployeeDataReport({
   };
 
   const handleAccessChange = async (event, row) => {
+    console.log("rowrowrowrow", row?.UniqueID);
     const isChecked = event.target.checked;
 
     const body = {
@@ -776,7 +803,12 @@ export default function AllEmployeeDataReport({
         });
 
         let isCheckedVal = isChecked ? "deviceEnabled" : "deviceDisabled";
-        setDeviceStatus(isCheckedVal);
+        setDeviceStatus({
+          type: isCheckedVal,
+          timestamp: Date.now(),
+          uniqueId: row?.UniqueID,
+        });
+
         setAllColumData((prev) => [...prev]); // If needed to refresh columns
       }
     } catch (error) {
@@ -1213,9 +1245,15 @@ export default function AllEmployeeDataReport({
   const handleClickOpenPoup = () => {
     setOpenPopup(true);
   };
+  const handleClickOpenPopupDeafiltPin = () => {
+    setOpenDefaultpin(true);
+  };
 
   const handleClosePopup = () => {
     setOpenPopup(false);
+  };
+  const handleClosePopupPin = () => {
+    setOpenDefaultpin(false);
   };
 
   const handleCheckboxChange = (event) => {
@@ -1229,8 +1267,7 @@ export default function AllEmployeeDataReport({
   };
 
   const onDragEnd = () => {};
-
-  // console.log("filteredRows", filteredRows);
+  console.log("filteredRows", filteredRows);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -1295,7 +1332,7 @@ export default function AllEmployeeDataReport({
               </Button>
               <Button
                 onClick={() => {
-                  handleLogoutDevice(logoutRow?.Id); // Or whatever key
+                  handleLogoutDevice(logoutRow); // Or whatever key
                   setShowLogoutModal(false);
                 }}
                 className="LogoutPopup_btn"
@@ -1338,6 +1375,16 @@ export default function AllEmployeeDataReport({
               </Droppable>
               <Button>Save</Button>
             </div>
+          </div>
+        </Dialog>
+
+        <Dialog open={openDefaultPin} onClose={handleClosePopupPin}>
+          <div className="Deafult_Pin_main">
+            <p style={{ fontWeight: 600 }}>Enter Default Pin</p>
+            <CustomTextField type="text" />
+            <Button onClick={handleClosePopupPin} className="Save_btn">
+              Save
+            </Button>
           </div>
         </Dialog>
         <Drawer
@@ -1406,10 +1453,14 @@ export default function AllEmployeeDataReport({
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
               <Button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                Open Filter
+                <MdOutlineFilterAlt style={{ fontSize: "25px" }} />
+                Filter
               </Button>
-              <Button className="SetDefault_pin">Set Default Pin</Button>
-              <Button className="Re_CalculateButton">Recalculate</Button>
+              <button onClick={handleClearFilter} className="ClearFilterButton">
+                <MdOutlineFilterAltOff style={{ fontSize: "25px" }} />
+                Clear
+              </button>
+
               {/* <p
                 style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
               >
@@ -1518,6 +1569,14 @@ export default function AllEmployeeDataReport({
               </div>
             )}
 
+            <Button
+              className="SetDefault_pin"
+              onClick={handleClickOpenPopupDeafiltPin}
+            >
+              Set Default Pin
+            </Button>
+            <Button className="Re_CalculateButton">Recalculate</Button>
+
             <CustomTextField
               type="text"
               placeholder="Common Search..."
@@ -1541,22 +1600,6 @@ export default function AllEmployeeDataReport({
                 </svg>
               </button>
             )}
-
-            <button onClick={handleClearFilter} className="ClearFilterButton">
-              <svg
-                stroke="currentColor"
-                fill="currentColor"
-                stroke-width="0"
-                viewBox="0 0 512 512"
-                class="mr-2"
-                height="1em"
-                width="1em"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
-              </svg>
-              Clear Filters
-            </button>
           </div>
         </div>
 
@@ -1630,15 +1673,29 @@ export default function AllEmployeeDataReport({
               }}
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
               rowsPerPageOptions={[5, 10, 15, 25, 50]}
+              onCellClick={(params, event) => {
+                event.stopPropagation();
+              }}
+              onRowClick={(params, event) => {
+                event.stopPropagation();
+              }}
               className="simpleGridView"
               pagination
               sx={{
+                "& .MuiDataGrid-cell:focus": {
+                  outline: "none", // removes default blue outline
+                  borderTop: '1px solid #d3d3d3cf !important'
+                },
+                "& .MuiDataGrid-cell:focus-within": {
+                  outline: "none", // ensures keyboard/tab focus is also hidden
+                  borderTop: '1px solid #d3d3d3cf !important'
+                },
                 "& .MuiDataGrid-menuIcon": {
                   display: "none",
                 },
-                marginLeft: 2,
-                marginRight: 2,
-                marginBottom: 2,
+                "& .MuiDataGrid-row.Mui-selected": {
+                  backgroundColor: "inherit !important",
+                },
               }}
             />
           )}

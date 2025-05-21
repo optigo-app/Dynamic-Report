@@ -244,10 +244,15 @@ export default function Spliter({ isLoadingNew }) {
   const handleSelectLocation = (location, allEmployeeData) => {
     setSelectedLocation(location);
 
-    const filtered = allEmployeeData?.filter(
-      (emp) => emp.location === location
+    console.log(
+      "allEmployeeDataallEmployeeDataallEmployeeData",
+      selectedMetalType,
+      allEmployeeData
     );
-
+    const filtered = allEmployeeDataMain?.filter(
+      (emp) =>
+        emp.location === location && emp.metaltypename == selectedMetalType
+    );
     const deptMap = new Map();
 
     filtered?.forEach((item) => {
@@ -308,9 +313,11 @@ export default function Spliter({ isLoadingNew }) {
   const handleSelecEmployee = (location, allEmployeeData) => {
     setSelectedLocation(location);
 
-    const filtered = allEmployeeData?.filter(
-      (emp) => emp.location === location
+    const filtered = allEmployeeDataMain?.filter(
+      (emp) =>
+        emp.location === location && emp.metaltypename == selectedMetalType
     );
+
     const employeeMap = new Map();
 
     filtered?.forEach((item) => {
@@ -600,7 +607,7 @@ export default function Spliter({ isLoadingNew }) {
                                       }
                                       style={{ width: "50%" }}
                                     >
-                                      Issue Wt : <br />
+                                      Issue Wt :{" "}
                                       <b>{emp?.netissuewt?.toFixed(3)}</b>
                                     </p>
                                     <p
@@ -611,7 +618,7 @@ export default function Spliter({ isLoadingNew }) {
                                       }
                                       style={{ width: "50%" }}
                                     >
-                                      Return Wt : <br />
+                                      Return Wt :{" "} 
                                       <b>{emp?.netretunwt?.toFixed(3)}</b>
                                     </p>
                                   </div>
@@ -818,7 +825,7 @@ export default function Spliter({ isLoadingNew }) {
                                             }
                                             style={{ width: "50%" }}
                                           >
-                                            Issue Wt : <br />
+                                            Issue Wt :{" "}
                                             <b>{emp?.netissuewt?.toFixed(3)}</b>
                                           </p>
                                           <p
@@ -829,7 +836,7 @@ export default function Spliter({ isLoadingNew }) {
                                             }
                                             style={{ width: "50%" }}
                                           >
-                                            Return Wt : <br />
+                                            Return Wt :{" "}
                                             <b>{emp?.netretunwt?.toFixed(3)}</b>
                                           </p>
                                         </div>
@@ -938,7 +945,7 @@ export default function Spliter({ isLoadingNew }) {
                                           }
                                           style={{ width: "50%" }}
                                         >
-                                          Issue Wt : <br />
+                                          Issue Wt :{" "}
                                           <b>{emp?.netissuewt?.toFixed(3)}</b>
                                         </p>
                                         <p
@@ -949,7 +956,7 @@ export default function Spliter({ isLoadingNew }) {
                                           }
                                           style={{ width: "50%" }}
                                         >
-                                          Return Wt : <br />
+                                          Return Wt :{" "}
                                           <b>{emp?.netretunwt?.toFixed(3)}</b>
                                         </p>
                                       </div>
@@ -976,7 +983,7 @@ export default function Spliter({ isLoadingNew }) {
                     </>
                   )}
                 </div>
-                
+
                 {locationSummaryData?.length != 0 && (
                   <div
                     style={{
