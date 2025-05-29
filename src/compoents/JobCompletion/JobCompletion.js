@@ -131,8 +131,10 @@ export default function JobCompletion() {
   const [selectedRd3Name, setSelectedRd3Name] = useState("");
   const [masterKeyData, setMasterKeyData] = useState();
   const [allColumIdWiseName, setAllColumIdWiseName] = useState();
+  const [allColumIdWiseNameAll, setAllColumIdWiseNameAll] = useState();
   const [allColumData, setAllColumData] = useState();
   const [allRowData, setAllRowData] = useState();
+  const [allRowDataAll, setAllRowDataAll] = useState();
   const [checkedColumns, setCheckedColumns] = useState({});
   const [selectedDepartmentId, setSelectedDepartmentId] = useState();
   const [selectedEmployeeCode, setSelectedEmployeeCode] = useState();
@@ -204,18 +206,29 @@ export default function JobCompletion() {
       p: `{"fdate":"${stat}","tdate":"${end}"}`,
       f: "Task Management (taskmaster)",
     };
-    try {
-      const fetchedData = await GetWorkerData(body, sp);
-      setAllRowData(fetchedData?.Data?.rd1);
-      // setAllRowData(fetchedData?.Data?.rd1?.slice(0, 100));
-      setAllColumIdWiseName(fetchedData?.Data?.rd);
+    if (allRowDataAll) {
+      setAllRowData(allRowDataAll);
+      setAllColumIdWiseName(allColumIdWiseNameAll);
       setMasterKeyData(OtherKeyData?.rd);
       setAllColumData(OtherKeyData?.rd1);
       setStatus500(false);
       setIsLoading(false);
-    } catch (error) {
-      setStatus500(true);
-      setIsLoading(false);
+    } else {
+      try {
+        const fetchedData = await GetWorkerData(body, sp);
+        setAllRowData(fetchedData?.Data?.rd1);
+        setAllRowDataAll(fetchedData?.Data?.rd1);
+        // setAllRowData(fetchedData?.Data?.rd1?.slice(0, 100));
+        setAllColumIdWiseName(fetchedData?.Data?.rd);
+        setAllColumIdWiseNameAll(fetchedData?.Data?.rd);
+        setMasterKeyData(OtherKeyData?.rd);
+        setAllColumData(OtherKeyData?.rd1);
+        setStatus500(false);
+        setIsLoading(false);
+      } catch (error) {
+        setStatus500(true);
+        setIsLoading(false);
+      }
     }
   };
 
@@ -359,17 +372,18 @@ export default function JobCompletion() {
         };
       });
 
-      const srColumn = {
-        field: "srNo",
-        headerName: "Sr#",
-        width: 70,
-        sortable: false,
-        filterable: false,
-        renderCell: (params) =>
-          params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
-      };
-      setColumns([srColumn, ...columnData]);
-  }, [allColumData, grupEnChekBox]);
+    const srColumn = {
+      field: "sr",
+      headerName: "Sr#",
+      width: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) =>
+        params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+    };
+
+    setColumns([srColumn, ...columnData]);
+  }, [allColumData, grupEnChekBox, sortModel]);
 
   useEffect(() => {
     if (!allColumData) return;
@@ -511,29 +525,19 @@ export default function JobCompletion() {
       return isMatch;
     });
 
-    if (sortModel.length > 0) {
-      const { field, sort } = sortModel[0];
-      newFilteredRows.sort((a, b) => {
-        if (a[field] == null) return 1;
-        if (b[field] == null) return -1;
-
-        const aVal =
-          typeof a[field] === "string" ? a[field].toLowerCase() : a[field];
-        const bVal =
-          typeof b[field] === "string" ? b[field].toLowerCase() : b[field];
-
-        if (aVal > bVal) return sort === "asc" ? 1 : -1;
-        if (aVal < bVal) return sort === "asc" ? -1 : 1;
-        return 0;
-      });
-    }
-
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
     setFilteredRows(rowsWithSrNo);
-  }, [filters, commonSearch, columns, startDate, selectedColors , selectedDateColumn]);
+  }, [
+    filters,
+    commonSearch,
+    columns,
+    startDate,
+    selectedColors,
+    selectedDateColumn,
+  ]);
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
@@ -1493,19 +1497,6 @@ export default function JobCompletion() {
     </DragDropContext>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // // http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18234
 

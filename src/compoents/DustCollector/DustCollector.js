@@ -255,6 +255,9 @@ export default function DustCollector() {
   
   useEffect(() => {
     if (!allColumData) return;
+
+    console.log('grupEnChekBoxgrupEnChekBox',grupEnChekBox);
+    
     const columnData = Object?.values(allColumData)
       ?.filter((col) => col.ColumShow)
       ?.map((col, index) => {

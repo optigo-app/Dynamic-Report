@@ -239,17 +239,17 @@ const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth })
                 <CalendarDays />
               </InputAdornment>
             ),
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="ClearIcon"
-                  onClick={handleClear}
-                  color="default"
-                >
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
+            // endAdornment: (
+            //   <InputAdornment position="end">
+            //     <IconButton
+            //       aria-label="ClearIcon"
+            //       onClick={handleClear}
+            //       color="default"
+            //     >
+            //       <ClearIcon />
+            //     </IconButton>
+            //   </InputAdornment>
+            // ),
           }}
         />
         <Popover

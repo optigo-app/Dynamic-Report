@@ -36,6 +36,7 @@ import { AiFillSetting } from "react-icons/ai";
 import OtherKeyData from "./AllEmployeeData.json";
 import OtherKeyDataAdmin from "./AdminApp.json";
 import OtherKeyDataSales from "./SalesRep.json";
+import OtherKeyDataExpress from "./ExpressApp.json";
 import OtherKeyDataIcate from "./IcateApp.json";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import SingleEmployeeWiseData from "./SingleEmployeeWiseData/SingleEmployeeWiseData";
@@ -249,10 +250,16 @@ export default function AllEmployeeDataReport({
 
     let filteredData = [];
     let filteredDataColumKey = [];
-    
+
     switch (selectedFileter) {
       case "App":
-        console.log("originalRowsoriginalRows", filteredData ,selectedFilterCategory , selectedFileter, AllFinalData);
+        console.log(
+          "originalRowsoriginalRows",
+          filteredData,
+          selectedFilterCategory,
+          selectedFileter,
+          AllFinalData
+        );
         filteredData = rd1.filter(
           (entry) => entry["1"] === selectedFilterCategory
         );
@@ -261,7 +268,7 @@ export default function AllEmployeeDataReport({
         } else if (selectedFilterCategory === "Sales rep app") {
           filteredDataColumKey = OtherKeyDataSales?.rd1;
         } else if (selectedFilterCategory === "ExpressApp") {
-          filteredDataColumKey = OtherKeyDataSales?.rd1;
+          filteredDataColumKey = OtherKeyDataExpress?.rd1;
         } else {
           filteredDataColumKey = OtherKeyDataIcate?.rd1;
         }
@@ -1569,13 +1576,17 @@ export default function AllEmployeeDataReport({
               </div>
             )}
 
-            <Button
-              className="SetDefault_pin"
-              onClick={handleClickOpenPopupDeafiltPin}
-            >
-              Set Default Pin
-            </Button>
-            <Button className="Re_CalculateButton">Recalculate</Button>
+            {selectedFilterCategory != "ExpressApp" && (
+              <Button
+                className="SetDefault_pin"
+                onClick={handleClickOpenPopupDeafiltPin}
+              >
+                Set Default Pin
+              </Button>
+            )}
+            {selectedFilterCategory != "ExpressApp" && (
+              <Button className="Re_CalculateButton">Recalculate</Button>
+            )}
 
             <CustomTextField
               type="text"
@@ -1684,11 +1695,11 @@ export default function AllEmployeeDataReport({
               sx={{
                 "& .MuiDataGrid-cell:focus": {
                   outline: "none", // removes default blue outline
-                  borderTop: '1px solid #d3d3d3cf !important'
+                  borderTop: "1px solid #d3d3d3cf !important",
                 },
                 "& .MuiDataGrid-cell:focus-within": {
                   outline: "none", // ensures keyboard/tab focus is also hidden
-                  borderTop: '1px solid #d3d3d3cf !important'
+                  borderTop: "1px solid #d3d3d3cf !important",
                 },
                 "& .MuiDataGrid-menuIcon": {
                   display: "none",

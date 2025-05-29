@@ -1337,6 +1337,7 @@ export default function SingleEmployeeWiseData({
               rows={filteredRows ?? []}
               columns={columns}
               pageSize={pageSize}
+              localeText={{ noRowsLabel: "No Data" }}
               autoHeight={false}
               columnBuffer={20}
               disableColumnVirtualization
@@ -1352,7 +1353,6 @@ export default function SingleEmployeeWiseData({
                 marginRight: 2,
                 marginBottom: 2,
               }}
-              localeText={{ noRowsLabel: "No Data" }}
               loading={isLoading}
               // components={{
               //   Toolbar: () => null,

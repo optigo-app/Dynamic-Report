@@ -58,10 +58,10 @@ const GridMain = () => {
   }, []);
 
   useEffect(() => {
-    //  Cookies.set(
-    //    "skey",
-    //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
-    //  );
+     Cookies.set(
+       "skey",
+       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
+     );
     const token = Cookies.get("skey");
     if (token) {
       getQueryParams();
@@ -111,7 +111,7 @@ const GridMain = () => {
     if (pid == 18223) {
       return <Spliter isLoadingNew={isLoading} />; // 1315 Doc.
     } else if (pid == 18226) {
-      return <DustCollector />; // 1383 Doc.
+      return <DustCollector />; // 1383 Doc.     ignore setting
     } else if (pid == 18227) {
       return <ToolReport />; // 1382 Doc.
     } else if (pid == 18228) {
@@ -122,7 +122,7 @@ const GridMain = () => {
       return <FinishGoodsReport />; // 1388 Doc.
     } else if (pid == 18231) {
       return <MaterialWiseSaleReport />; // 1389 Doc.
-    } else if (pid == 1000) {
+    } else if (pid == 18245) {
       return <StcokReport />; // 1392 Doc.
     } else if (pid == 18233) {
       return <DeviceSpliter />; // 1045 Doc.

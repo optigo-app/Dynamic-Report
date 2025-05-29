@@ -1,18 +1,17 @@
-// http://localhost:3000/testreport/?sp=12&ifid=ToolsReport&pid=1000
+// http://localhost:3000/testreport/?sp=12&ifid=ToolsReport&pid=18245
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
 import "./StcokReport.scss";
 import DatePicker from "react-datepicker";
 // import masterData from "./masterData.json";
+import "react-datepicker/dist/react-datepicker.css";
 import mainButton from "../images/Mail_32.png";
 import printButton from "../images/print.png";
 import gridView from "../images/GriedView.png";
 import imageView from "../images/ImageView2.png";
 import { RiFullscreenLine } from "react-icons/ri";
-import { IoMdClose } from "react-icons/io";
-import "react-datepicker/dist/react-datepicker.css";
 import {
   Accordion,
   AccordionDetails,
@@ -44,6 +43,7 @@ import DualDatePicker from "../DatePicker/DualDatePicker";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import { IoMdClose } from "react-icons/io";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -141,37 +141,14 @@ export default function StcokReport() {
   const [searchParams] = useSearchParams();
   const [startDate, setStartDate] = useState();
   const [endDate, setEndDate] = useState();
-  const [AllFinalData, setFinalData] = useState();
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
-  const [summaryData, setSummaryData] = useState([]);
-  const [showOnlyCompanyStock, setShowOnlyCompanyStock] = useState(true); // default checked
-
-  // const [grupEnChekBox, setGrupEnChekBox] = useState(() => {
-  //   const initial = {};
-  //   OtherKeyData?.rd1.forEach((col) => {
-  //     if (col.GrupChekBox && col.GrupChekboxDefault) {
-  //       initial[col.field] = true;
-  //     }
-  //   });
-  //   return initial;
-  // });
-
-  const [grupEnChekBox, setGrupEnChekBox] = useState(() => {
-    const initial = {};
-    OtherKeyData?.rd1.forEach((col) => {
-      if (col.GrupChekBox && col.field == "categoryname") {
-        initial[col.field] = true;
-      } else if (col.GrupChekBox) {
-        initial[col.field] = false;
-      }
-    });
-    return initial;
-  });
-
+  const [includeCustomerStock, setIncludeCustomerStock] = useState(false);
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
+
+  const [grupEnChekBox, setGrupEnChekBox] = useState({});
 
   useEffect(() => {
     const now = new Date();
@@ -182,7 +159,6 @@ export default function StcokReport() {
         endDate: now,
       },
     });
-
     setStartDate(formattedDate);
     setEndDate(formattedDate);
     fetchData(formattedDate, formattedDate);
@@ -200,8 +176,8 @@ export default function StcokReport() {
   }, [filterState.dateRange]);
 
   const fetchData = async (stat, end) => {
-    const sp = searchParams.get("sp");
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+    const sp = searchParams.get("sp");
     setIsLoading(true);
     const body = {
       con: `{"id":"","mode":"StockReport","appuserid":"${AllData?.uid}"}`,
@@ -215,12 +191,17 @@ export default function StcokReport() {
       setAllColumIdWiseName(fetchedData?.Data?.rd);
       setMasterKeyData(OtherKeyData?.rd);
       setAllColumData(OtherKeyData?.rd1);
-      setFinalData(fetchedData?.Data);
+      const grupCheckboxMap = (OtherKeyData?.rd1 || [])
+        .filter((col) => col?.GrupChekBox)
+        .reduce((acc, col) => {
+          acc[col.field] = true;
+          return acc;
+        }, {});
+      setGrupEnChekBox(grupCheckboxMap);
+      setStatus500(false);
       setIsLoading(false);
     } catch (error) {
-      if (error?.status == 500) {
-        setStatus500(true);
-      }
+      setStatus500(true);
       setIsLoading(false);
     }
   };
@@ -228,6 +209,7 @@ export default function StcokReport() {
   useEffect(() => {
     const now = new Date();
     const formatNumber = (n) => n.toString().padStart(2, "0");
+
     const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
       now.getMonth() + 1
     )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
@@ -247,11 +229,19 @@ export default function StcokReport() {
     }
   }, [allColumData]);
 
+  const handleGrupEnChekBoxChange = (field) => {
+    setGrupEnChekBox((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
+
   useEffect(() => {
     if (!allColumData) return;
     const columnData = Object?.values(allColumData)
       ?.filter((col) => col.ColumShow)
       ?.map((col, index) => {
+        const isPriorityFilter = col.proiorityFilter === true;
         return {
           field: col.field,
           headerName: (
@@ -271,8 +261,8 @@ export default function StcokReport() {
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
           filterable: col.ColumFilter,
-          suggestionFilter: col.suggestionFilter,
           headerNamesingle: col.headerName,
+          suggestionFilter: col.suggestionFilter,
           hrefLink: col.HrefLink,
           summuryValueKey: col.summuryValueKey,
           summaryTitle: col.summaryTitle,
@@ -285,21 +275,17 @@ export default function StcokReport() {
             col.SuggestionFilter && "suggestionFilter",
             col.selectDropdownFilter && "selectDropdownFilter",
           ].filter(Boolean),
+
           renderCell: (params) => {
             if (col.ToFixedValue) {
               return (
-                <span
+                <p
                   style={{
-                    color: col.Color || "inherit",
-                    backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
-                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
-                    borderRadius: col.BorderRadius,
                   }}
                 >
                   {params.value?.toFixed(col.ToFixedValue)}
-                </span>
+                </p>
               );
             } else if (col.dateColumn == true) {
               const date = new Date(params.value);
@@ -317,27 +303,7 @@ export default function StcokReport() {
                   {formattedDate}
                 </span>
               );
-            }
-            //  else if (col.field === "metalpurity") {
-            //   const Purity = params.row.metalpurity || "";
-            //   const Color = params.row.metalcolor || ""; // Ensure that name exists
-            //   const type = params.row.metaltype || ""; // Ensure that name exists
-            //   return (
-            //     <span
-            //       style={{
-            //         color: col.Color || "inherit",
-            //         backgroundColor: col.BackgroundColor || "inherit",
-            //         fontSize: col.FontSize || "inherit",
-            //         textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-            //         padding: "5px",
-            //         borderRadius: col.BorderRadius,
-            //       }}
-            //     >
-            //       {`${type} ${Purity} / ${Color}`}
-            //     </span>
-            //   );
-            // }
-            else if (col.hrefLink) {
+            } else if (col.hrefLink) {
               return (
                 <a
                   target="_blank"
@@ -366,7 +332,7 @@ export default function StcokReport() {
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
+                    padding: "5px 20px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
@@ -380,46 +346,80 @@ export default function StcokReport() {
     setColumns(columnData);
   }, [allColumData, grupEnChekBox]);
 
+  useEffect(() => {
+    if (!allColumData) return;
+    const defaultChecked = {};
+    Object.values(allColumData).forEach((col) => {
+      if (col.GrupChekBox) {
+        defaultChecked[col.field] = true; // ✅ By default checked if GrupChekBox is true
+      }
+    });
+
+    setCheckedColumns(defaultChecked);
+  }, [allColumData]);
+
   const handleCellClick = (params) => {
     setSelectedDepartmentId(params?.row?.deptid);
     setSelectedEmployeeCode(params?.row?.employeecode);
     setOpen(true);
   };
 
+  // Defensive check to make sure the column map is valid
+  const columnMap =
+    Array.isArray(allColumIdWiseName) && allColumIdWiseName.length > 0
+      ? allColumIdWiseName[0]
+      : {};
+  columnMap["49"] = "jobCountTotal";
+  const updatedRowData =
+    allRowData &&
+    allRowData?.map((row) => ({
+      ...row,
+      49: 1,
+    }));
   const originalRows =
-    allColumIdWiseName &&
-    allRowData?.map((row, index) => {
+    updatedRowData &&
+    updatedRowData.map((row, index) => {
       const formattedRow = {};
       Object.keys(row).forEach((key) => {
-        formattedRow[allColumIdWiseName[0][key]] = row[key];
+        const columnName = columnMap[key] || `unknown_${key}`;
+        formattedRow[columnName] = row[key];
       });
       return { id: index, ...formattedRow };
     });
 
-  // const originalRows = useMemo(() => {
-  //   if (!allColumIdWiseName || !allRowData) return [];
-
-  //   const filteredRawData = showOnlyCompanyStock
-  //     ? allRowData.filter((row) => row["3"] === 1 || row["3"] === "1")
-  //     : allRowData;
-
-  //   return filteredRawData.map((row, index) => {
+  // console.log("allRowDataallRowData", allRowData);
+  // console.log("allColumIdWiseName", allColumIdWiseName);
+  // const originalRows =
+  //   allColumIdWiseName &&
+  //   allRowData?.map((row, index) => {
   //     const formattedRow = {};
   //     Object.keys(row).forEach((key) => {
   //       formattedRow[allColumIdWiseName[0][key]] = row[key];
   //     });
   //     return { id: index, ...formattedRow };
   //   });
-  // }, [allColumIdWiseName, allRowData, showOnlyCompanyStock]);
 
   const [pageSize, setPageSize] = useState(10);
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
 
   useEffect(() => {
-    console.log("originalRows", originalRows);
+    const hasActiveFilters = Object.values(filters).some(
+      (val) => val && (Array.isArray(val) ? val.length > 0 : val !== "")
+    );
+
+    if (!hasActiveFilters) {
+      setFilteredRows(originalRows);
+    }
+  }, [originalRows, filters]);
+
+  useEffect(() => {
     const newFilteredRows = originalRows?.filter((row) => {
       let isMatch = true;
+
+      if (!includeCustomerStock && row.iscompanystock !== 1) {
+        return false;
+      }
 
       for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
@@ -469,22 +469,20 @@ export default function StcokReport() {
         }
       }
 
-      if (isMatch && filterState) {
-        const toDateOnly = (d) => new Date(new Date(d).toDateString());
-        const rowDate = toDateOnly(row["entrydate"]);
-        const parsedStart = toDateOnly(startDate);
-        const parsedEnd = toDateOnly(endDate);
-
-        console.log('rowDate' , rowDate);
-        console.log('parsedStart' , parsedStart);
-        console.log('parsedEnd' , parsedEnd);
-        
-        if (
-          isNaN(rowDate.getTime()) ||
-          rowDate < parsedStart ||
-          rowDate > parsedEnd
-        ) {
-          isMatch = false;
+      if (isMatch && fromDate && toDate) {
+        const dateColumn = columns.find(
+          (col) =>
+            col.filterTypes && col.filterTypes.includes("DateRangeFilter")
+        );
+        if (dateColumn) {
+          const rowDate = new Date(row[dateColumn.field]);
+          if (
+            isNaN(rowDate.getTime()) ||
+            rowDate < fromDate ||
+            rowDate > toDate
+          ) {
+            isMatch = false;
+          }
         }
       }
 
@@ -499,15 +497,24 @@ export default function StcokReport() {
       }
       return isMatch;
     });
-    const groupedRows = groupRows(newFilteredRows, grupEnChekBox);
-    const rowsWithSrNo = groupedRows?.map((row, index) => ({
+
+    const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
-    console.log("rowsWithSrNorowsWithSrNo", rowsWithSrNo);
-    setFilteredRows(rowsWithSrNo);
-  }, [filters, commonSearch, startDate, endDate, columns]);
-  // }, [filters, originalRows, commonSearch, fromDate, toDate, columns, filterState.dateRange,]);
+
+    const groupedRows = groupRows(rowsWithSrNo, grupEnChekBox);
+    setFilteredRows(groupedRows);
+  }, [
+    filters,
+    commonSearch,
+    fromDate,
+    toDate,
+    columns,
+    originalRows,
+    selectedColors,
+    includeCustomerStock 
+  ]);
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
@@ -536,11 +543,12 @@ export default function StcokReport() {
   const renderFilter = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
     const filtersToRender = col.filterTypes;
+
     return filtersToRender.map((filterType) => {
       switch (filterType) {
         case "NormalFilter":
           return (
-            <div style={{ width: "100%", margin: "5px 10px" }}>
+            <div style={{ width: "100%", margin: "5px 20px" }}>
               <CustomTextField
                 key={`filter-${col.field}-NormalFilter`}
                 type="text"
@@ -749,7 +757,7 @@ export default function StcokReport() {
             ...new Set(originalRows.map((row) => row[col.field])),
           ];
           return (
-            <div key={col.field}>
+            <div key={col.field} style={{ width: "100%" }}>
               <Accordion>
                 <AccordionSummary
                   expandIcon={<MdExpandMore />}
@@ -799,16 +807,74 @@ export default function StcokReport() {
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
   };
+
   const renderSummary = () => {
+    const summaryColumns = columns.filter((col) => {
+      const columnData = Object.values(allColumData).find(
+        (data) => data.field === col.field
+      );
+      return columnData?.summary;
+    });
+
     return (
       <div className="summaryBox">
-        {summaryData?.map((col) => {
+        {summaryColumns.map((col) => {
+          let calculatedValue = 0;
+
+          if (col.field === "lossperfm") {
+            const totalLossWt =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.losswt) || 0),
+                0
+              ) || 0;
+
+            const totalNetReturnWt =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
+                0
+              ) || 1; // prevent division by 0
+            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+          } else if (col.field === "lossper") {
+            const totalLossWt =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.losswt) || 0),
+                0
+              ) || 0;
+
+            const totalNetReturnWt =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.netretunwtfm) || 0),
+                0
+              ) || 1; // prevent division by 0
+            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+          } else if (col.field === "losspergross") {
+            const totalLossWt =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.losswt) || 0),
+                0
+              ) || 0;
+
+            const totalNetReturnWt =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
+                0
+              ) || 1; // prevent division by 0
+            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+          } else {
+            calculatedValue =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row[col.field]) || 0),
+                0
+              ) || 0;
+          }
           return (
             <div className="summaryItem" key={col.field}>
               <div className="AllEmploe_boxViewTotal">
                 <div>
-                  <p className="AllEmplo_boxViewTotalValue">{col.value}</p>
-                  <p className="boxViewTotalTitle">{col.title}</p>
+                  <p className="AllEmplo_boxViewTotalValue">
+                    {calculatedValue.toFixed(col?.summuryValueKey)}
+                  </p>
+                  <p className="boxViewTotalTitle">{col.summaryTitle}</p>
                 </div>
               </div>
             </div>
@@ -885,33 +951,12 @@ export default function StcokReport() {
     setShowImageView((prevState) => !prevState);
   };
 
-  const toggleColorSelection = (colorId) => {
-    setSelectedColors((prevSelected) => {
-      if (prevSelected.includes(colorId)) {
-        return prevSelected.filter((id) => id !== colorId);
-      } else {
-        return [...prevSelected, colorId];
-      }
-    });
-  };
-
-  const handleGrupEnChekBoxChange = (field) => {
-    setGrupEnChekBox((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
-  };
-
   const handleClickOpenPoup = () => {
     setOpenPopup(true);
   };
 
   const handleClosePopup = () => {
     setOpenPopup(false);
-  };
-
-  const handleCheckboxChange = (event) => {
-    setIsChecked(event.target.checked);
   };
 
   const handleSave = () => {
@@ -921,19 +966,38 @@ export default function StcokReport() {
   };
 
   const onDragEnd = () => {};
-
   const groupRows = (rows, groupCheckBox) => {
     const grouped = [];
+    const adjustedCheckBox = { ...groupCheckBox };
+    const keysExceptJobNo = Object.keys(adjustedCheckBox).filter(
+      (key) => key !== "j_jobno"
+    );
+    const anyFalse = keysExceptJobNo.some((k) => !adjustedCheckBox[k]);
+
+    if (anyFalse && adjustedCheckBox["j_jobno"]) {
+      adjustedCheckBox["j_jobno"] = false;
+      setGrupEnChekBox(adjustedCheckBox); // <-- this is key
+    }
 
     if (!Array.isArray(rows)) {
       console.warn("groupRows: rows is not an array!", rows);
       return grouped;
     }
 
+    const allChecked = Object.values(adjustedCheckBox).every(Boolean);
+    if (allChecked) {
+      return rows.map((row, index) => ({
+        ...row,
+        id: index,
+        srNo: index + 1,
+      }));
+    }
+
     rows.forEach((row) => {
       const newRow = { ...row };
       const keyParts = [];
-      for (const [field, checked] of Object.entries(groupCheckBox)) {
+
+      for (const [field, checked] of Object.entries(adjustedCheckBox)) {
         if (checked) {
           keyParts.push(newRow[field]);
         } else {
@@ -945,7 +1009,7 @@ export default function StcokReport() {
       if (!grouped[groupKey]) {
         grouped[groupKey] = { ...newRow };
       } else {
-        for (const col of OtherKeyData?.rd1) {
+        for (const col of OtherKeyData?.rd1 || []) {
           if (!col.GrupChekBox && typeof newRow[col.field] === "number") {
             grouped[groupKey][col.field] =
               (grouped[groupKey][col.field] || 0) + (newRow[col.field] || 0);
@@ -961,304 +1025,296 @@ export default function StcokReport() {
     }));
   };
 
-  useEffect(() => {
-    let metalAmount = 0;
-    let totalDiamondAmount = 0;
-    let totalCSTAmount = 0;
-    let totalMISCAmount = 0;
-    let metalWeight = 0;
-    let diamondWeight = 0,
-      diamondPcs = 0;
-    let colorStoneWeight = 0,
-      colorStonePcs = 0;
-    let miscWeight = 0,
-      miscPcs = 0;
-    let totalPureWeight = 0;
-    let totalAmount = 0;
+  // const groupRows = (rows, groupCheckBox) => {
+  //   const grouped = [];
 
-    filteredRows?.forEach((item) => {
-      const { material, amount, weight, pcs, purewt } = item;
+  //   console.log('grupEnChekBox', grupEnChekBox);
 
-      if (material === "METAL") {
-        metalAmount += amount;
-      }
+  //   if (!Array.isArray(rows)) {
+  //     console.warn("groupRows: rows is not an array!", rows);
+  //     return grouped;
+  //   }
 
-      if (material === "METAL" || material === "FINDING") {
-        metalWeight += weight;
-      }
+  //   const groupCheckBoxClone = { ...groupCheckBox };
+  //   const isAnyUnchecked = Object.entries(groupCheckBoxClone).some(
+  //     ([key, val]) => key !== "j_jobno" && val === false
+  //   );
+  //   if (isAnyUnchecked) {
+  //     groupCheckBoxClone["j_jobno"] = false;
+  //   }
 
-      if (material === "DIAMOND") {
-        totalDiamondAmount += amount;
-        diamondWeight += weight;
-        diamondPcs += pcs;
-      }
+  //   const allChecked = Object.values(groupCheckBoxClone).every(Boolean);
+  //   if (allChecked) {
+  //     return rows.map((row, index) => ({
+  //       ...row,
+  //       id: index,
+  //       srNo: index + 1,
+  //     }));
+  //   }
 
-      if (material === "COLOR STONE") {
-        totalCSTAmount += amount;
-        colorStoneWeight += weight;
-        colorStonePcs += pcs;
-      }
-      if (material === "MISC") {
-        totalMISCAmount += amount;
-        miscWeight += weight;
-        miscPcs += pcs;
-      }
+  //   rows.forEach((row) => {
+  //     const newRow = { ...row };
+  //     const keyParts = [];
 
-      totalPureWeight += purewt;
-      totalAmount += amount;
-    });
+  //     for (const [field, checked] of Object.entries(groupCheckBox)) {
+  //       if (checked) {
+  //         keyParts.push(newRow[field]);
+  //       } else {
+  //         newRow[field] = "-";
+  //       }
+  //     }
 
-    const finalSummary = [
-      { title: "Total Metal Amt", value: metalAmount?.toFixed(2) },
-      { title: "Total Dia. Amt", value: totalDiamondAmount?.toFixed(2) },
-      { title: "Total CST Amt", value: totalCSTAmount?.toFixed(2) },
-      { title: "Total MISC Amt", value: totalMISCAmount?.toFixed(2) },
-      { title: "Metal Weight", value: metalWeight?.toFixed(3) },
-      {
-        title: "Diamond Wt/Pcs",
-        value: `${diamondWeight?.toFixed(3)} / ${diamondPcs}`,
-      },
-      {
-        title: "Colorstone Wt/Pcs",
-        value: `${colorStoneWeight?.toFixed(3)} / ${colorStonePcs}`,
-      },
-      { title: "MISC Wt/Pcs", value: `${miscWeight?.toFixed(3)} / ${miscPcs}` },
-      { title: "Total Pure Wt", value: totalPureWeight?.toFixed(3) },
-      { title: "Total Amount", value: totalAmount?.toFixed(2) },
-    ];
+  //     const groupKey = keyParts.join("|");
+  //     if (!grouped[groupKey]) {
+  //       grouped[groupKey] = { ...newRow };
+  //     } else {
+  //       for (const col of OtherKeyData?.rd1 || []) {
+  //         if (!col.GrupChekBox && typeof newRow[col.field] === "number") {
+  //           grouped[groupKey][col.field] =
+  //             (grouped[groupKey][col.field] || 0) + (newRow[col.field] || 0);
+  //         }
+  //       }
+  //     }
+  //   });
 
-    setSummaryData(finalSummary);
-  }, [filteredRows]);
+  //   return Object.values(grouped).map((item, index) => ({
+  //     ...item,
+  //     id: index,
+  //     srNo: index + 1,
+  //   }));
+  // };
 
-  // const groupedRows = useMemo(() => {
-  //   const rowsToGroup = filteredRows?.length > 0 ? filteredRows : originalRows;
-  //   return groupRows(rowsToGroup, grupEnChekBox);
-  // }, [filteredRows, grupEnChekBox, originalRows]);
-
-  // useEffect(() => {
-  //   setFilteredRows(groupedRows);
-  // }, [groupedRows]);
-  // console.log('filteredRows', filteredRows);
+  const handleChange = (event) => {
+    setIncludeCustomerStock(event.target.checked);
+    console.log("Include Customer Stock:", event.target.checked);
+  };
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      {!status500 && (
-        <div
-          className="StcokReportMain_mainGridView"
-          sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
-          ref={gridContainerRef}
-        >
-          {isLoading && (
-            <div className="loader-overlay">
-              <CircularProgress className="loadingBarManage" />
-            </div>
-          )}
-
-          <Dialog open={openPopup} onClose={handleClosePopup}>
-            <div className="ConversionMain">
-              <div className="filterDrawer">
-                <p className="dataGridPopupColumSetting">Column Settings</p>
-                <Droppable droppableId="columns-list" type="COLUMN">
-                  {(provided) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps}>
-                      {columns.map((col, index) => (
-                        <DraggableColumn
-                          key={col.field}
-                          col={col}
-                          index={index}
-                          checkedColumns={checkedColumns}
-                          setCheckedColumns={setCheckedColumns}
-                        />
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-                <Button>Save</Button>
-              </div>
-            </div>
-          </Dialog>
-
-          <Drawer
-            open={sideFilterOpen}
-            onClose={toggleDrawer(false)}
-            className="drawerMain"
-          >
-            <p
-              style={{
-                margin: "20px 10px 0px 10px",
-                fontSize: "25px",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              Filter
-              <IoMdClose
-                style={{
-                  cursor: "pointer",
-                  fontSize: "25px",
-                  marginTop: "-10px",
-                }}
-                onClick={() => setSideFilterOpen(false)}
-              />
-            </p>
-            {columns
-              .filter((col) => col.filterable)
-              .map((col) => (
-                <div key={col.field}>{renderFilterMulti(col)}</div>
-              ))}
-
-            {columns
-              .filter((col) => col.filterable)
-              .map((col) => (
-                <div key={col.field}>{renderFilterRange(col)}</div>
-              ))}
-
-            {columns
-              .filter((col) => col.filterable)
-              .map((col) => (
-                <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                  {renderFilterDropDown(col)}
-                </div>
-              ))}
-
-            {columns
-              .filter((col) => col.filterable)
-              .map((col) => (
-                <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                  {renderFilter(col)}
-                </div>
-              ))}
-          </Drawer>
-
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            {/* {renderSummary()} */}
-
-            {masterKeyData?.ColumnSettingPopup && (
-              <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
-                <AiFillSetting style={{ height: "25px", width: "25px" }} />
-              </div>
-            )}
-
-            {masterKeyData?.fullScreenGridButton && (
-              <button className="fullScreenButton" onClick={toggleFullScreen}>
-                <RiFullscreenLine
-                  style={{ marginInline: "5px", fontSize: "30px" }}
-                />
-              </button>
-            )}
+      <div
+        className="DustoCollection_report_main"
+        sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
+        ref={gridContainerRef}
+      >
+        {isLoading && (
+          <div className="loader-overlay">
+            <CircularProgress className="loadingBarManage" />
           </div>
+        )}
+
+        <Dialog open={openPopup} onClose={handleClosePopup}>
+          <div className="ConversionMain">
+            <div className="filterDrawer">
+              <p className="dataGridPopupColumSetting">Column Settings</p>
+              <Droppable droppableId="columns-list" type="COLUMN">
+                {(provided) => (
+                  <div ref={provided.innerRef} {...provided.droppableProps}>
+                    {columns.map((col, index) => (
+                      <DraggableColumn
+                        key={col.field}
+                        col={col}
+                        index={index}
+                        checkedColumns={checkedColumns}
+                        setCheckedColumns={setCheckedColumns}
+                      />
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+              <Button>Save</Button>
+            </div>
+          </div>
+        </Dialog>
+        <Drawer
+          open={sideFilterOpen}
+          onClose={toggleDrawer(false)}
+          className="drawerMain"
+        >
+          <p
+            style={{
+              margin: "20px 10px 0px 10px",
+              fontSize: "25px",
+              display: "flex",
+              justifyContent: "space-between",
+            }}
+          >
+            Filter
+            <IoMdClose
+              style={{
+                cursor: "pointer",
+                fontSize: "25px",
+                marginTop: "-10px",
+              }}
+              onClick={() => setSideFilterOpen(false)}
+            />
+          </p>
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
+              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                {renderFilter(col)}
+              </div>
+            ))}
+
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
+              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                {renderFilterRange(col)}
+              </div>
+            ))}
+
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
+              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                {renderFilterDropDown(col)}
+              </div>
+            ))}
 
           <div
             style={{
+              margin: "3px 15px",
               display: "flex",
-              justifyContent: "space-between",
-              padding: "20px",
+              flexDirection: "column",
+              gap: "5px",
             }}
           >
-            <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "20px" }}
-              >
-                <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                  Open Filter
-                </button>
-                <DualDatePicker
-                  filterState={filterState}
-                  setFilterState={setFilterState}
-                  validDay={31}
-                  validMonth={1}
-                />
-                {/* <p
+            {columns
+              .filter((col) => col.filterable)
+              .map((col) => (
+                <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                  {renderFilterMulti(col)}
+                </div>
+              ))}
+          </div>
+        </Drawer>
+
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          {renderSummary()}
+
+          {masterKeyData?.ColumnSettingPopup && (
+            <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
+              <AiFillSetting style={{ height: "25px", width: "25px" }} />
+            </div>
+          )}
+          {masterKeyData?.fullScreenGridButton && (
+            <button className="fullScreenButton" onClick={toggleFullScreen}>
+              <RiFullscreenLine
+                style={{ marginInline: "5px", fontSize: "30px" }}
+              />
+            </button>
+          )}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "20px",
+          }}
+        >
+          <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+              <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
+                Open Filter
+              </button>
+              <DualDatePicker
+                filterState={filterState}
+                setFilterState={setFilterState}
+                validDay={186}
+                validMonth={6}
+              />
+              {/* <p
                 style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
               >
                 {" "}
                 Last Updated :- {lastUpdated}
               </p> */}
-              </div>
-              {columns
-                .filter((col) => col.filterable)
-                .map((col) => (
-                  <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                    {renderDateFilter(col)}
-                  </div>
-                ))}
+            </div>
+            {columns
+              .filter((col) => col.filterable)
+              .map((col) => (
+                <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                  {renderDateFilter(col)}
+                </div>
+              ))}
 
-              <div
-                className="date-selector"
-                style={{ display: "flex", gap: "10px" }}
-              >
-                {masterKeyData?.progressFilter && (
-                  <button
-                    className="FiletrBtnOpen"
-                    onClick={() => setOpenPDate(!openPDate)}
-                  >
-                    Set P.Date
-                  </button>
-                )}
-                <div
-                  className={`transition-container ${
-                    openPDate ? "open" : "closed"
-                  }`}
-                  style={{
-                    transition: "0.5s ease",
-                    opacity: openPDate ? 1 : 0,
-                    maxHeight: openPDate ? "300px" : "0",
-                    overflow: "hidden",
-                    display: openPDate ? "flex" : "none",
-                    gap: "10px",
-                  }}
+            <div
+              className="date-selector"
+              style={{ display: "flex", gap: "10px" }}
+            >
+              {masterKeyData?.progressFilter && (
+                <button
+                  className="FiletrBtnOpen"
+                  onClick={() => setOpenPDate(!openPDate)}
                 >
-                  <DatePicker
-                    selected={selectedDate}
-                    onChange={(date) => setSelectedDate(date)}
-                    dateFormat="dd-MM-yyyy"
-                    customInput={
-                      <CustomTextField
-                        customBorderColor="rgba(47, 43, 61, 0.2)"
-                        borderoutlinedColor="#00CFE8"
-                        customTextColor="#2F2B3DC7"
-                        customFontSize="0.8125rem"
-                        style={{ Width: "100px" }}
-                      />
-                    }
-                    placeholderText="Select Date"
-                  />
-
-                  {/* <CustomTextField
-                      select
-                      fullWidth
-                      value={filters.someField || ""}
-                      onChange={(e) => handleFilterChange(e.target.value)}
+                  Set P.Date
+                </button>
+              )}
+              <div
+                className={`transition-container ${
+                  openPDate ? "open" : "closed"
+                }`}
+                style={{
+                  transition: "0.5s ease",
+                  opacity: openPDate ? 1 : 0,
+                  maxHeight: openPDate ? "300px" : "0",
+                  overflow: "hidden",
+                  display: openPDate ? "flex" : "none",
+                  gap: "10px",
+                }}
+              >
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={(date) => setSelectedDate(date)}
+                  dateFormat="dd-MM-yyyy"
+                  customInput={
+                    <CustomTextField
                       customBorderColor="rgba(47, 43, 61, 0.2)"
                       borderoutlinedColor="#00CFE8"
                       customTextColor="#2F2B3DC7"
                       customFontSize="0.8125rem"
-                      size="small"
-                      className="selectDropDownMain"
-                      variant="filled"
-                    >
-                      <MenuItem value="">
-                        <em>None</em>
-                      </MenuItem>
-                      {masterData.rd3.map((item) => (
-                        <MenuItem key={item.id} value={item.name}>
-                          {item.name}
-                        </MenuItem>
-                      ))}
-                    </CustomTextField> */}
+                      style={{ Width: "100px" }}
+                    />
+                  }
+                  placeholderText="Select Date"
+                />
 
-                  <button
-                    onClick={handleSave}
-                    variant="contained"
-                    className="FiletrBtnOpen"
-                    sx={{ marginTop: 2 }}
-                  >
-                    Save
-                  </button>
-                </div>
+                {/* <CustomTextField
+                  select
+                  fullWidth
+                  value={filters.someField || ""}
+                  onChange={(e) => handleFilterChange(e.target.value)}
+                  customBorderColor="rgba(47, 43, 61, 0.2)"
+                  borderoutlinedColor="#00CFE8"
+                  customTextColor="#2F2B3DC7"
+                  customFontSize="0.8125rem"
+                  size="small"
+                  className="selectDropDownMain"
+                  variant="filled"
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  {masterData.rd3.map((item) => (
+                    <MenuItem key={item.id} value={item.name}>
+                      {item.name}
+                    </MenuItem>
+                  ))}
+                </CustomTextField> */}
+
+                <button
+                  onClick={handleSave}
+                  variant="contained"
+                  className="FiletrBtnOpen"
+                  sx={{ marginTop: 2 }}
+                >
+                  Save
+                </button>
               </div>
-              {/* <div style={{ display: "flex" }}>
+            </div>
+            {/* <div style={{ display: "flex" }}>
               {masterData?.rd3.map((data) => (
                 <abbr title={data?.name}>
                   <p
@@ -1276,49 +1332,61 @@ export default function StcokReport() {
                 </abbr>
               ))}
             </div> */}
-            </div>
-            <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
-              {masterKeyData?.mailButton && (
-                <img
-                  src={mainButton}
-                  style={{ cursor: "pointer" }}
-                  onClick={handleSendEmail}
+          </div>
+          <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={includeCustomerStock}
+                  onChange={handleChange}
+                  name="includeCustomerStock"
+                  color="primary"
                 />
-              )}
+              }
+              label="Include Customer Stock"
+            />
 
-              {masterKeyData?.PrintButton && (
-                <img
-                  src={printButton}
-                  style={{ cursor: "pointer", height: "40px", width: "40px" }}
-                  onClick={handlePrint}
-                />
-              )}
+            {masterKeyData?.mailButton && (
+              <img
+                src={mainButton}
+                style={{ cursor: "pointer" }}
+                onClick={handleSendEmail}
+              />
+            )}
 
-              {masterKeyData?.imageView && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {showImageView ? (
-                    <img
-                      src={gridView}
-                      className="imageViewImgGrid"
-                      onClick={handleImg}
-                    />
-                  ) : (
-                    <img
-                      src={imageView}
-                      className="imageViewImg"
-                      onClick={handleImg}
-                    />
-                  )}
-                </div>
-              )}
+            {masterKeyData?.PrintButton && (
+              <img
+                src={printButton}
+                style={{ cursor: "pointer", height: "40px", width: "40px" }}
+                onClick={handlePrint}
+              />
+            )}
 
-              {/* {masterKeyData?.fullScreenGridButton && (
+            {masterKeyData?.imageView && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {showImageView ? (
+                  <img
+                    src={gridView}
+                    className="imageViewImgGrid"
+                    onClick={handleImg}
+                  />
+                ) : (
+                  <img
+                    src={imageView}
+                    className="imageViewImg"
+                    onClick={handleImg}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* {masterKeyData?.fullScreenGridButton && (
               <button className="fullScreenButton" onClick={toggleFullScreen}>
                 <RiFullscreenLine
                   style={{ marginInline: "5px", fontSize: "30px" }}
@@ -1326,182 +1394,166 @@ export default function StcokReport() {
               </button>
             )} */}
 
-              {/* <label
-                style={{
-                  marginBottom: "10px",
-                  fontWeight: 600,
-                  fontSize: "16px",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={showOnlyCompanyStock}
-                  onChange={(e) => setShowOnlyCompanyStock(e.target.checked)}
-                />
-                Show Only Company Stock
-              </label> */}
+            <CustomTextField
+              type="text"
+              placeholder="Common Search..."
+              value={commonSearch}
+              customBorderColor="rgba(47, 43, 61, 0.2)"
+              onChange={(e) => setCommonSearch(e.target.value)}
+            />
 
-              <CustomTextField
-                type="text"
-                placeholder="Common Search..."
-                value={commonSearch}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                onChange={(e) => setCommonSearch(e.target.value)}
-              />
-
-              {masterKeyData?.ExcelExport && (
-                <button onClick={exportToExcel} className="All_exportButton">
-                  <svg
-                    stroke="currentColor"
-                    fill="currentColor"
-                    stroke-width="0"
-                    viewBox="0 0 384 512"
-                    height="2em"
-                    width="2em"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
-                  </svg>
-                </button>
-              )}
-
-              <button onClick={handleClearFilter} className="ClearFilterButton">
+            {masterKeyData?.ExcelExport && (
+              <button onClick={exportToExcel} className="All_exportButton">
                 <svg
                   stroke="currentColor"
                   fill="currentColor"
                   stroke-width="0"
-                  viewBox="0 0 512 512"
-                  class="mr-2"
-                  height="1em"
-                  width="1em"
+                  viewBox="0 0 384 512"
+                  height="2em"
+                  width="2em"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
+                  <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
                 </svg>
-                Clear Filters
               </button>
-            </div>
-          </div>
-          <div
-            ref={gridRef}
-            style={{ height: "calc(100vh - 220px)", margin: "5px" }}
-          >
-            {showImageView ? (
-              <div>
-                <img
-                  className="imageViewImgage"
-                  src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVXLW1j3zO3UP6dIu96A3IpZihTe3fVRsm9g&s"
-                />
-                <img
-                  className="imageViewImgage"
-                  src="https://help.earthsoft.com/ent-data_grid_widget-sample.png"
-                />
-                <img
-                  className="imageViewImgage"
-                  src="https://i0.wp.com/thewwwmagazine.com/wp-content/uploads/2020/07/Screenshot-2020-07-09-at-7.36.56-PM.png?resize=1404%2C1058&ssl=1"
-                />
-                <img
-                  className="imageViewImgage"
-                  src="https://docs.devexpress.com/WPF/images/wpf-data-grid.png"
-                />
-                <img
-                  className="imageViewImgage"
-                  src="https://www.infragistics.com/products/ignite-ui-web-components/web-components/images/general/landing-grid-page.png"
-                />
-                <img
-                  className="imageViewImgage"
-                  src="https://i0.wp.com/angularscript.com/wp-content/uploads/2020/04/Angular-Data-Grid-For-The-Enterprise-nGrid.png?fit=1245%2C620&ssl=1"
-                />
-                <img
-                  className="imageViewImgage"
-                  src="https://angularscript.com/wp-content/uploads/2015/12/ng-bootstrap-grid-370x297.jpg"
-                />
-              </div>
-            ) : (
-              <DataGrid
-                rows={filteredRows ?? []}
-                columns={columns ?? []}
-                pageSize={pageSize}
-                autoHeight={false}
-                columnBuffer={17}
-                localeText={{ noRowsLabel: "No Data" }}
-                initialState={{
-                  columns: {
-                    columnVisibilityModel: {
-                      status: false,
-                      traderName: false,
-                    },
-                  },
-                }}
-                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                rowsPerPageOptions={[5, 10, 15, 25, 50]}
-                className="simpleGridView"
-                pagination
-                sx={{
-                  "& .MuiDataGrid-menuIcon": {
-                    display: "none",
-                  },
-                  marginLeft: 2,
-                  marginRight: 2,
-                  marginBottom: 2,
-                }}
-              />
             )}
+
+            <button onClick={handleClearFilter} className="ClearFilterButton">
+              <svg
+                stroke="currentColor"
+                fill="currentColor"
+                stroke-width="0"
+                viewBox="0 0 512 512"
+                class="mr-2"
+                height="1em"
+                width="1em"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
+              </svg>
+              Clear Filters
+            </button>
           </div>
         </div>
-      )}
-
-      {status500 && (
         <div
-          style={{ display: "flex", width: "100%", justifyContent: "center" }}
+          ref={gridRef}
+          style={{ height: "calc(100vh - 230px)", margin: "5px" }}
         >
-          <Box
-            minHeight="70vh"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            p={2}
-          >
-            <Paper
-              elevation={3}
-              sx={{
-                maxWidth: 500,
-                width: "100%",
-                p: 4,
-                borderRadius: "20px",
-                textAlign: "center",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          {showImageView ? (
+            <div>
+              <img
+                className="imageViewImgage"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVXLW1j3zO3UP6dIu96A3IpZihTe3fVRsm9g&s"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://help.earthsoft.com/ent-data_grid_widget-sample.png"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://i0.wp.com/thewwwmagazine.com/wp-content/uploads/2020/07/Screenshot-2020-07-09-at-7.36.56-PM.png?resize=1404%2C1058&ssl=1"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://docs.devexpress.com/WPF/images/wpf-data-grid.png"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://www.infragistics.com/products/ignite-ui-web-components/web-components/images/general/landing-grid-page.png"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://i0.wp.com/angularscript.com/wp-content/uploads/2020/04/Angular-Data-Grid-For-The-Enterprise-nGrid.png?fit=1245%2C620&ssl=1"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://angularscript.com/wp-content/uploads/2015/12/ng-bootstrap-grid-370x297.jpg"
+              />
+            </div>
+          ) : (
+            <DataGrid
+              rows={filteredRows ?? []}
+              columns={columns ?? []}
+              pageSize={pageSize}
+              autoHeight={false}
+              columnBuffer={17}
+              localeText={{ noRowsLabel: "No Data" }}
+              initialState={{
+                columns: {
+                  columnVisibilityModel: {
+                    status: false,
+                    traderName: false,
+                  },
+                },
               }}
+              onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+              rowsPerPageOptions={[5, 10, 15, 25, 50]}
+              className="simpleGridView"
+              pagination
+              sx={{
+                "& .MuiDataGrid-menuIcon": {
+                  display: "none",
+                },
+                marginLeft: 2,
+                marginRight: 2,
+                marginBottom: 2,
+              }}
+            />
+          )}
+        </div>
+
+        {status500 && (
+          <div
+            style={{ display: "flex", width: "100%", justifyContent: "center" }}
+          >
+            <Box
+              minHeight="70vh"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              p={2}
             >
-              <Box
-                display="flex"
-                justifyContent="center"
-                alignItems="center"
-                mb={2}
+              <Paper
+                elevation={3}
+                sx={{
+                  maxWidth: 500,
+                  width: "100%",
+                  p: 4,
+                  borderRadius: "20px",
+                  textAlign: "center",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                }}
               >
-                <AlertTriangle size={48} color="#f44336" />
-              </Box>
+                <Box
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  mb={2}
+                >
+                  <AlertTriangle size={48} color="#f44336" />
+                </Box>
 
-              <Typography variant="h5" fontWeight={600} gutterBottom>
-                Something Went Wrong
-              </Typography>
+                <Typography variant="h5" fontWeight={600} gutterBottom>
+                  Something Went Wrong
+                </Typography>
 
-              <Typography variant="body1" color="text.secondary" mb={3}>
-                We're sorry, but an unexpected error has occurred. Please try
-                again later.
-              </Typography>
+                <Typography variant="body1" color="text.secondary" mb={3}>
+                  We're sorry, but an unexpected error has occurred. Please try
+                  again later.
+                </Typography>
 
-              {/* <Button
+                {/* <Button
                   variant="contained"
                   color="error"
                   sx={{ textTransform: "none", borderRadius: "10px", px: 4 }}
                 >
                   Try Again
                 </Button> */}
-            </Paper>
-          </Box>
-        </div>
-      )}
+              </Paper>
+            </Box>
+          </div>
+        )}
+      </div>
     </DragDropContext>
   );
 }

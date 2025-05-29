@@ -1320,6 +1320,7 @@ export default function AllEmployeeDataReport({
               columns={columns ?? []}
               pageSize={pageSize}
               autoHeight={false}
+              localeText={{ noRowsLabel: "No Data" }}
               columnBuffer={17}
               initialState={{
                 columns: {

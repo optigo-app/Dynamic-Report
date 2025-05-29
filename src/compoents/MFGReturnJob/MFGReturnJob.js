@@ -1,4 +1,4 @@
-// http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=MFGReturnJob&pid=1590
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18228
 
 import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
@@ -10,6 +10,7 @@ import printButton from "../images/print.png";
 import gridView from "../images/GriedView.png";
 import imageView from "../images/ImageView2.png";
 import { RiFullscreenLine } from "react-icons/ri";
+import { FiX } from "react-icons/fi";
 import "react-datepicker/dist/react-datepicker.css";
 import {
   Accordion,
@@ -143,6 +144,7 @@ export default function MFGReturnJob() {
   const [AllFinalData, setFinalData] = useState();
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
+  const [sortModel, setSortModel] = React.useState([]);
 
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
@@ -186,10 +188,7 @@ export default function MFGReturnJob() {
     };
 
     try {
-      const fetchedData = await GetWorkerData(
-        body,
-        sp
-      );
+      const fetchedData = await GetWorkerData(body, sp);
       setAllRowData(fetchedData?.Data?.rd1);
       setAllColumIdWiseName(fetchedData?.Data?.rd);
       setMasterKeyData(OtherKeyData?.rd);
@@ -271,13 +270,18 @@ export default function MFGReturnJob() {
               );
             } else if (col.ToFixedValue) {
               return (
-                <p
+                <span
                   style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px",
+                    borderRadius: col.BorderRadius,
                   }}
                 >
                   {params.value?.toFixed(col.ToFixedValue)}
-                </p>
+                </span>
               );
             } else if (col.hrefLink) {
               return (
@@ -319,8 +323,19 @@ export default function MFGReturnJob() {
           },
         };
       });
-    setColumns(columnData);
-  }, [allColumData]);
+
+    const srColumn = {
+      field: "sr",
+      headerName: "Sr#",
+      width: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) =>
+        params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+    };
+
+    setColumns([srColumn, ...columnData]);
+  }, [allColumData, sortModel]);
 
   // const hideColumns = Object.values(allColumData)
   //   .filter((col) => !col.ColumShow)
@@ -1286,13 +1301,36 @@ export default function MFGReturnJob() {
               </button>
             )} */}
 
-            <CustomTextField
-              type="text"
-              placeholder="Common Search..."
-              value={commonSearch}
-              customBorderColor="rgba(47, 43, 61, 0.2)"
-              onChange={(e) => setCommonSearch(e.target.value)}
-            />
+            <div
+              className="input-with-icon"
+              style={{ position: "relative", width: "100%" }}
+            >
+              <CustomTextField
+                type="text"
+                placeholder="Search"
+                value={commonSearch}
+                customBorderColor="rgba(47, 43, 61, 0.2)"
+                onChange={(e) => setCommonSearch(e.target.value)}
+                style={{ paddingRight: "2rem" }} // leave space for icon
+              />
+
+              {commonSearch && (
+                <FiX
+                  onClick={() => setCommonSearch("")}
+                  style={{
+                    position: "absolute",
+                    right: "50px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    cursor: "pointer",
+                    color: "#999",
+                    fontSize: "1.2rem",
+                    height: "95%",
+                    backgroundColor: "white",
+                  }}
+                />
+              )}
+            </div>
 
             {masterKeyData?.ExcelExport && (
               <button onClick={exportToExcel} className="All_exportButton">
@@ -1310,7 +1348,7 @@ export default function MFGReturnJob() {
               </button>
             )}
 
-            <button onClick={handleClearFilter} className="ClearFilterButton">
+            {/* <button onClick={handleClearFilter} className="ClearFilterButton">
               <svg
                 stroke="currentColor"
                 fill="currentColor"
@@ -1324,12 +1362,12 @@ export default function MFGReturnJob() {
                 <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
               </svg>
               Clear Filters
-            </button>
+            </button> */}
           </div>
         </div>
         <div
           ref={gridRef}
-          style={{ height: "calc(100vh - 180px)", margin: "5px" }}
+          style={{ height: "calc(100vh - 230px)", margin: "5px" }}
         >
           {showImageView ? (
             <div>
@@ -1367,6 +1405,8 @@ export default function MFGReturnJob() {
               rows={filteredRows ?? []}
               columns={columns ?? []}
               pageSize={pageSize}
+              sortModel={sortModel}
+              onSortModelChange={(model) => setSortModel(model)}
               autoHeight={false}
               columnBuffer={17}
               initialState={{
