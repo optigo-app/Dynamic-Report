@@ -50,6 +50,8 @@ import { IoMdLogOut } from "react-icons/io";
 import { MdFormatClear } from "react-icons/md";
 import { MdOutlineFilterAlt } from "react-icons/md";
 import { MdOutlineFilterAltOff } from "react-icons/md";
+import LoadingBackdrop from "../../../Utils/LoadingBackdrop";
+import { showToast } from "../../../Utils/Tostify/ToastManager";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -138,6 +140,7 @@ export default function AllEmployeeDataReport({
   const [allColumData, setAllColumData] = React.useState();
   const [allRowData, setAllRowData] = React.useState();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [lodingRecakulate, setLodingRecakulate] = React.useState(false);
   const [checkedColumns, setCheckedColumns] = React.useState({});
   const [selectedDepartmentId, setSelectedDepartmentId] = React.useState();
   const [selectedEmployeeCode, setSelectedEmployeeCode] = React.useState();
@@ -1276,8 +1279,36 @@ export default function AllEmployeeDataReport({
   const onDragEnd = () => {};
   console.log("filteredRows", filteredRows);
 
+  const handleRecalculate = async () => {
+    try {
+      setLodingRecakulate(true);
+      const sp = searchParams.get("sp");
+      let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+      const body = {
+        con: `{"id":"","mode":"EvoStockCalCulate","appuserid":"${AllData?.uid}"}`,
+        p: "",
+        f: "Task Management (taskmaster)",
+      };
+      const fetchedData = await GetWorkerData(body, sp);
+      
+      if (fetchedData?.Data?.rd[0]?.msg == "Success") {
+        console.log('fetchedData?.Data?.rd[0]?.msgfetchedData?.Data?.rd[0]?.msg', fetchedData?.Data?.rd[0]?.msg);
+        showToast({
+          message: "Recalculate Successfully",
+          bgColor: "#3bab3b",
+          fontColor: "#fff",
+          duration: 30000,
+        });
+      }
+    } catch (error) {
+      console.error("Fetch failed:", error);
+    } finally {
+      setLodingRecakulate(false);
+    }
+  };
   return (
     <DragDropContext onDragEnd={onDragEnd}>
+      <LoadingBackdrop isLoading={lodingRecakulate} />
       <div
         className="DeviceAllData_mainGridView"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
@@ -1585,7 +1616,12 @@ export default function AllEmployeeDataReport({
               </Button>
             )}
             {selectedFilterCategory != "ExpressApp" && (
-              <Button className="Re_CalculateButton">Recalculate</Button>
+              <Button
+                className="Re_CalculateButton"
+                onClick={handleRecalculate}
+              >
+                Recalculate
+              </Button>
             )}
 
             <CustomTextField

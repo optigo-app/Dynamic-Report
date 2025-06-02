@@ -4,6 +4,7 @@ import GridMain from "./GridMain";
 import { BrowserRouter, useSearchParams } from "react-router-dom";
 import ConnectionManager from "./API/SoketConnection/ConnectionManager";
 import { DeviceStatusProvider } from "./DeviceStatusContext";
+import { ToastContainer } from "./Utils/Tostify/ToastManager";
 
 function AppWrapper() {
   return (
@@ -23,6 +24,7 @@ function App() {
 
   return (
     <>
+      <ToastContainer />
       {pid === "18233" && <ConnectionManager />}
       <GridMain />
     </>
