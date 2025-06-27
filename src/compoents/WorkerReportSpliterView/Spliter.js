@@ -20,12 +20,12 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-export default function Spliter({ isLoadingNew }) {
+export default function Spliter() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [paneWidths, setPaneWidths] = useState(["18%", "18%", "74%"]);
-  const [isLoading, setIsLoading] = React.useState(isLoadingNew);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [status500, setStatus500] = useState(false);
   const [showDepartment, setShowDepartment] = useState(true);
   const [searchParams] = useSearchParams();
@@ -90,28 +90,38 @@ export default function Spliter({ isLoadingNew }) {
     }, 100); // wait 100ms after popover opens
   }, []);
 
+  const firstTimeLoadedRef = useRef(false);
+
   useEffect(() => {
     const now = new Date();
     const formattedDate = formatToMMDDYYYY(now);
+    setStartDate(formattedDate);
+    setEndDate(formattedDate);
+    // fetchData(formattedDate, formattedDate);
+    console.log("cal 2222");
     setFilterState({
       dateRange: {
         startDate: now,
         endDate: now,
       },
     });
-    setStartDate(formattedDate);
-    setEndDate(formattedDate);
-    fetchData(formattedDate, formattedDate);
+    setTimeout(() => {
+      firstTimeLoadedRef.current = true;
+    }, 0);
   }, []);
 
   useEffect(() => {
+    if (!firstTimeLoadedRef.current) return;
     const { startDate: s, endDate: e } = filterState.dateRange;
     if (s && e) {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
+
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
+
       fetchData(formattedStart, formattedEnd);
+      console.log("cal 11111");
     }
   }, [filterState.dateRange]);
 
@@ -131,7 +141,6 @@ export default function Spliter({ isLoadingNew }) {
       const { rd, rd1 } = fetchedData?.Data || {};
       if (rd1?.length != 0) {
         setFinalData(fetchedData?.Data);
-
         if (Array.isArray(rd) && Array.isArray(rd1)) {
           const keyMap = Object.entries(rd[0]).reduce((acc, [numKey, name]) => {
             acc[numKey] = name.toLowerCase();
@@ -148,9 +157,10 @@ export default function Spliter({ isLoadingNew }) {
           });
 
           setAllEmployeeDataMain(mergedData);
-
           const metalFilteredData = mergedData?.filter(
-            (item) => item.metaltypename === selectedMetalType
+            (item) =>
+              item.metaltypename?.toLowerCase() ==
+              selectedMetalType?.toLowerCase()
           );
           setAllEmployeeData(metalFilteredData);
           GetTotlaData(metalFilteredData);
@@ -173,6 +183,8 @@ export default function Spliter({ isLoadingNew }) {
       setIsLoading(false);
     }
   };
+
+  console.log("allEmployeeDataMainallEmployeeDataMain", allEmployeeDataMain);
 
   useEffect(() => {
     if (allEmployeeData?.length > 0) {
@@ -235,6 +247,7 @@ export default function Spliter({ isLoadingNew }) {
     const sortedLocationSummary = [...locationSummary].sort(
       (a, b) => a.locationdisplayorder - b.locationdisplayorder
     );
+
     const firstLocation = sortedLocationSummary[0]?.location;
     setLocationSummaryData(sortedLocationSummary);
     handleSelectLocation(firstLocation, allEmployeeData);
@@ -244,14 +257,23 @@ export default function Spliter({ isLoadingNew }) {
   const handleSelectLocation = (location, allEmployeeData) => {
     setSelectedLocation(location);
 
-    console.log(
-      "allEmployeeDataallEmployeeDataallEmployeeData",
-      selectedMetalType,
-      allEmployeeData
-    );
-    const filtered = allEmployeeDataMain?.filter(
+    const FilterDataTemp =
+      Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
+        ? allEmployeeDataMain
+        : allEmployeeData;
+
+    const filtered = FilterDataTemp?.filter(
       (emp) =>
-        emp.location === location && emp.metaltypename == selectedMetalType
+        emp.location === location &&
+        emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+    );
+
+    console.log(
+      "filteredfiltered",
+      FilterDataTemp,
+      location,
+      selectedMetalType,
+      filtered
     );
     const deptMap = new Map();
 
@@ -313,9 +335,15 @@ export default function Spliter({ isLoadingNew }) {
   const handleSelecEmployee = (location, allEmployeeData) => {
     setSelectedLocation(location);
 
-    const filtered = allEmployeeDataMain?.filter(
+    const FilterDataTemp =
+      Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
+        ? allEmployeeDataMain
+        : allEmployeeData;
+
+    const filtered = FilterDataTemp?.filter(
       (emp) =>
-        emp.location === location && emp.metaltypename == selectedMetalType
+        emp.location === location &&
+        emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
     );
 
     const employeeMap = new Map();
@@ -618,7 +646,7 @@ export default function Spliter({ isLoadingNew }) {
                                       }
                                       style={{ width: "50%" }}
                                     >
-                                      Return Wt :{" "} 
+                                      Return Wt :{" "}
                                       <b>{emp?.netretunwt?.toFixed(3)}</b>
                                     </p>
                                   </div>

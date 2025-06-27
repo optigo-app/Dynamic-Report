@@ -156,57 +156,51 @@ export default function JobCompletion() {
     dept: true,
   });
 
+  const firstTimeLoadedRef = useRef(false);
+
   useEffect(() => {
     const now = new Date();
     const formattedDate = formatToMMDDYYYY(now);
+    setStartDate(formattedDate);
+    setEndDate(formattedDate);
+    fetchData(formattedDate, formattedDate);
     setFilterState({
       dateRange: {
         startDate: now,
         endDate: now,
       },
     });
-    setStartDate(formattedDate);
-    setEndDate(formattedDate);
-    fetchData(formattedDate, formattedDate);
+    setTimeout(() => {
+      firstTimeLoadedRef.current = true;
+    }, 0); // lets React finish updating state first
   }, []);
 
   useEffect(() => {
+    if (!firstTimeLoadedRef.current) return;
     const { startDate: s, endDate: e } = filterState.dateRange;
     if (s && e) {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
+
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
+
       fetchData(formattedStart, formattedEnd);
     }
   }, [filterState.dateRange]);
 
-  useEffect(() => {
-    setTimeout(() => {
-      const items = document.querySelectorAll(
-        ".MuiButtonBase-root.MuiListItem-root.MuiListItem-gutters.MuiListItem-padding.MuiListItem-button"
-      );
-      items.forEach((item) => {
-        const textElement = item.querySelector(".MuiListItemText-root");
-        if (textElement) {
-          const text = textElement.textContent.trim();
-          if (text === "Last Year" || text === "This Year") {
-            item.style.display = "none";
-          }
-        }
-      });
-    }, 100);
-  }, []);
-
   const fetchData = async (stat, end) => {
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     const sp = searchParams.get("sp");
+
     setIsLoading(true);
+
     const body = {
       con: `{"id":"","mode":"jobcompletionlead","appuserid":"${AllData?.uid}"}`,
       p: `{"fdate":"${stat}","tdate":"${end}"}`,
       f: "Task Management (taskmaster)",
     };
+
     if (allRowDataAll) {
       setAllRowData(allRowDataAll);
       setAllColumIdWiseName(allColumIdWiseNameAll);
@@ -219,7 +213,6 @@ export default function JobCompletion() {
         const fetchedData = await GetWorkerData(body, sp);
         setAllRowData(fetchedData?.Data?.rd1);
         setAllRowDataAll(fetchedData?.Data?.rd1);
-        // setAllRowData(fetchedData?.Data?.rd1?.slice(0, 100));
         setAllColumIdWiseName(fetchedData?.Data?.rd);
         setAllColumIdWiseNameAll(fetchedData?.Data?.rd);
         setMasterKeyData(OtherKeyData?.rd);
@@ -335,6 +328,64 @@ export default function JobCompletion() {
                   {params.value}
                 </a>
               );
+            } else if (col.field == "Venderfgage") {
+              let finalDate = 0;
+              console.log("params.row.fgdate", params.row.fgdate);
+              console.log("params.row.outsourcedate", params.row.outsourcedate);
+
+              const fgDateStr = params.row.fgdate;
+              const outsourceDateStr = params.row.outsourcedate;
+
+              if (fgDateStr && outsourceDateStr) {
+                const fgDate = new Date(fgDateStr);
+                const outsourceDate = new Date(outsourceDateStr);
+                const diffInMs = fgDate - outsourceDate;
+                const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+                finalDate = diffInDays;
+              }
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px 20px",
+                    borderRadius: col.BorderRadius,
+                  }}
+                >
+                  {finalDate}
+                </span>
+              );
+            } else if (col.field == "Fgage") {
+              let finalDate = 0;
+              console.log("params.row.fgdate", params.row.fgdate);
+              console.log("params.row.outsourcedate", params.row.outsourcedate);
+
+              const fgDateStr = params.row.fgdate;
+              const outsourceDateStr = params.row.orderdate;
+
+              if (fgDateStr && outsourceDateStr) {
+                const fgDate = new Date(fgDateStr);
+                const outsourceDate = new Date(outsourceDateStr);
+                const diffInMs = fgDate - outsourceDate;
+                const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+                finalDate = diffInDays;
+              }
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px 20px",
+                    borderRadius: col.BorderRadius,
+                  }}
+                >
+                  {finalDate}
+                </span>
+              );
             } else if (col.dateColumn == true) {
               const formattedDate =
                 params.value && !isNaN(new Date(params.value).getTime())
@@ -428,12 +479,16 @@ export default function JobCompletion() {
       );
 
       if (dateCols.length > 0) {
-        setSelectedDateColumn(dateCols[0].field); // default selection
+        setSelectedDateColumn(dateCols[0].field);
       }
     }
   }, [allColumData]);
 
   const [pageSize, setPageSize] = useState(10);
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
 
@@ -1136,6 +1191,7 @@ export default function JobCompletion() {
               <AiFillSetting style={{ height: "25px", width: "25px" }} />
             </div>
           )}
+          
           {masterKeyData?.fullScreenGridButton && (
             <button className="fullScreenButton" onClick={toggleFullScreen}>
               <RiFullscreenLine
@@ -1154,12 +1210,12 @@ export default function JobCompletion() {
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
               <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                Open Filter
+                Filter
               </button>
               <FormControl size="small" sx={{ minWidth: 200, margin: "0px" }}>
-                <InputLabel>Date Column</InputLabel>
+                <InputLabel>Date Type</InputLabel>
                 <Select
-                  label="Date Column"
+                  label="Date Type"
                   value={selectedDateColumn}
                   onChange={(e) => setSelectedDateColumn(e.target.value)}
                 >
@@ -1335,7 +1391,7 @@ export default function JobCompletion() {
 
             <CustomTextField
               type="text"
-              placeholder="Common Search..."
+              placeholder="Search..."
               value={commonSearch}
               customBorderColor="rgba(47, 43, 61, 0.2)"
               onChange={(e) => setCommonSearch(e.target.value)}
@@ -1415,7 +1471,7 @@ export default function JobCompletion() {
               columns={columns ?? []}
               sortModel={sortModel}
               onSortModelChange={(model) => setSortModel(model)}
-              pageSize={pageSize}
+              // pageSize={pageSize}
               autoHeight={false}
               columnBuffer={17}
               localeText={{ noRowsLabel: "No Data" }}
@@ -1427,9 +1483,12 @@ export default function JobCompletion() {
                   },
                 },
               }}
-              onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-              rowsPerPageOptions={[5, 10, 15, 25, 50]}
-              className="simpleGridView"
+              // onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+              // rowsPerPageOptions={[5, 10, 15, 25, 50]}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[10, 20, 50, 100]}
+              className="simpleGridView bottomNavigate"
               pagination
               sx={{
                 "& .MuiDataGrid-menuIcon": {

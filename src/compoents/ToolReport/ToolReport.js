@@ -154,27 +154,35 @@ export default function ToolReport() {
     dateRange: { startDate: null, endDate: null },
   });
 
+  const firstTimeLoadedRef = useRef(false);
+
   useEffect(() => {
     const now = new Date();
     const formattedDate = formatToMMDDYYYY(now);
+    setStartDate(formattedDate);
+    setEndDate(formattedDate);
+    fetchData(formattedDate, formattedDate);
     setFilterState({
       dateRange: {
         startDate: now,
         endDate: now,
       },
     });
-    setStartDate(formattedDate);
-    setEndDate(formattedDate);
-    fetchData(formattedDate, formattedDate);
+    setTimeout(() => {
+      firstTimeLoadedRef.current = true;
+    }, 0); // lets React finish updating state first
   }, []);
 
   useEffect(() => {
+    if (!firstTimeLoadedRef.current) return;
     const { startDate: s, endDate: e } = filterState.dateRange;
     if (s && e) {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
+
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
+
       fetchData(formattedStart, formattedEnd);
     }
   }, [filterState.dateRange]);

@@ -141,9 +141,12 @@ export default function DeviceSpliter({ isLoadingNew }) {
         department: item.department,
       }));
 
-      // Set states
+      const nonEmptyAppData = filteredData?.filter(
+        (item) => item.app && item.app.trim() !== ""
+      );
+
       setSideFilterData(filtered);
-      setGroupedDepartments(filteredData);
+      setGroupedDepartments(nonEmptyAppData);
       setSelectedDepartment(filteredData[0]?.app || "");
     } catch (error) {
       console.error("Fetch failed:", error);
@@ -168,11 +171,30 @@ export default function DeviceSpliter({ isLoadingNew }) {
     startEnableTimer();
   }, []);
 
+  const subRef = useRef();
+
   const handleRefresh = () => {
     // if (!isRefreshEnabled) return;
     fetchData();
+    if (subRef.current) {
+      subRef.current.handleClearFilter();
+    }
+
     // window.location.reload();
     // startEnableTimer();
+  };
+
+  // Add this inside DeviceSpliter before return()
+  const [isPaneCollapsed, setIsPaneCollapsed] = useState(false);
+
+  const handleClose = () => {
+    setIsPaneCollapsed(true);
+    setPaneWidths(["0%", "0%", "100%"]);
+  };
+
+  const handleOpen = () => {
+    setIsPaneCollapsed(false);
+    setPaneWidths(["15%", "15%", "70%"]);
   };
 
   return (
@@ -242,34 +264,6 @@ export default function DeviceSpliter({ isLoadingNew }) {
                                 {emp.location}
                               </span>
                             </div>
-                            {/* <div
-                              style={{
-                                display: "flex",
-                                gap: "15px",
-                                marginTop: "10px",
-                              }}
-                            >
-                              <p
-                                className={
-                                  selectedLocation == emp.location
-                                    ? "employee_detail_title"
-                                    : "employee_detail"
-                                }
-                                style={{ width: "50%" }}
-                              >
-                                Loss : <b>{emp?.losswt?.toFixed(3)} gm</b>
-                              </p>
-                              <p
-                                className={
-                                  selectedLocation == emp.location
-                                    ? "employee_detail_title"
-                                    : "employee_detail"
-                                }
-                                style={{ width: "50%" }}
-                              >
-                                Loss% : <b>{emp?.lossper?.toFixed(2)} %</b>
-                              </p>
-                            </div> */}
                           </div>
                         </div>
                       );
@@ -350,45 +344,6 @@ export default function DeviceSpliter({ isLoadingNew }) {
                                 </span>
                               </div>
                             </div>
-                            {/* <div
-                              className={`employee-details ${
-                                isExpanded ? "expanded" : ""
-                              }`}
-                            >
-                              {isExpanded && (
-                                <>
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      gap: "15px",
-                                    }}
-                                  >
-                                    <p
-                                      className={
-                                        selectedDepartment == emp.app
-                                          ? "employee_detail_title"
-                                          : "employee_detail"
-                                      }
-                                      style={{ width: "50%" }}
-                                    >
-                                      Issue Wt : <br />
-                                      <b>{emp?.netissuewt?.toFixed(3)}</b>
-                                    </p>
-                                    <p
-                                      className={
-                                        selectedDepartment == emp.app
-                                          ? "employee_detail_title"
-                                          : "employee_detail"
-                                      }
-                                      style={{ width: "50%" }}
-                                    >
-                                      Return Wt : <br />
-                                      <b>{emp?.netretunwt?.toFixed(3)}</b>
-                                    </p>
-                                  </div>
-                                </>
-                              )}
-                            </div> */}
                           </div>
                         );
                       })
@@ -412,8 +367,7 @@ export default function DeviceSpliter({ isLoadingNew }) {
           </>
         )}
 
-        {console.log("dddddddddddddddddddd", AllFinalData)}
-        {AllFinalData && paneWidths[2] !== "0%" && (
+        {AllFinalData && subRef && paneWidths[2] !== "0%" && (
           <>
             <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
             <div className="pane" style={{ width: paneWidths[2] }}>
@@ -421,6 +375,10 @@ export default function DeviceSpliter({ isLoadingNew }) {
                 selectedFilterCategory={selectedDepartment ?? ""}
                 selectedFileter={selectedFileter ?? ""}
                 AllFinalData={AllFinalData ?? ""}
+                ref={subRef}
+                onClosePane={handleClose}
+                onOpenPane={handleOpen}
+                isPaneCollapsed={isPaneCollapsed}
               />
             </div>
           </>

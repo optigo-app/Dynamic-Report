@@ -15,6 +15,8 @@ import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import JobCompletion from "./compoents/JobCompletion/JobCompletion";
 import { AlertTriangle } from "lucide-react";
+import EmployeeDepartmentReportSpliter from "./compoents/EmployeeDepartmentReport/EmployeeDepartmentReportSpliter";
+import OSRReportSpliter from "./compoents/OSRReport/OSRReportSpliter";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -28,6 +30,8 @@ const GridMain = () => {
   const getQueryParams = () => {
     const token = Cookies.get("skey");
     const decoded = jwtDecode(token);
+    const Token = sessionStorage.getItem("Token");
+
     const decodedPayload = {
       ...decoded,
       uid: decodeBase64(decoded.uid),
@@ -35,10 +39,18 @@ const GridMain = () => {
     if (decodedPayload) {
       sessionStorage.setItem("AuthqueryParams", JSON.stringify(decodedPayload));
     }
-    fetchData(decoded);
+    if (!Token) {
+      fetchData(decoded);
+    }else{
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
+    //      Cookies.set(
+    //    "skey",
+    //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
+    //  );
     const interval = setInterval(() => {
       const token = Cookies.get("skey");
       if (!token) {
@@ -57,18 +69,18 @@ const GridMain = () => {
     return () => clearInterval(interval); // clean up on unmount
   }, []);
 
-  useEffect(() => {
-    //  Cookies.set(
-    //    "skey",
-    //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
-    //  );
-    const token = Cookies.get("skey");
-    if (token) {
-      getQueryParams();
-    } else {
-      console.warn("Token cookie not found");
-    }
-  }, []);
+  // useEffect(() => {
+  //   Cookies.set(
+  //    "skey",
+  //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
+  //  );
+  //   const token = Cookies.get("skey");
+  //   if (token) {
+  //     getQueryParams();
+  //   } else {
+  //     console.warn("Token cookie not found");
+  //   }
+  // }, []);
 
   const decodeBase64 = (str) => {
     if (!str) return null;
@@ -109,7 +121,11 @@ const GridMain = () => {
 
   const renderComponent = () => {
     if (pid == 18223) {
-      return <Spliter isLoadingNew={isLoading} />; // 1315 Doc.
+      return <Spliter />; // 1315 Doc.
+    } else if (pid == 18279) {
+      return <OSRReportSpliter />; // 1553 Doc.
+    } else if (pid == 18276) {
+      return <EmployeeDepartmentReportSpliter />; // 1553 Doc.
     } else if (pid == 18226) {
       return <DustCollector />; // 1383 Doc.     ignore setting
     } else if (pid == 18227) {
@@ -194,7 +210,7 @@ export default GridMain;
 // import React, { useState, useEffect } from "react";
 // import { useSearchParams } from "react-router-dom";
 // import { GetToken } from "./API/GetToken";
-// import { CircularProgress } from "@mui/material";
+// import { Box, CircularProgress, Paper, Typography } from "@mui/material";
 // import Spliter from "./compoents/WorkerReportSpliterView/Spliter";
 // import DustCollector from "./compoents/DustCollector/DustCollector";
 // import ToolReport from "./compoents/ToolReport/ToolReport";
@@ -207,19 +223,22 @@ export default GridMain;
 // import Cookies from "js-cookie";
 // import { jwtDecode } from "jwt-decode";
 // import JobCompletion from "./compoents/JobCompletion/JobCompletion";
+// import { AlertTriangle } from "lucide-react";
+// import EmployeeDepartmentReportSpliter from "./compoents/EmployeeDepartmentReport/EmployeeDepartmentReportSpliter";
 
 // // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 
 // const GridMain = () => {
 //   const [isLoading, setIsLoading] = useState(true);
+//   const [tokenMissing, setTokenMissing] = useState(false); // NEW
 //   const [searchParams] = useSearchParams();
 //   const pid = searchParams.get("pid");
 
 //   const getQueryParams = () => {
 //     const token = Cookies.get("skey");
-//     console.log("tokentoken", token);
 //     const decoded = jwtDecode(token);
+
 //     const decodedPayload = {
 //       ...decoded,
 //       uid: decodeBase64(decoded.uid),
@@ -227,14 +246,34 @@ export default GridMain;
 //     if (decodedPayload) {
 //       sessionStorage.setItem("AuthqueryParams", JSON.stringify(decodedPayload));
 //     }
+//     console.log('decoded final Data is....', decoded);
 //     fetchData(decoded);
 //   };
 
 //   useEffect(() => {
-//     // Cookies.set(
-//     //   "skey",
-//     //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
-//     // );
+//     const interval = setInterval(() => {
+//       const token = Cookies.get("skey");
+//       if (!token) {
+//         setTokenMissing(true);
+//       }
+//     }, 500);
+//     const token = Cookies.get("skey");
+//     if (token) {
+//       getQueryParams();
+//     } else {
+//       console.warn("Token cookie not found initially");
+//       setTokenMissing(true);
+//       setIsLoading(false);
+//     }
+
+//     return () => clearInterval(interval); // clean up on unmount
+//   }, []);
+
+//   useEffect(() => {
+//     //   Cookies.set(
+//     //    "skey",
+//     //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
+//     //  );
 //     const token = Cookies.get("skey");
 //     if (token) {
 //       getQueryParams();
@@ -254,7 +293,6 @@ export default GridMain;
 //   };
 
 //   const fetchData = async (decoded) => {
-//     console.log("decoded", decoded);
 //     const sp = searchParams.get("sp");
 //     if (decoded) {
 //       const tokenPayload = {
@@ -284,8 +322,10 @@ export default GridMain;
 //   const renderComponent = () => {
 //     if (pid == 18223) {
 //       return <Spliter isLoadingNew={isLoading} />; // 1315 Doc.
-//     } else if (pid == 18226) {
-//       return <DustCollector />; // 1383 Doc.
+//     } else if (pid == 18276) {
+//       return <EmployeeDepartmentReportSpliter />; // 1553 Doc.
+//     }else if (pid == 18226) {
+//       return <DustCollector />; // 1383 Doc.     ignore setting
 //     } else if (pid == 18227) {
 //       return <ToolReport />; // 1382 Doc.
 //     } else if (pid == 18228) {
@@ -296,12 +336,12 @@ export default GridMain;
 //       return <FinishGoodsReport />; // 1388 Doc.
 //     } else if (pid == 18231) {
 //       return <MaterialWiseSaleReport />; // 1389 Doc.
-//     } else if (pid == 1000) {
+//     } else if (pid == 18245) {
 //       return <StcokReport />; // 1392 Doc.
 //     } else if (pid == 18233) {
-//       return <DeviceSpliter />; // 1392 Doc.
-//     } else if (pid == 1001) {
-//       return <JobCompletion />; // 1392 Doc.
+//       return <DeviceSpliter />; // 1045 Doc.
+//     } else if (pid == 18234) {
+//       return <JobCompletion />; // 1256 Doc.
 //     } else {
 //       return (
 //         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>
@@ -311,7 +351,48 @@ export default GridMain;
 
 //   return (
 //     <div>
-//       {isLoading ? (
+//       {tokenMissing ? (
+//         <div
+//           style={{ display: "flex", width: "100%", justifyContent: "center" }}
+//         >
+//           <Box
+//             minHeight="70vh"
+//             display="flex"
+//             alignItems="center"
+//             justifyContent="center"
+//             p={2}
+//           >
+//             <Paper
+//               elevation={3}
+//               sx={{
+//                 maxWidth: 500,
+//                 width: "100%",
+//                 p: 4,
+//                 borderRadius: "20px",
+//                 textAlign: "center",
+//                 boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+//               }}
+//             >
+//               <Box
+//                 display="flex"
+//                 justifyContent="center"
+//                 alignItems="center"
+//                 mb={2}
+//               >
+//                 <AlertTriangle size={48} color="#f44336" />
+//               </Box>
+
+//               <Typography variant="h5" fontWeight={600} gutterBottom>
+//                 You've been logged out
+//               </Typography>
+
+//               <Typography variant="body1" color="text.secondary" mb={3}>
+//                 Your session has ended. Please log in again to continue.
+//               </Typography>
+//             </Paper>
+//           </Box>
+//         </div>
+//       ) : isLoading ? (
 //         <div style={{ textAlign: "center", marginTop: "20%" }}>
 //           <CircularProgress />
 //         </div>
@@ -323,8 +404,3 @@ export default GridMain;
 // };
 
 // export default GridMain;
-  // Cookies.set(
-      // "skey",
-      // "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
-    // "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDYxNjQ2OTgsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHNhWFpsTG05d2RHbG5iMkZ3Y0hNdVkyOXRmWDE3ZXpJd2ZYMTdlM1JsYzNRM00zMTllM3QwWlhOME56TjlmUT09Iiwic3YiOiIxIn0.xYz-RZ50afg0aPWgXUQk5ml8Vy8ebG4idlfAWx_tSbU"
-    // );

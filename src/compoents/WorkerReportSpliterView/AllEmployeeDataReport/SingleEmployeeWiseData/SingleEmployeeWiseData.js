@@ -153,7 +153,6 @@ export default function SingleEmployeeWiseData({
     try {
       const sp = searchParams.get("sp");
       const fetchedData = await GetWorkerData(body, sp);
-      console.log("fetchedData", fetchedData?.Data?.rd[0]?.start);
       if (fetchedData?.Data?.rd[0]?.stat == 0) {
         setAllRowData();
         setIsLoading(false);
@@ -162,8 +161,9 @@ export default function SingleEmployeeWiseData({
         setAllColumData(OtherKeyData?.rd1);
         setAllColumIdWiseName(fetchedData?.Data?.rd);
         const filteredDataEmployee = fetchedData?.Data?.rd1.filter((entry) => {
-          return entry["24"] == selectedMetalType;
+          return entry["24"]?.toLowerCase() == selectedMetalType?.toLowerCase;
         });
+        console.log("fetchedData", fetchedData?.Data?.rd1 , selectedMetalType , filteredDataEmployee);
         setAllRowData(filteredDataEmployee);
       }
       setIsLoading(false);
@@ -343,6 +343,8 @@ export default function SingleEmployeeWiseData({
       return { id: index, ...formattedRow };
     });
 
+    console.log('originalRowsoriginalRows', allRowData);
+    
   const [pageSize, setPageSize] = React.useState(10);
   const [filteredRows, setFilteredRows] = React.useState(originalRows);
   const [filters, setFilters] = React.useState({});

@@ -2,8 +2,13 @@
 import axios from "axios";
 export const CommonAPI = async (body, sp) => {
   let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+  // const APIURL =
+  //   AllData?.sv == 0
+  //     ? "http://nextjstest.web/api/report"
+  //     : "https://livenx.optigoapps.com/api/report";
   const APIURL =
-    AllData?.sv == 0
+    window.location.hostname == "localhost" ||
+    window.location.hostname == "nzen"
       ? "http://nextjstest.web/api/report"
       : "https://livenx.optigoapps.com/api/report";
 

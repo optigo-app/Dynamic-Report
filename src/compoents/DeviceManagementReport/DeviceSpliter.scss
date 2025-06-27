@@ -138,6 +138,19 @@
     z-index: 10;
   }
 
+  /* Add to your CSS/SCSS */
+  .pane {
+    transition: width 0.4s ease;
+    overflow: hidden; /* Avoid content jumping */
+  }
+
+  .splitter {
+    transition: opacity 0.3s ease;
+    background-color: #ccc;
+    width: 4px;
+    cursor: col-resize;
+  }
+
   .dataGrid_spliterView {
     height: 95vh !important;
   }
@@ -259,7 +272,7 @@
     background-color: transparent;
   }
 
-  .Location_department_title_div{
+  .Location_department_title_div {
     height: 32px;
     border-radius: 5px;
     width: 100%;

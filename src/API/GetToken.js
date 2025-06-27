@@ -1,8 +1,14 @@
 import axios from "axios";
 
 export const GetToken = async (body, yCode, sv, sp) => {
+  // const APIURL =
+  //   sv == 0
+  //     ? "http://nextjstest.web/api/report"
+  //     : "https://livenx.optigoapps.com/api/report";
+
   const APIURL =
-    sv == 0
+    window.location.hostname == "localhost" ||
+    window.location.hostname == "nzen"
       ? "http://nextjstest.web/api/report"
       : "https://livenx.optigoapps.com/api/report";
 

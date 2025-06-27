@@ -52,6 +52,13 @@ import { MdOutlineFilterAlt } from "react-icons/md";
 import { MdOutlineFilterAltOff } from "react-icons/md";
 import LoadingBackdrop from "../../../Utils/LoadingBackdrop";
 import { showToast } from "../../../Utils/Tostify/ToastManager";
+import { FaExclamationTriangle } from "react-icons/fa";
+import {
+  ChevronsLeft,
+  ChevronsRight,
+  CircleX,
+  TriangleAlert,
+} from "lucide-react";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -119,6 +126,10 @@ export default function AllEmployeeDataReport({
   selectedFilterCategory,
   selectedFileter,
   AllFinalData,
+  ref,
+  onClosePane,
+  onOpenPane,
+  isPaneCollapsed,
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -166,6 +177,10 @@ export default function AllEmployeeDataReport({
       enableCount: 0,
       disableCount: 0,
     });
+
+    React.useImperativeHandle(ref, () => ({
+      handleClearFilter,
+    }));
 
     React.useEffect(() => {
       const records = AllFinalData || [];
@@ -561,7 +576,7 @@ export default function AllEmployeeDataReport({
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px 20px",
+                    padding: "5px 0px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
@@ -1290,14 +1305,12 @@ export default function AllEmployeeDataReport({
         f: "Task Management (taskmaster)",
       };
       const fetchedData = await GetWorkerData(body, sp);
-      
       if (fetchedData?.Data?.rd[0]?.msg == "Success") {
-        console.log('fetchedData?.Data?.rd[0]?.msgfetchedData?.Data?.rd[0]?.msg', fetchedData?.Data?.rd[0]?.msg);
         showToast({
           message: "Recalculate Successfully",
           bgColor: "#3bab3b",
           fontColor: "#fff",
-          duration: 30000,
+          duration: 4000,
         });
       }
     } catch (error) {
@@ -1335,57 +1348,128 @@ export default function AllEmployeeDataReport({
             outline: "0px",
           }}
         >
-          <div style={{ backgroundColor: "white", padding: "5px 20px" }}>
-            <p
-              style={{
-                margin: "10px 0px 20px 0px",
-                fontWeight: 600,
-              }}
-            >
-              Are you sure you want to {isDeleteModel ? "Delete" : "logout"}{" "}
-              this device?
-            </p>
+          <div
+            style={{
+              backgroundColor: "white",
+              padding: "25px 20px",
+              width: "22%",
+              borderRadius: "10px",
+              position: "relative",
+              boxShadow: "0 0 20px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <div style={{ position: "absolute", right: "20px", top: "15px" }}>
+              <CircleX
+                onClick={() => setShowLogoutModal(false)}
+                style={{ color: "gray", cursor: "pointer", fontSize: "20px" }}
+              />
+            </div>
+
             <div
               style={{
                 display: "flex",
-                justifyContent: "flex-end",
-                gap: "10px",
+                justifyContent: "center",
+                marginBottom: "15px",
               }}
             >
+              <TriangleAlert
+                style={{
+                  backgroundColor: "#f3cbca",
+                  color: "red",
+                  padding: "10px",
+                  fontSize: "30px",
+                  borderRadius: "50%",
+                }}
+              />
+            </div>
+
+            <p
+              style={{
+                textAlign: "center",
+                fontWeight: "bold",
+                fontSize: "18px",
+                marginBottom: "10px",
+              }}
+            >
+              {/* ⚠️ */}
+              Confirm {isDeleteModel ? "Deletion" : "Force Logout"}
+            </p>
+
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "15px",
+                color: "#716b6b",
+                fontWeight: 500,
+                margin: "3px",
+              }}
+            >
+              Are you sure you want to proceed?
+            </p>
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "15px",
+                color: "#716b6b",
+                fontWeight: 500,
+                margin: "0px",
+              }}
+            >
+              This action will disconnect and{" "}
+              <b>permanently remove all app data.</b>
+            </p>
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "15px",
+                color: "#716b6b",
+                fontWeight: 500,
+                marginBottom: "15px",
+                marginTop: '3px'
+              }}
+            >
+              Once {isDeleteModel ? "deleted" : "logged out"}, the data{" "}
+              <b>cannot be recovered.</b>
+            </p>
+
+            {/* Buttons */}
+            <div
+              style={{ display: "flex", justifyContent: "center", gap: "10px" }}
+            >
               <Button
-                onClick={() => setShowLogoutModal("")}
+                onClick={() => setShowLogoutModal(false)}
                 style={{
                   height: "35px",
-                  width: "80px",
+                  width: "100px",
                   backgroundColor: "#e73838",
                   fontWeight: 600,
-                  fontSize: "16px",
+                  fontSize: "14px",
                   color: "white",
                   border: "none",
                   cursor: "pointer",
+                  borderRadius: "5px",
                 }}
-                className="LogoutPopup_btn"
               >
-                No
+                Cancel
               </Button>
               <Button
                 onClick={() => {
-                  handleLogoutDevice(logoutRow); // Or whatever key
+                  handleLogoutDevice(logoutRow); // Your action
                   setShowLogoutModal(false);
                 }}
-                className="LogoutPopup_btn"
                 style={{
                   height: "35px",
-                  width: "80px",
+                  width: "160px",
                   backgroundColor: "#7568fb",
                   fontWeight: 600,
-                  fontSize: "16px",
+                  fontSize: "14px",
                   border: "none",
                   color: "white",
                   cursor: "pointer",
+                  borderRadius: "5px",
                 }}
               >
-                Yes
+                {isDeleteModel ? "Confirm Delete" : "Confirm Logout"}
               </Button>
             </div>
           </div>
@@ -1465,7 +1549,33 @@ export default function AllEmployeeDataReport({
             ))}
         </Drawer>
 
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ height: "30px" }}>
+            {!isPaneCollapsed && (
+              <p
+                onClick={onClosePane}
+                style={{ cursor: "pointer", color: "red", margin: "10px" }}
+              >
+                <ChevronsLeft />
+              </p>
+            )}
+
+            {isPaneCollapsed && (
+              <p
+                onClick={onOpenPane}
+                style={{ cursor: "pointer", color: "green", margin: "10px" }}
+              >
+                <ChevronsRight />
+              </p>
+            )}
+          </div>
+
           {renderSummary()}
 
           {masterKeyData?.ColumnSettingPopup && (
@@ -1693,6 +1803,7 @@ export default function AllEmployeeDataReport({
               autoHeight={false}
               checkboxSelection
               columnBuffer={17}
+              localeText={{ noRowsLabel: "No Data" }}
               initialState={{
                 columns: {
                   columnVisibilityModel: {
@@ -1742,6 +1853,24 @@ export default function AllEmployeeDataReport({
                 },
                 "& .MuiDataGrid-row.Mui-selected": {
                   backgroundColor: "inherit !important",
+                },
+              }}
+              componentsProps={{
+                pagination: {
+                  SelectProps: {
+                    MenuProps: {
+                      anchorOrigin: {
+                        vertical: "top",
+                        horizontal: "left",
+                      },
+                      transformOrigin: {
+                        vertical: "bottom",
+                        horizontal: "left",
+                      },
+                      disablePortal: true,
+                      marginThreshold: 0,
+                    },
+                  },
                 },
               }}
             />

@@ -147,16 +147,16 @@ export default function AllEmployeeDataReport({
     }
     const filteredDataDepartment = rd1.filter((entry) => {
       return (
-        entry["2"] === selectedDepartment &&
-        entry["17"] === selectedLocation &&
-        entry["22"] == selectedMetalType
+        entry["2"]?.toLowerCase() === selectedDepartment?.toLowerCase() &&
+        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase() &&
+        entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase()
       );
     });
     const filteredDataEmployee = rd1.filter((entry) => {
       return (
-        entry["3"] === selectedEmployee &&
-        entry["17"] === selectedLocation &&
-        entry["22"] == selectedMetalType
+        entry["3"]?.toLowerCase() === selectedEmployee?.toLowerCase() &&
+        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase() &&
+        entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase()
       );
     });
 
