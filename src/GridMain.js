@@ -17,6 +17,7 @@ import JobCompletion from "./compoents/JobCompletion/JobCompletion";
 import { AlertTriangle } from "lucide-react";
 import EmployeeDepartmentReportSpliter from "./compoents/EmployeeDepartmentReport/EmployeeDepartmentReportSpliter";
 import OSRReportSpliter from "./compoents/OSRReport/OSRReportSpliter";
+import ItaskReport from "./compoents/ItaskReport/ItaskReport";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -144,6 +145,8 @@ const GridMain = () => {
       return <DeviceSpliter />; // 1045 Doc.
     } else if (pid == 18234) {
       return <JobCompletion />; // 1256 Doc.
+    }  else if (pid == 1000) {
+      return <ItaskReport />; // 1256 Doc.
     } else {
       return (
         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>

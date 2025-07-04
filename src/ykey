@@ -9,16 +9,3 @@
     //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImJXbG9hWEpBWldjdVkyOXQiLCJleHAiOjE3NDg5NDAyMzcsInVpZCI6ImJXbG9hWEpBWldjdVkyOXQiLCJ5YyI6ImUzdHNhWFpsTG05d2RHbG5iMkZ3Y0hNdVkyOXRmWDE3ZXpJd2ZYMTdlM1JsYzNRM00zSjlmWHQ3ZEdWemREY3pjbjE5Iiwic3YiOiIyIn0.b_IMl3wDhKobGIyDLJONNrpuJcwB0jGBsikrynPkISk"
     // );
 
-
-      // const handleClick = () => {
-      //   const title = 'Google';
-      //   const icon = 'icon-google'; // Can be any icon you use
-      //   const url = 'https://www.google.com';
-    
-      //   if (window.parent && window.parent.parent && window.parent.parent.addTab) {
-      //     window.parent.parent.CloseTab(title); // Optional
-      //     window.parent.parent.addTab(title, icon, url);
-      //   } else {
-      //     console.warn('Tab management system not found');
-      //   }
-      // };

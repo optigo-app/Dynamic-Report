@@ -20,11 +20,14 @@ import {
   Drawer,
   FormControl,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Modal,
   Select,
   Slide,
+  TextField,
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
@@ -159,14 +162,25 @@ export default function AllEmployeeDataReport({
   const [searchParams] = useSearchParams();
   const [logoutRow, setLogoutRow] = React.useState(null);
   const [showLogoutModal, setShowLogoutModal] = React.useState(false);
+  const [openCustomerBideModel, setOpenCustomerBideModel] =
+    React.useState(false);
   const [showSuccess, setShowSuccess] = React.useState(false);
   const [isDeleteModel, setIsDeleteMode] = React.useState(false);
   const { setDeviceStatus } = useDeviceStatus();
+  const [selectedRowId, setSelectedRowId] = React.useState();
 
   const [selectedEmployeeBarCode, setSelectedEmployeeBarCode] =
     React.useState();
+  const [customerBindAllData, setCustomerBindAllData] = React.useState();
+  const [customerBindIsloading, setCustomerBindIsLoading] = React.useState();
   const [lastUpdated, setLastUpdated] = React.useState("");
   const gridRef = React.useRef(null);
+  const [sortModel, setSortModel] = React.useState([]);
+  const [paginationModel, setPaginationModel] = React.useState({
+    page: 0,
+    pageSize: 10,
+  });
+  const [hoveredField, setHoveredField] = React.useState(null);
 
   const useDeviceSummary = (AllFinalData) => {
     const [summary, setSummary] = React.useState({
@@ -271,13 +285,6 @@ export default function AllEmployeeDataReport({
 
     switch (selectedFileter) {
       case "App":
-        console.log(
-          "originalRowsoriginalRows",
-          filteredData,
-          selectedFilterCategory,
-          selectedFileter,
-          AllFinalData
-        );
         filteredData = rd1.filter(
           (entry) => entry["1"] === selectedFilterCategory
         );
@@ -608,25 +615,52 @@ export default function AllEmployeeDataReport({
           return {
             ...col,
             renderCell: (params) => (
-              <Select
-                value={params.row.customerBind ?? ""}
-                onChange={(e) =>
-                  handleCustomerBindChange(e.target.value, params.row)
-                }
-                size="small"
-                fullWidth
-                className="MenuSelectItem"
-              >
-                {CustomerBind.map((item) => (
-                  <MenuItem
-                    key={item.id}
-                    value={item.id}
-                    className="MenuSelectItem_select"
+              <div>
+                {selectedFilterCategory === "ExpressApp" ? (
+                  <p
+                    style={{
+                      color: "blue",
+                      backgroundColor: col.BackgroundColor || "inherit",
+                      fontSize: col.FontSize || "inherit",
+                      textTransform: col.ColumTitleCapital
+                        ? "uppercase"
+                        : "none",
+                      padding: "5px 0px",
+                      borderRadius: col.BorderRadius,
+                      margin: "0px",
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      setOpenCustomerBideModel(true);
+                      handleGetCustomerBindData(params.row?.Id);
+                    }}
+                    // onClick={() => alert(JSON?.stringify(params.row?.Id))}
                   >
-                    {item.name}
-                  </MenuItem>
-                ))}
-              </Select>
+                    Customer Bind
+                  </p>
+                ) : (
+                  <Select
+                    value={params.row.customerBind ?? ""}
+                    onChange={(e) =>
+                      handleCustomerBindChange(e.target.value, params.row)
+                    }
+                    size="small"
+                    fullWidth
+                    className="MenuSelectItem"
+                  >
+                    {CustomerBind.map((item) => (
+                      <MenuItem
+                        key={item.id}
+                        value={item.id}
+                        className="MenuSelectItem_select"
+                      >
+                        {item.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
+              </div>
             ),
           };
         }
@@ -1319,6 +1353,132 @@ export default function AllEmployeeDataReport({
       setLodingRecakulate(false);
     }
   };
+
+  const handleGetCustomerBindData = async (id) => {
+    setSelectedRowId(id);
+    setIsLoading(true);
+    setCustomerBindIsLoading(true);
+    const sp = searchParams.get("sp");
+    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+    const body = {
+      con: `{"id":"","mode":"CustomerBindGrid","appuserid":"${AllData?.uid}"}`,
+      p: "",
+      p: `{\"AppDevRowId\":${id}}`,
+      f: "Task Management (taskmaster)",
+    };
+
+    const fetchedData = await GetWorkerData(body, sp);
+    if (fetchedData?.Data?.rd) {
+      setCustomerBindAllData(fetchedData?.Data?.rd);
+      setIsLoading(false);
+    }
+  };
+
+  const [filterType, setFilterType] = React.useState("all"); // all | bound | unbound
+  const [searchTerm, setSearchTerm] = React.useState(""); // text‑box filter
+  const [rowSelection, setRowSelection] = React.useState([]); // ids of selected rows
+  const columnsCustomerBind = [
+    {
+      field: "srNo",
+      headerName: "Sr#",
+      width: 70,
+      sortable: false,
+      filterable: false,
+    },
+    { field: "customercode", headerName: "Customer Code", width: 150 },
+    { field: "firstname", headerName: "First Name", width: 150 },
+    { field: "lastname", headerName: "Last Name", width: 150 },
+  ];
+
+  const rows = React.useMemo(() => {
+    let data = customerBindAllData ?? [];
+
+    if (filterType === "bound") {
+      data = data.filter((r) => r.IsBindCustomer == 1);
+    }
+    if (filterType === "unbound") {
+      data = data.filter((r) => r.IsBindCustomer == 0);
+    }
+
+    if (searchTerm.trim() !== "") {
+      const s = searchTerm.toLowerCase();
+      data = data.filter(
+        (r) =>
+          r.customercode.toLowerCase().includes(s) ||
+          r.firstname.toLowerCase().includes(s) ||
+          r.lastname.toLowerCase().includes(s)
+      );
+    }
+
+    // Add srNo
+    return data.map((row, index) => ({
+      ...row,
+      srNo: index + 1,
+    }));
+  }, [customerBindAllData, filterType, searchTerm]);
+
+  const handleBindToggle = async (shouldBind) => {
+    if (!rowSelection.length) return;
+
+    const sp = searchParams.get("sp");
+    const AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+
+    const selectedIds = rowSelection.join(","); // Convert to comma-separated string
+
+    const mode = shouldBind
+      ? "CustomerBindWithDevice"
+      : "CustomerUnBindWithDevice";
+
+    const body = {
+      con: JSON.stringify({
+        id: "",
+        mode: mode,
+        appuserid: AllData?.uid || "",
+      }),
+      p: JSON.stringify({
+        AppDevRowId: selectedRowId,
+        CustomerIdList: selectedIds,
+      }),
+      f: "Task Management (taskmaster)",
+    };
+
+    try {
+      const fetchedData = await GetWorkerData(body, sp);
+      if (fetchedData?.Data?.rd[0]?.msg == "Success") {
+        setDeviceStatus({
+          type: "CustomerBindChanged",
+          timestamp: Date.now(),
+          uniqueId: selectedRowId,
+        });
+        showToast({
+          message: shouldBind
+            ? "Customer Bind Successfully"
+            : "Customer Unbind Successfully",
+          bgColor: "#3bab3b",
+          fontColor: "#fff",
+          duration: 4000,
+        });
+        const updatedData = customerBindAllData.map((item) =>
+          rowSelection.includes(item.id)
+            ? { ...item, IsBindCustomer: shouldBind ? 1 : 0 }
+            : item
+        );
+        setCustomerBindAllData(updatedData);
+      } else {
+        showToast({
+          message: "Can Not bind Or Unbind customer greater than 50",
+          bgColor: "red",
+          fontColor: "#fff",
+          duration: 4000,
+        });
+      }
+
+      setRowSelection([]);
+    } catch (error) {
+      console.error("❌ API error:", error);
+    }
+  };
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <LoadingBackdrop isLoading={lodingRecakulate} />
@@ -1338,6 +1498,144 @@ export default function AllEmployeeDataReport({
             {isDeleteModel ? "Delete" : "Logout"} successful!
           </div>
         )}
+
+        <Modal
+          open={openCustomerBideModel}
+          onClose={() => setOpenCustomerBideModel(false)}
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              padding: "10px 20px",
+              width: "45%",
+              height: "60%",
+              borderRadius: 10,
+              position: "relative",
+              boxShadow: "0 0 20px rgba(0,0,0,0.1)",
+            }}
+          >
+            <CircleX
+              onClick={() => setOpenCustomerBideModel(false)}
+              style={{
+                position: "absolute",
+                right: 20,
+                top: 15,
+                cursor: "pointer",
+              }}
+            />
+
+            <p
+              style={{
+                margin: 0,
+                fontWeight: 600,
+                fontSize: 20,
+                color: "gray",
+              }}
+            >
+              Bind Customer
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 10,
+                gap: 12,
+              }}
+            >
+              <TextField
+                select
+                size="small"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                sx={{ minWidth: 160 }}
+              >
+                <MenuItem value="all">All Customers</MenuItem>
+                <MenuItem value="bound">Bind Customers</MenuItem>
+                <MenuItem value="unbound">Unbind Customers</MenuItem>
+              </TextField>
+
+              <TextField
+                placeholder="Search…"
+                size="small"
+                fullWidth
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  endAdornment: searchTerm ? (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setSearchTerm("")} edge="end">
+                        <CircleX size={20} />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
+              />
+
+              <Button
+                variant="contained"
+                color="success"
+                disabled={rowSelection.length === 0}
+                onClick={() => handleBindToggle(true)}
+              >
+                Bind
+              </Button>
+              <Button
+                variant="contained"
+                color="error"
+                disabled={rowSelection.length === 0}
+                onClick={() => handleBindToggle(false)}
+              >
+                Unbind
+              </Button>
+            </div>
+            <DataGrid
+              rows={rows}
+              columns={columnsCustomerBind}
+              sortModel={sortModel}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[10, 20, 50, 100]}
+              onSortModelChange={(model) => setSortModel(model)}
+              initialState={{
+                pagination: {
+                  paginationModel: {
+                    pageSize: 5,
+                  },
+                },
+              }}
+              checkboxSelection
+              disableRowSelectionOnClick
+              rowSelectionModel={rowSelection}
+              onRowSelectionModelChange={setRowSelection}
+              onCellMouseEnter={(params) => setHoveredField(params.field)}
+              onColumnHeaderMouseEnter={(params) =>
+                setHoveredField(params.field)
+              }
+              onMouseLeave={() => setHoveredField(null)} // clear on full grid mouse‑out
+              getRowClassName={(params) =>
+                params.row.IsBindCustomer == 1
+                  ? "bound-customer-row"
+                  : "unbound-customer-row"
+              }
+              sx={{
+                "& .MuiDataGrid-row:hover": {
+                  // backgroundColor: "transparent",
+                },
+                "& .bound-customer-row": {
+                  backgroundColor: "#e0ffe0",
+                },
+              }}
+              style={{ height: "80%", marginTop: "20px" }}
+            />
+          </div>
+        </Modal>
         <Modal
           open={showLogoutModal}
           style={{
@@ -1425,7 +1723,7 @@ export default function AllEmployeeDataReport({
                 color: "#716b6b",
                 fontWeight: 500,
                 marginBottom: "15px",
-                marginTop: '3px'
+                marginTop: "3px",
               }}
             >
               Once {isDeleteModel ? "deleted" : "logged out"}, the data{" "}
