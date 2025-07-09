@@ -1,6 +1,6 @@
 // http://localhost:3000/testreport/?sp=12&ifid=ToolsReport&pid=18245
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
 import "./StcokReport.scss";
@@ -42,8 +42,9 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import DualDatePicker from "../DatePicker/DualDatePicker";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ImageUp, LayoutGrid } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
+import noFoundImg from "../images/noFound.jpg";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -147,7 +148,7 @@ export default function StcokReport() {
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
-
+  const [sortModel, setSortModel] = useState([]);
   const [grupEnChekBox, setGrupEnChekBox] = useState({});
 
   const firstTimeLoadedRef = useRef(false);
@@ -351,8 +352,19 @@ export default function StcokReport() {
           },
         };
       });
-    setColumns(columnData);
-  }, [allColumData, grupEnChekBox]);
+
+    const srColumn = {
+      field: "sr",
+      headerName: "Sr#",
+      width: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) =>
+        params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+    };
+
+    setColumns([srColumn, ...columnData]);
+  }, [allColumData, grupEnChekBox, sortModel]);
 
   useEffect(() => {
     if (!allColumData) return;
@@ -373,17 +385,18 @@ export default function StcokReport() {
   };
 
   // Defensive check to make sure the column map is valid
+
   const columnMap =
     Array.isArray(allColumIdWiseName) && allColumIdWiseName.length > 0
       ? allColumIdWiseName[0]
       : {};
-  columnMap["49"] = "jobCountTotal";
+  columnMap["49"] = "imageViewkey";
   const updatedRowData =
     allRowData &&
     allRowData?.map((row) => ({
       ...row,
-      49: 1,
     }));
+
   const originalRows =
     updatedRowData &&
     updatedRowData.map((row, index) => {
@@ -521,7 +534,7 @@ export default function StcokReport() {
     columns,
     originalRows,
     selectedColors,
-    includeCustomerStock 
+    includeCustomerStock,
   ]);
 
   const handleFilterChange = (field, value, filterType) => {
@@ -1096,11 +1109,14 @@ export default function StcokReport() {
     setIncludeCustomerStock(event.target.checked);
     console.log("Include Customer Stock:", event.target.checked);
   };
-
+  const allChecked = useMemo(
+    () => Object.values(grupEnChekBox).every((val) => val === true),
+    [grupEnChekBox]
+  );
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
-        className="DustoCollection_report_main"
+        className="StcokReportMain_mainGridView"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
         ref={gridContainerRef}
       >
@@ -1198,98 +1214,130 @@ export default function StcokReport() {
               ))}
           </div>
         </Drawer>
-
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          {renderSummary()}
-
-          {masterKeyData?.ColumnSettingPopup && (
-            <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
-              <AiFillSetting style={{ height: "25px", width: "25px" }} />
-            </div>
-          )}
-          {masterKeyData?.fullScreenGridButton && (
-            <button className="fullScreenButton" onClick={toggleFullScreen}>
-              <RiFullscreenLine
-                style={{ marginInline: "5px", fontSize: "30px" }}
-              />
-            </button>
-          )}
-        </div>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "20px",
+            position: "fixed",
+            top: "0px",
+            backgroundColor: "#f8f7fa",
+            width: "100%",
           }}
         >
-          <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-              <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                Open Filter
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            {renderSummary()}
+
+            {masterKeyData?.ColumnSettingPopup && (
+              <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
+                <AiFillSetting style={{ height: "25px", width: "25px" }} />
+              </div>
+            )}
+            {masterKeyData?.fullScreenGridButton && (
+              <button className="fullScreenButton" onClick={toggleFullScreen}>
+                <RiFullscreenLine
+                  style={{ marginInline: "5px", fontSize: "30px" }}
+                />
               </button>
-              <DualDatePicker
-                filterState={filterState}
-                setFilterState={setFilterState}
-                validDay={186}
-                validMonth={6}
-              />
-              {/* <p
+            )}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              padding: "20px",
+            }}
+          >
+            <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "20px" }}
+              >
+                <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
+                  Open Filter
+                </button>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "3px",
+                  }}
+                >
+                  <DualDatePicker
+                    filterState={filterState}
+                    setFilterState={setFilterState}
+                    validDay={186}
+                    validMonth={6}
+                    withountDateFilter={true}
+                  />
+                  <Button
+                    onClick={() =>
+                      setFilterState({
+                        ...filterState,
+                        dateRange: {
+                          startDate: new Date("2000-01-01T18:30:00.000Z"),
+                          endDate: new Date(), // current date
+                        },
+                      })
+                    }
+                    className="FiletrBtnAll"
+                  >
+                    All
+                  </Button>
+                </div>
+                {/* <p
                 style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
               >
                 {" "}
                 Last Updated :- {lastUpdated}
               </p> */}
-            </div>
-            {columns
-              .filter((col) => col.filterable)
-              .map((col) => (
-                <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                  {renderDateFilter(col)}
-                </div>
-              ))}
+              </div>
+              {columns
+                .filter((col) => col.filterable)
+                .map((col) => (
+                  <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                    {renderDateFilter(col)}
+                  </div>
+                ))}
 
-            <div
-              className="date-selector"
-              style={{ display: "flex", gap: "10px" }}
-            >
-              {masterKeyData?.progressFilter && (
-                <button
-                  className="FiletrBtnOpen"
-                  onClick={() => setOpenPDate(!openPDate)}
-                >
-                  Set P.Date
-                </button>
-              )}
               <div
-                className={`transition-container ${
-                  openPDate ? "open" : "closed"
-                }`}
-                style={{
-                  transition: "0.5s ease",
-                  opacity: openPDate ? 1 : 0,
-                  maxHeight: openPDate ? "300px" : "0",
-                  overflow: "hidden",
-                  display: openPDate ? "flex" : "none",
-                  gap: "10px",
-                }}
+                className="date-selector"
+                style={{ display: "flex", gap: "10px" }}
               >
-                <DatePicker
-                  selected={selectedDate}
-                  onChange={(date) => setSelectedDate(date)}
-                  dateFormat="dd-MM-yyyy"
-                  customInput={
-                    <CustomTextField
-                      customBorderColor="rgba(47, 43, 61, 0.2)"
-                      borderoutlinedColor="#00CFE8"
-                      customTextColor="#2F2B3DC7"
-                      customFontSize="0.8125rem"
-                      style={{ Width: "100px" }}
-                    />
-                  }
-                  placeholderText="Select Date"
-                />
+                {masterKeyData?.progressFilter && (
+                  <button
+                    className="FiletrBtnOpen"
+                    onClick={() => setOpenPDate(!openPDate)}
+                  >
+                    Set P.Date
+                  </button>
+                )}
+                <div
+                  className={`transition-container ${
+                    openPDate ? "open" : "closed"
+                  }`}
+                  style={{
+                    transition: "0.5s ease",
+                    opacity: openPDate ? 1 : 0,
+                    maxHeight: openPDate ? "300px" : "0",
+                    overflow: "hidden",
+                    display: openPDate ? "flex" : "none",
+                    gap: "10px",
+                  }}
+                >
+                  <DatePicker
+                    selected={selectedDate}
+                    onChange={(date) => setSelectedDate(date)}
+                    dateFormat="dd-MM-yyyy"
+                    customInput={
+                      <CustomTextField
+                        customBorderColor="rgba(47, 43, 61, 0.2)"
+                        borderoutlinedColor="#00CFE8"
+                        customTextColor="#2F2B3DC7"
+                        customFontSize="0.8125rem"
+                        style={{ Width: "100px" }}
+                      />
+                    }
+                    placeholderText="Select Date"
+                  />
 
-                {/* <CustomTextField
+                  {/* <CustomTextField
                   select
                   fullWidth
                   value={filters.someField || ""}
@@ -1312,17 +1360,17 @@ export default function StcokReport() {
                   ))}
                 </CustomTextField> */}
 
-                <button
-                  onClick={handleSave}
-                  variant="contained"
-                  className="FiletrBtnOpen"
-                  sx={{ marginTop: 2 }}
-                >
-                  Save
-                </button>
+                  <button
+                    onClick={handleSave}
+                    variant="contained"
+                    className="FiletrBtnOpen"
+                    sx={{ marginTop: 2 }}
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-            </div>
-            {/* <div style={{ display: "flex" }}>
+              {/* <div style={{ display: "flex" }}>
               {masterData?.rd3.map((data) => (
                 <abbr title={data?.name}>
                   <p
@@ -1340,61 +1388,57 @@ export default function StcokReport() {
                 </abbr>
               ))}
             </div> */}
-          </div>
-          <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={includeCustomerStock}
-                  onChange={handleChange}
-                  name="includeCustomerStock"
-                  color="primary"
+            </div>
+            <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={includeCustomerStock}
+                    onChange={handleChange}
+                    name="includeCustomerStock"
+                    color="primary"
+                  />
+                }
+                label="Include Customer Stock"
+              />
+
+              {masterKeyData?.mailButton && (
+                <img
+                  src={mainButton}
+                  style={{ cursor: "pointer" }}
+                  onClick={handleSendEmail}
                 />
-              }
-              label="Include Customer Stock"
-            />
+              )}
 
-            {masterKeyData?.mailButton && (
-              <img
-                src={mainButton}
-                style={{ cursor: "pointer" }}
-                onClick={handleSendEmail}
-              />
-            )}
+              {masterKeyData?.PrintButton && (
+                <img
+                  src={printButton}
+                  style={{ cursor: "pointer", height: "40px", width: "40px" }}
+                  onClick={handlePrint}
+                />
+              )}
 
-            {masterKeyData?.PrintButton && (
-              <img
-                src={printButton}
-                style={{ cursor: "pointer", height: "40px", width: "40px" }}
-                onClick={handlePrint}
-              />
-            )}
+              {allChecked && masterKeyData?.imageView && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {showImageView ? (
+                    <div onClick={() => setShowImageView(false)}>
+                      <LayoutGrid className="imageViewImgGrid" />
+                    </div>
+                  ) : (
+                    <div onClick={() => setShowImageView(true)}>
+                      <ImageUp className="imageViewImg" />
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {masterKeyData?.imageView && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {showImageView ? (
-                  <img
-                    src={gridView}
-                    className="imageViewImgGrid"
-                    onClick={handleImg}
-                  />
-                ) : (
-                  <img
-                    src={imageView}
-                    className="imageViewImg"
-                    onClick={handleImg}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* {masterKeyData?.fullScreenGridButton && (
+              {/* {masterKeyData?.fullScreenGridButton && (
               <button className="fullScreenButton" onClick={toggleFullScreen}>
                 <RiFullscreenLine
                   style={{ marginInline: "5px", fontSize: "30px" }}
@@ -1402,81 +1446,120 @@ export default function StcokReport() {
               </button>
             )} */}
 
-            <CustomTextField
-              type="text"
-              placeholder="Common Search..."
-              value={commonSearch}
-              customBorderColor="rgba(47, 43, 61, 0.2)"
-              onChange={(e) => setCommonSearch(e.target.value)}
-            />
+              <CustomTextField
+                type="text"
+                placeholder="Common Search..."
+                value={commonSearch}
+                customBorderColor="rgba(47, 43, 61, 0.2)"
+                onChange={(e) => setCommonSearch(e.target.value)}
+              />
 
-            {masterKeyData?.ExcelExport && (
-              <button onClick={exportToExcel} className="All_exportButton">
+              {masterKeyData?.ExcelExport && (
+                <button onClick={exportToExcel} className="All_exportButton">
+                  <svg
+                    stroke="currentColor"
+                    fill="currentColor"
+                    stroke-width="0"
+                    viewBox="0 0 384 512"
+                    height="2em"
+                    width="2em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
+                  </svg>
+                </button>
+              )}
+
+              <button onClick={handleClearFilter} className="ClearFilterButton">
                 <svg
                   stroke="currentColor"
                   fill="currentColor"
                   stroke-width="0"
-                  viewBox="0 0 384 512"
-                  height="2em"
-                  width="2em"
+                  viewBox="0 0 512 512"
+                  class="mr-2"
+                  height="1em"
+                  width="1em"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
+                  <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
                 </svg>
+                Clear Filters
               </button>
-            )}
-
-            <button onClick={handleClearFilter} className="ClearFilterButton">
-              <svg
-                stroke="currentColor"
-                fill="currentColor"
-                stroke-width="0"
-                viewBox="0 0 512 512"
-                class="mr-2"
-                height="1em"
-                width="1em"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
-              </svg>
-              Clear Filters
-            </button>
+            </div>
           </div>
         </div>
+
         <div
           ref={gridRef}
-          style={{ height: "calc(100vh - 230px)", margin: "5px" }}
+          style={{
+            height: "calc(100vh - 230px)",
+            margin: "5px",
+            marginTop: "170px",
+          }}
         >
           {showImageView ? (
-            <div>
-              <img
-                className="imageViewImgage"
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVXLW1j3zO3UP6dIu96A3IpZihTe3fVRsm9g&s"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://help.earthsoft.com/ent-data_grid_widget-sample.png"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://i0.wp.com/thewwwmagazine.com/wp-content/uploads/2020/07/Screenshot-2020-07-09-at-7.36.56-PM.png?resize=1404%2C1058&ssl=1"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://docs.devexpress.com/WPF/images/wpf-data-grid.png"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://www.infragistics.com/products/ignite-ui-web-components/web-components/images/general/landing-grid-page.png"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://i0.wp.com/angularscript.com/wp-content/uploads/2020/04/Angular-Data-Grid-For-The-Enterprise-nGrid.png?fit=1245%2C620&ssl=1"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://angularscript.com/wp-content/uploads/2015/12/ng-bootstrap-grid-370x297.jpg"
-              />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              {filteredRows.map((item, idx) => {
+                const src =
+                  String(item["imageViewkey"] ?? "").trim() || noFoundImg;
+                return (
+                  <div>
+                    <img
+                      key={idx}
+                      src={src}
+                      alt={`record-${idx}`}
+                      height="auto"
+                      loading="lazy"
+                      style={{
+                        width: "200px",
+                        height: "200px",
+                        border: "1px solid lightgray",
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <p
+                          style={{
+                            margin: "0px",
+                            fontWeight: 600,
+                            fontSize: "15px",
+                          }}
+                        >
+                          {item["5"]}
+                        </p>
+                        <p
+                          style={{
+                            margin: "0px",
+                            fontWeight: 600,
+                            fontSize: "14px",
+                            display: "flex",
+                            gap: "2px",
+                            color: "#CF4F7D",
+                          }}
+                        >
+                          <span>{item["16"]}</span>
+                          <span>{item["17"]}</span>
+                          <span>{item["18"]}</span>
+                        </p>
+                      </div>
+                      <p
+                        style={{
+                          margin: "0px",
+                          fontWeight: 600,
+                          fontSize: "14px",
+                        }}
+                      >
+                        {item["9"]}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <DataGrid
@@ -1485,6 +1568,8 @@ export default function StcokReport() {
               pageSize={pageSize}
               autoHeight={false}
               columnBuffer={17}
+              sortModel={sortModel}
+              onSortModelChange={(model) => setSortModel(model)}
               localeText={{ noRowsLabel: "No Data" }}
               initialState={{
                 columns: {

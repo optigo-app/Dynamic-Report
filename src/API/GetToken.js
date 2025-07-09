@@ -9,9 +9,8 @@ export const GetToken = async (body, yCode, sv, sp) => {
   const APIURL =
     window.location.hostname == "localhost" ||
     window.location.hostname == "nzen"
-      ? "http://nextjstest.web/api/report"
+      ? "http://newnextjs.web/api/report"
       : "https://livenx.optigoapps.com/api/report";
-
   try {
     const headers = {
       Authorization: "",

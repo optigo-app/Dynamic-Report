@@ -109,6 +109,7 @@ export default function AllEmployeeDataReport({
   selectedEmployee,
   showDepartment,
   selectedMetalType,
+  showWithouLocationData,
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -146,19 +147,50 @@ export default function AllEmployeeDataReport({
       return;
     }
     const filteredDataDepartment = rd1.filter((entry) => {
-      return (
-        entry["2"]?.toLowerCase() === selectedDepartment?.toLowerCase() &&
-        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase() &&
-        entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase()
-      );
+      const matchDepartment =
+        entry["2"]?.toLowerCase() === selectedDepartment?.toLowerCase();
+
+      const matchMetal =
+        entry["22"]?.toLowerCase() === selectedMetalType?.toLowerCase();
+
+      const matchLocation =
+        showWithouLocationData ||
+        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase();
+
+      return matchDepartment && matchMetal && matchLocation;
     });
+
+    console.log("filteredDataDepartment", filteredDataDepartment);
+
     const filteredDataEmployee = rd1.filter((entry) => {
-      return (
-        entry["3"]?.toLowerCase() === selectedEmployee?.toLowerCase() &&
-        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase() &&
-        entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase()
-      );
+      const matchEmployee =
+        entry["3"]?.toLowerCase() === selectedEmployee?.toLowerCase();
+
+      const matchMetal =
+        entry["22"]?.toLowerCase() === selectedMetalType?.toLowerCase();
+
+      const matchLocation =
+        showWithouLocationData ||
+        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase();
+
+      return matchEmployee && matchMetal && matchLocation;
     });
+
+    // const filteredDataDepartment = rd1.filter((entry) => {
+    //   return (
+    //     entry["2"]?.toLowerCase() === selectedDepartment?.toLowerCase() &&
+    //     entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase() &&
+    //     entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase()
+    //   );
+    // });
+
+    // const filteredDataEmployee = rd1.filter((entry) => {
+    //   return (
+    //     entry["3"]?.toLowerCase() === selectedEmployee?.toLowerCase() &&
+    //     entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase() &&
+    //     entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase()
+    //   );
+    // });
 
     setMasterKeyData(OtherKeyData?.rd);
     setAllColumData(OtherKeyData?.rd1);

@@ -14,7 +14,7 @@ import { DateRangePicker } from "mui-daterange-picker";
 import { ThemeProvider } from "@mui/material/styles";
 import { CalendarDays } from "lucide-react";
 import ClearIcon from "@mui/icons-material/Clear";
-import './DualDatePicker.scss'
+import "./DualDatePicker.scss";
 
 const Datetheme = createTheme({
   palette: {
@@ -98,7 +98,13 @@ const Datetheme = createTheme({
   },
 });
 
-const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth }) => {
+const DualDatePicker = ({
+  filterState,
+  setFilterState,
+  validDay,
+  validMonth,
+  withountDateFilter = false,
+}) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [error, setError] = useState("");
   const dateRef = useRef(null);
@@ -115,8 +121,8 @@ const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth })
       items.forEach((item) => {
         const textElement = item.querySelector(".MuiListItemText-root");
         if (textElement) {
-          console.log('textElement',textElement);
-          
+          console.log("textElement", textElement);
+
           const text = textElement.textContent.trim();
           if (text === "Last Year" || text === "This Year") {
             item.style.display = "none";
@@ -143,7 +149,7 @@ const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth })
       });
     }, 100); // slight delay to wait till the popover DOM renders
   };
-  
+
   const handleClose = () => {
     setAnchorEl(null);
     setError("");
@@ -161,18 +167,19 @@ const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth })
       setError("Please select a valid range.");
       return;
     }
+    if (!withountDateFilter) {
+      if (endDate > today) {
+        setError("Future dates are not allowed.");
+        return;
+      }
 
-    if (endDate > today) {
-      setError("Future dates are not allowed.");
-      return;
-    }
+      const diffInMs = endDate.getTime() - startDate.getTime();
+      const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
 
-    const diffInMs = endDate.getTime() - startDate.getTime();
-    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
-
-    if (diffInDays > validDay) {
-      setError(`You can select a maximum range of ${validMonth} month.`);
-      return;
+      if (diffInDays > validDay) {
+        setError(`You can select a maximum range of ${validMonth} month.`);
+        return;
+      }
     }
 
     setError("");
@@ -209,7 +216,6 @@ const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth })
     handleClose();
   };
 
-  
   return (
     <ThemeProvider theme={Datetheme}>
       <Box display="flex" gap={1} alignItems="center">
@@ -271,33 +277,63 @@ const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth })
                 { label: "Today", startDate: new Date(), endDate: new Date() },
                 {
                   label: "Yesterday",
-                  startDate: new Date(new Date().setDate(new Date().getDate() - 1)),
-                  endDate: new Date(new Date().setDate(new Date().getDate() - 1)),
+                  startDate: new Date(
+                    new Date().setDate(new Date().getDate() - 1)
+                  ),
+                  endDate: new Date(
+                    new Date().setDate(new Date().getDate() - 1)
+                  ),
                 },
                 {
                   label: "This Week",
-                  startDate: new Date(new Date().setDate(new Date().getDate() - new Date().getDay())),
+                  startDate: new Date(
+                    new Date().setDate(
+                      new Date().getDate() - new Date().getDay()
+                    )
+                  ),
                   endDate: new Date(),
                 },
                 {
                   label: "Last Week",
-                  startDate: new Date(new Date().setDate(new Date().getDate() - new Date().getDay() - 7)),
-                  endDate: new Date(new Date().setDate(new Date().getDate() - new Date().getDay() - 1)),
+                  startDate: new Date(
+                    new Date().setDate(
+                      new Date().getDate() - new Date().getDay() - 7
+                    )
+                  ),
+                  endDate: new Date(
+                    new Date().setDate(
+                      new Date().getDate() - new Date().getDay() - 1
+                    )
+                  ),
                 },
                 {
                   label: "Last 7 Days",
-                  startDate: new Date(new Date().setDate(new Date().getDate() - 6)),
+                  startDate: new Date(
+                    new Date().setDate(new Date().getDate() - 6)
+                  ),
                   endDate: new Date(),
                 },
                 {
                   label: "This Month",
-                  startDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                  startDate: new Date(
+                    new Date().getFullYear(),
+                    new Date().getMonth(),
+                    1
+                  ),
                   endDate: new Date(),
                 },
                 {
                   label: "Last Month",
-                  startDate: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-                  endDate: new Date(new Date().getFullYear(), new Date().getMonth(), 0),
+                  startDate: new Date(
+                    new Date().getFullYear(),
+                    new Date().getMonth() - 1,
+                    1
+                  ),
+                  endDate: new Date(
+                    new Date().getFullYear(),
+                    new Date().getMonth(),
+                    0
+                  ),
                 },
               ]}
             />
@@ -314,7 +350,12 @@ const DualDatePicker = ({ filterState, setFilterState , validDay , validMonth })
               <Button onClick={handleClose} color="secondary">
                 Cancel
               </Button>
-              <Button onClick={handleApply} variant="contained" color="primary" style={{backgroundColor: '#887df2'}}>
+              <Button
+                onClick={handleApply}
+                variant="contained"
+                color="primary"
+                style={{ backgroundColor: "#887df2" }}
+              >
                 Apply
               </Button>
             </Stack>

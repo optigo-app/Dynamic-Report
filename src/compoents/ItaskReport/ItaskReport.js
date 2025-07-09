@@ -217,15 +217,12 @@ export default function ItaskReport() {
         // setAllRowDataAll(fetchedData?.Data?.rd1);
         // setAllColumIdWiseName(fetchedData?.Data?.rd);
         // setAllColumIdWiseNameAll(fetchedData?.Data?.rd);
-
-        console.log('fetchedData', OtherKeyData);
         setAllRowData(OtherKeyData?.rd4);
         setAllRowDataAll(OtherKeyData?.rd4);
         setAllColumIdWiseName(OtherKeyData.rd3);
         setAllColumIdWiseNameAll(OtherKeyData?.rd3);
-        
-        setMasterKeyData(OtherKeyData?.rd);
         setAllColumData(OtherKeyData?.rd1);
+        setMasterKeyData(OtherKeyData?.rd);
         setStatus500(false);
         setIsLoading(false);
       } catch (error) {
@@ -421,7 +418,7 @@ export default function ItaskReport() {
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px 20px",
+                    padding: "5px",
                     borderRadius: col.BorderRadius,
                   }}
                 >

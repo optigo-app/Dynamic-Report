@@ -1,4 +1,4 @@
-.StcokReportMain_mainGridView {
+.SignageTvReport_mainGridView {
   background-color: #f8f7fa;
   height: 100vh;
 
@@ -7,6 +7,7 @@
     flex-wrap: wrap;
     gap: 10px;
     padding: 10px;
+    justify-content: flex-end;
   }
 
   .AllEmploe_boxViewTotal {
@@ -17,8 +18,8 @@
     border: 1px solid rgb(115, 103, 240);
     background-color: white;
     margin: 0px;
-    min-width: 150px;
-    max-width: 150px;
+    min-width: 130px;
+    max-width: 130px;
   }
 
   .boxViewTotalTitle {
@@ -46,6 +47,16 @@
     width: 100% !important;
   }
 
+  .MenuSelectItem {
+    padding: 10px !important;
+    .MuiSelect-select {
+      padding: 0px !important;
+      display: flex;
+      font-size: 13px !important;
+      width: 90px !important;
+    }
+  }
+
   .simpleGridView {
     box-shadow: 0 0.1875rem 0.75rem 0 rgba(47, 43, 61, 0.14);
     background-color: white;
@@ -57,40 +68,74 @@
 
   .FiletrBtnOpen {
     height: 40px;
-    width: 130px;
+    width: 100px;
     border-radius: 3px;
     background-color: rgb(222 212 212);
     border: none;
     outline: none;
     cursor: pointer;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 14px;
+    letter-spacing: 0px;
+    color: rgb(35 32 32) !important;
   }
-
-  .FiletrBtnAll {
-    height: 35px;
-    width: 70px;
+  .Re_CalculateButton {
+    height: 40px;
+    width: 130px;
     border-radius: 3px;
-    background-color: rgb(222 212 212) !important;
+    background-color: rgb(112 98 238);
     border: none;
     outline: none;
     cursor: pointer;
     font-weight: 600;
-    font-size: 15px;
-    color: black !important;
+    font-size: 13px;
+    letter-spacing: 0px;
+    color: white !important;
+  }
+  .SetDefault_pin {
+    height: 40px;
+    width: 130px;
+    border-radius: 3px;
+    background-color: rgb(112 98 238);
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0px;
+    color: white !important;
+  }
+
+  .row_delete_button {
+    height: 35px;
+    width: 60px;
+    border-radius: 3px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0px;
+    color: white !important;
+  }
+
+  .row_logout_button {
+    height: 35px;
+    width: 60px;
+    border-radius: 3px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0px;
+    color: white !important;
   }
 
   .accordianMain {
     margin: 20px !important;
   }
 
-  .gridMetalComboMain {
-    display: flex !important;
-    flex-direction: column !important;
-    max-height: 340px;
-    overflow: auto;
-    scrollbar-width: thin;
-  }
 
   .mainName {
     height: 20px;
@@ -215,7 +260,7 @@
     background-color: rgb(250 77 77);
     color: white;
     font-size: 16px;
-    width: 150px;
+    width: 100px;
     height: 40px;
     font-weight: 500;
     border: none;
@@ -323,24 +368,70 @@
     max-height: 500px !important;
   }
 
-  .filter_column_box {
-    width: 100% !important;
-
-    .MuiFormControl-root {
-      width: 100% !important;
-    }
-    .MuiInputBase-root {
-      width: 100% !important;
-    }
+  .success-message {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    background-color: #4caf50;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    z-index: 9999;
+    font-weight: bold;
+    animation: slideInOut 3s ease-in-out forwards;
   }
 
-  .MuiDataGrid-menuIcon {
-    display: none !important;
+ 
+
+  @keyframes slideInOut {
+    0% {
+      transform: translate(-50%, -100%);
+      opacity: 0;
+    }
+    10% {
+      transform: translate(-50%, 20px);
+      opacity: 1;
+    }
+    90% {
+      transform: translate(-50%, 20px);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, -100%);
+      opacity: 0;
+    }
   }
-  .MuiDataGrid-iconButtonContainer {
-    min-width: 30px !important;
-  }
-  .MuiDataGrid-columnHeaderTitleContainer {
+}
+
+.MenuSelectItem_select {
+  font-size: 12px !important;
+  .MuiInputBase-inputSizeSmall {
     padding: 0px !important;
   }
+}
+
+.Deafult_Pin_main {
+  display: flex;
+  flex-direction: column;
+  margin: 0px 20px 10px;
+  align-items: center;
+  .Save_btn {
+    width: 100% !important;
+    height: 35px;
+    width: 300px;
+    margin: 20px;
+    background-color: rgb(112, 98, 238) !important;
+    color: white;
+  }
+}
+
+
+
+.gridMetalComboMain {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 340px;
+  overflow: auto;
+  scrollbar-width: thin;
 }

@@ -1,10 +1,10 @@
-.sliperViewMain_top {
+.SignageDisplayList_top {
   .employee-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
     margin-top: 10px;
-    height: 74vh;
+    height: 81vh;
     overflow: auto;
   }
   .employee-list::-webkit-scrollbar {
@@ -138,6 +138,19 @@
     z-index: 10;
   }
 
+  /* Add to your CSS/SCSS */
+  .pane {
+    transition: width 0.4s ease;
+    overflow: hidden; /* Avoid content jumping */
+  }
+
+  .splitter {
+    transition: opacity 0.3s ease;
+    background-color: #ccc;
+    width: 4px;
+    cursor: col-resize;
+  }
+
   .dataGrid_spliterView {
     height: 95vh !important;
   }
@@ -255,8 +268,19 @@
     height: 35px;
     border-radius: 5px;
     width: 100%;
-    border: 1px solid lightgray;
+    border: 2px solid rgb(115, 103, 240);
     background-color: transparent;
+  }
+
+  .Location_department_title_div {
+    height: 32px;
+    border-radius: 5px;
+    width: 100%;
+    border: 2px solid rgb(115, 103, 240);
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .loader-overlay {

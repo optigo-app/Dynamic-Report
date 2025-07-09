@@ -9,7 +9,7 @@ export const CommonAPI = async (body, sp) => {
   const APIURL =
     window.location.hostname == "localhost" ||
     window.location.hostname == "nzen"
-      ? "http://nextjstest.web/api/report"
+      ? "http://newnextjs.web/api/report"
       : "https://livenx.optigoapps.com/api/report";
 
   let AuthorizationToken = sessionStorage.getItem("Token");

@@ -21,6 +21,7 @@ const formatToMMDDYYYY = (date) => {
 };
 
 export default function Spliter() {
+  const [showWithouLocationData, setShowWithouLocationData] = useState(true);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -98,7 +99,6 @@ export default function Spliter() {
     setStartDate(formattedDate);
     setEndDate(formattedDate);
     // fetchData(formattedDate, formattedDate);
-    console.log("cal 2222");
     setFilterState({
       dateRange: {
         startDate: now,
@@ -119,9 +119,7 @@ export default function Spliter() {
 
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
-
       fetchData(formattedStart, formattedEnd);
-      console.log("cal 11111");
     }
   }, [filterState.dateRange]);
 
@@ -184,8 +182,6 @@ export default function Spliter() {
     }
   };
 
-  console.log("allEmployeeDataMainallEmployeeDataMain", allEmployeeDataMain);
-
   useEffect(() => {
     if (allEmployeeData?.length > 0) {
       const metalFilteredData = allEmployeeDataMain.filter(
@@ -194,6 +190,15 @@ export default function Spliter() {
       GetTotlaData(metalFilteredData);
     }
   }, [selectedMetalType, allEmployeeData]);
+
+  const showWithoutLocationData = () => {
+    if (allEmployeeData?.length > 0) {
+      const metalFilteredData = allEmployeeDataMain.filter(
+        (item) => item.metaltypename === selectedMetalType
+      );
+      handleSelectLocation("", metalFilteredData, true);
+    }
+  };
 
   const GetTotlaData = (allEmployeeData) => {
     if (allEmployeeData?.length === 0) return;
@@ -250,31 +255,33 @@ export default function Spliter() {
 
     const firstLocation = sortedLocationSummary[0]?.location;
     setLocationSummaryData(sortedLocationSummary);
-    handleSelectLocation(firstLocation, allEmployeeData);
-    handleSelecEmployee(firstLocation, allEmployeeData);
+    handleSelectLocation(firstLocation, allEmployeeData, true);
+    handleSelecEmployee(firstLocation, allEmployeeData, true);
   };
 
-  const handleSelectLocation = (location, allEmployeeData) => {
-    setSelectedLocation(location);
-
+  const handleSelectLocation = (
+    location,
+    allEmployeeData,
+    showData = false
+  ) => {
+    if (!showData) {
+      setSelectedLocation(location);
+    }
     const FilterDataTemp =
       Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
         ? allEmployeeDataMain
         : allEmployeeData;
 
-    const filtered = FilterDataTemp?.filter(
-      (emp) =>
-        emp.location === location &&
-        emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
-    );
-
-    console.log(
-      "filteredfiltered",
-      FilterDataTemp,
-      location,
-      selectedMetalType,
-      filtered
-    );
+    const filtered = showData
+      ? FilterDataTemp?.filter(
+          (emp) =>
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        )
+      : FilterDataTemp?.filter(
+          (emp) =>
+            emp.location === location &&
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        );
     const deptMap = new Map();
 
     filtered?.forEach((item) => {
@@ -328,23 +335,32 @@ export default function Spliter() {
     const firstDepartment = sortedDepartmentSummary[0]?.deptname ?? "";
     setGroupedDepartments(sortedDepartmentSummary);
     setSelectedDepartment(firstDepartment);
-    setExpandedEmployee(location);
+    if (!showData) {
+      setExpandedEmployee(location);
+    }
     setIsLoading(false);
   };
 
-  const handleSelecEmployee = (location, allEmployeeData) => {
-    setSelectedLocation(location);
+  const handleSelecEmployee = (location, allEmployeeData, showData) => {
+    if (!showData) {
+      setSelectedLocation(location);
+    }
 
     const FilterDataTemp =
       Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
         ? allEmployeeDataMain
         : allEmployeeData;
 
-    const filtered = FilterDataTemp?.filter(
-      (emp) =>
-        emp.location === location &&
-        emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
-    );
+    const filtered = showWithouLocationData
+      ? FilterDataTemp?.filter(
+          (emp) =>
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        )
+      : FilterDataTemp?.filter(
+          (emp) =>
+            emp.location === location &&
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        );
 
     const employeeMap = new Map();
 
@@ -384,7 +400,9 @@ export default function Spliter() {
 
     setGroupedEmployeeData(grouped);
     setSelectedEmployee(grouped[0]?.employeename);
-    setExpandedEmployee(location);
+    if (!showData) {
+      setExpandedEmployee(location);
+    }
     setIsLoading(false);
   };
 
@@ -412,7 +430,9 @@ export default function Spliter() {
     const metalFilteredData = allEmployeeData?.filter(
       (item) => item.metaltypename === selectedMetalType
     );
-    GetTotlaData(metalFilteredData);
+    showWithouLocationData
+      ? handleSelectLocation("", metalFilteredData, true)
+      : GetTotlaData(metalFilteredData);
     setShowDepartment(!showDepartment);
   };
 
@@ -432,6 +452,8 @@ export default function Spliter() {
     (sum, item) => sum + item.netissuewt,
     0
   );
+
+  const Location_TotalPer = (Location_TotalLoss / Location_TotalReturnWt) * 100;
 
   const department_TotalLoss = showDepartment
     ? groupedDepartments.reduce((sum, item) => sum + item.losswt, 0)
@@ -505,6 +527,106 @@ export default function Spliter() {
                   />
                 </div>
               </div>
+              {locationSummaryData?.length > 1 && (
+                <div style={{ margin: "0px 10px" }}>
+                  <div
+                    className={
+                      showWithouLocationData
+                        ? "employee_card_selected"
+                        : "employee-card"
+                    }
+                  >
+                    <div
+                      className="employee-header"
+                      onClick={() => {
+                        handleToggle("All");
+                        showWithoutLocationData();
+                        setShowWithouLocationData(true);
+                        setSelectedLocation(null);
+                      }}
+                    >
+                      <div className="location_first">
+                        <span
+                          className={
+                            showWithouLocationData && "location_top_name"
+                          }
+                        >
+                          ALL
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "15px",
+                          marginTop: "10px",
+                        }}
+                      >
+                        <p
+                          className={
+                            showWithouLocationData
+                              ? "employee_detail_title"
+                              : "employee_detail"
+                          }
+                          style={{ width: "50%" }}
+                        >
+                          Loss : <b> {Location_TotalLoss?.toFixed(3)} gm</b>
+                        </p>
+                        <p
+                          className={
+                            showWithouLocationData
+                              ? "employee_detail_title"
+                              : "employee_detail"
+                          }
+                          style={{ width: "50%" }}
+                        >
+                          Loss% :<b> {Location_TotalPer?.toFixed(2)} %</b>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`employee-details ${
+                        showWithouLocationData ? "expanded" : ""
+                      }`}
+                    >
+                      {showWithouLocationData && (
+                        <>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "15px",
+                            }}
+                          >
+                            <p
+                              className={
+                                showWithouLocationData
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Issue Wt :{" "}
+                              <b>{Location_TotalIssueWt?.toFixed(3)}</b>
+                            </p>
+                            <p
+                              className={
+                                showWithouLocationData
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Return Wt :{" "}
+                              <b>{Location_TotalReturnWt?.toFixed(3)} </b>
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               <div
                 className="employee-list"
                 style={{ padding: "0px 8px 0px 8px" }}
@@ -514,7 +636,7 @@ export default function Spliter() {
                       ?.sort(
                         (a, b) =>
                           a.locationdisplayorder - b.locationdisplayorder
-                      ) // ✨ Added sort
+                      )
                       .map((emp) => {
                         const isExpanded = expandedEmployee === emp.location;
                         return (
@@ -534,6 +656,7 @@ export default function Spliter() {
                                   emp.location,
                                   allEmployeeData
                                 );
+                                setShowWithouLocationData(false);
                                 handleSelecEmployee(
                                   emp.location,
                                   allEmployeeData
@@ -687,7 +810,7 @@ export default function Spliter() {
                       </div>
                     )}
               </div>
-              {locationSummaryData?.length != 0 && (
+              {/* {locationSummaryData?.length != 0 && (
                 <div
                   style={{
                     margin: "5px",
@@ -722,7 +845,7 @@ export default function Spliter() {
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         )}
@@ -1053,8 +1176,7 @@ export default function Spliter() {
           </>
         )}
 
-        {selectedLocation &&
-          selectedEmployee &&
+        {selectedEmployee &&
           selectedDepartment &&
           selectedMetalType &&
           paneWidths[2] !== "0%" && (
@@ -1070,6 +1192,7 @@ export default function Spliter() {
                   selectedEmployee={selectedEmployee}
                   showDepartment={showDepartment}
                   selectedMetalType={selectedMetalType}
+                  showWithouLocationData={showWithouLocationData}
                 />
               </div>
             </>
