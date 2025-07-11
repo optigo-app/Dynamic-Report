@@ -191,6 +191,18 @@ export default function Spliter() {
     }
   }, [selectedMetalType, allEmployeeData]);
 
+  const handleToggleNew = () => {
+    const metalFilteredData = allEmployeeData?.filter(
+      (item) => item.metaltypename === selectedMetalType
+    );
+    console.log("showWithouLocationData", showWithouLocationData);
+    showWithouLocationData
+      ? handleSelectLocation("", metalFilteredData, true)
+      : GetTotlaData(metalFilteredData, selectedLocation);
+
+    setShowDepartment(!showDepartment);
+  };
+
   const showWithoutLocationData = () => {
     if (allEmployeeData?.length > 0) {
       const metalFilteredData = allEmployeeDataMain.filter(
@@ -200,7 +212,7 @@ export default function Spliter() {
     }
   };
 
-  const GetTotlaData = (allEmployeeData) => {
+  const GetTotlaData = (allEmployeeData, selectedL) => {
     if (allEmployeeData?.length === 0) return;
     const summaryMap = new Map();
     allEmployeeData?.forEach((item) => {
@@ -253,7 +265,7 @@ export default function Spliter() {
       (a, b) => a.locationdisplayorder - b.locationdisplayorder
     );
 
-    const firstLocation = sortedLocationSummary[0]?.location;
+    const firstLocation = selectedL ?? sortedLocationSummary[0]?.location;
     setLocationSummaryData(sortedLocationSummary);
     handleSelectLocation(firstLocation, allEmployeeData, true);
     handleSelecEmployee(firstLocation, allEmployeeData, true);
@@ -342,6 +354,8 @@ export default function Spliter() {
   };
 
   const handleSelecEmployee = (location, allEmployeeData, showData) => {
+    console.log("locationlocation", location, showData, allEmployeeData);
+
     if (!showData) {
       setSelectedLocation(location);
     }
@@ -417,23 +431,15 @@ export default function Spliter() {
       setIsRefreshEnabled(true); // enable after 2 mins
     }, 2 * 60 * 1000); // 2 minutes in ms
   };
+
   useEffect(() => {
     startEnableTimer();
   }, []);
+
   const handleRefresh = () => {
     if (!isRefreshEnabled) return;
     window.location.reload();
     startEnableTimer();
-  };
-
-  const handleToggleNew = () => {
-    const metalFilteredData = allEmployeeData?.filter(
-      (item) => item.metaltypename === selectedMetalType
-    );
-    showWithouLocationData
-      ? handleSelectLocation("", metalFilteredData, true)
-      : GetTotlaData(metalFilteredData);
-    setShowDepartment(!showDepartment);
   };
 
   const uniqueMetalTypes = [
@@ -659,7 +665,8 @@ export default function Spliter() {
                                 setShowWithouLocationData(false);
                                 handleSelecEmployee(
                                   emp.location,
-                                  allEmployeeData
+                                  allEmployeeData,
+                                  false
                                 );
                               }}
                             >

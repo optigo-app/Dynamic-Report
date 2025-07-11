@@ -390,10 +390,10 @@ export default function JobCompletion() {
               const formattedDate =
                 params.value && !isNaN(new Date(params.value).getTime())
                   ? new Date(params.value).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
                   : "";
               return (
                 <span
@@ -982,12 +982,12 @@ export default function JobCompletion() {
 
   // for excel data format
   function mapRowsToHeaders(columns, rows) {
-    const isIsoDateTime = str =>
-      typeof str === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(str);
+    const isIsoDateTime = (str) =>
+      typeof str === "string" && /^\d{4}-\d{2}-\d{2}T/.test(str);
     const fieldToHeader = {};
-    columns?.forEach(col => {
-      let header = '';
-      if (typeof col.headerName === 'string') {
+    columns?.forEach((col) => {
+      let header = "";
+      if (typeof col.headerName === "string") {
         header = col.headerName;
       } else if (col.headerNamesingle) {
         header = col.headerNamesingle;
@@ -1001,23 +1001,24 @@ export default function JobCompletion() {
     });
     return rows?.map((row, idx) => {
       const ordered = {};
-      columns?.forEach(col => {
+      columns?.forEach((col) => {
         const header = fieldToHeader[col.field];
-        let value = row[col.field] ?? '';
-        if (header === 'Sr#') {
+        let value = row[col.field] ?? "";
+        if (header === "Sr#") {
           value = idx + 1;
         }
-        if (col.field === 'Venderfgage') {
+        if (col.field === "Venderfgage") {
           let finalDate = 0;
           const fgDateStr = row.fgdate;
           const outsourceDateStr = row.outsourcedate;
           if (fgDateStr && outsourceDateStr) {
             const diff =
-              new Date(fgDateStr).getTime() - new Date(outsourceDateStr).getTime();
+              new Date(fgDateStr).getTime() -
+              new Date(outsourceDateStr).getTime();
             finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
           }
           value = finalDate;
-        } else if (col.field === 'Fgage') {
+        } else if (col.field === "Fgage") {
           let finalDate = 0;
           const fgDateStr = row.fgdate;
           const orderDateStr = row.orderdate;
@@ -1029,18 +1030,18 @@ export default function JobCompletion() {
           value = finalDate;
         }
         if (isIsoDateTime(value)) {
-          value = value.split('T')[0];
+          const dateObj = new Date(value);
+          const day = String(dateObj.getDate()).padStart(2, "0");
+          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const year = dateObj.getFullYear();
+          value = `${day}-${month}-${year}`;
         }
         ordered[header] = value;
       });
       return ordered;
     });
   }
-  // call function formated excel data
   const converted = mapRowsToHeaders(columns, filteredRows);
-
-  console.log("hjhfhjd", converted)
-
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
@@ -1050,8 +1051,26 @@ export default function JobCompletion() {
       bookType: "xlsx",
       type: "array",
     });
+
     const data = new Blob([excelBuffer], { type: EXCEL_TYPE });
-    saveAs(data, "data.xlsx");
+
+    const now = new Date();
+    const dateString = now
+      .toLocaleString("en-GB", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(/[/:]/g, "-")
+      .replace(/, /g, "_"); // Format: dd-MM-yyyy_HH-mm-ss
+
+    const fileName = `Job Completion Lead Report_${dateString}.xlsx`;
+
+    saveAs(data, fileName);
   };
 
   const handleClearFilter = () => {
@@ -1084,7 +1103,7 @@ export default function JobCompletion() {
       );
   };
 
-  const handlePrint = () => { };
+  const handlePrint = () => {};
 
   const handleImg = () => {
     setShowImageView((prevState) => !prevState);
@@ -1104,7 +1123,7 @@ export default function JobCompletion() {
     console.log("Selected Rd3 Name:", selectedRd3Name);
   };
 
-  const onDragEnd = () => { };
+  const onDragEnd = () => {};
 
   const groupRows = (rows, groupCheckBox) => {
     const grouped = [];
@@ -1182,6 +1201,7 @@ export default function JobCompletion() {
             </div>
           </div>
         </Dialog>
+
         <Drawer
           open={sideFilterOpen}
           onClose={toggleDrawer(false)}
@@ -1321,8 +1341,9 @@ export default function JobCompletion() {
                 </button>
               )}
               <div
-                className={`transition-container ${openPDate ? "open" : "closed"
-                  }`}
+                className={`transition-container ${
+                  openPDate ? "open" : "closed"
+                }`}
                 style={{
                   transition: "0.5s ease",
                   opacity: openPDate ? 1 : 0,

@@ -111,6 +111,7 @@ export default function SingleEmployeeWiseData({
   selectedEmployeeBarCode,
   selectedEmployeeName,
   selectedMetalType,
+  showDeatilSelectedLocation
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -136,6 +137,10 @@ export default function SingleEmployeeWiseData({
   const [dateRange, setDateRange] = React.useState([null, null]);
   const [NewStartDate, setNewStartDate] = React.useState(startDate);
   const [newEndDate, setNewEndDate] = React.useState(endDate);
+  const [paginationModel, setPaginationModel] = React.useState({
+    page: 0,
+    pageSize: 10,
+  });
   const [start, end] = dateRange;
   const [openDatePicker, setOpenDatePicker] = React.useState(false);
   const [searchParams] = useSearchParams();
@@ -145,7 +150,7 @@ export default function SingleEmployeeWiseData({
     setIsLoading(true);
     const body = {
       con: `{"id":"","mode":"workerwithoutfindingdetail","appuserid":"${AllData?.uid}"}`,
-      p: `{\"fdate\":\"${NewStartDate}",\"tdate\":\"${newEndDate}",\"deptid\":\"${selectedDepartmentId}",\"locationname\":\"${currentLocation}",\"employeecode\":\"${selectedEmployeeCode}"}`,
+      p: `{\"fdate\":\"${NewStartDate}",\"tdate\":\"${newEndDate}",\"deptid\":\"${selectedDepartmentId}",\"locationname\":\"${currentLocation ?? showDeatilSelectedLocation}",\"employeecode\":\"${selectedEmployeeCode}"}`,
       f: "Task Management (taskmaster)",
     };
     // e3tsaXZlMS5vcHRpZ29hcHBzLmNvbX19e3syMH19e3tlbHZlZXN0ZXJ9fXt7aGVubnlzfX0=
@@ -160,10 +165,20 @@ export default function SingleEmployeeWiseData({
         setMasterKeyData(OtherKeyData?.rd);
         setAllColumData(OtherKeyData?.rd1);
         setAllColumIdWiseName(fetchedData?.Data?.rd);
+
         const filteredDataEmployee = fetchedData?.Data?.rd1.filter((entry) => {
-          return entry["24"]?.toLowerCase() == selectedMetalType?.toLowerCase;
+          return (
+            entry["24"]?.toLowerCase() === selectedMetalType?.toLowerCase()
+          );
         });
-        console.log("fetchedData", fetchedData?.Data?.rd1 , selectedMetalType , filteredDataEmployee);
+
+        console.log(
+          "originalRowsoriginalRows",
+          selectedMetalType,
+          filteredDataEmployee,
+          fetchedData
+        );
+
         setAllRowData(filteredDataEmployee);
       }
       setIsLoading(false);
@@ -343,8 +358,6 @@ export default function SingleEmployeeWiseData({
       return { id: index, ...formattedRow };
     });
 
-    console.log('originalRowsoriginalRows', allRowData);
-    
   const [pageSize, setPageSize] = React.useState(10);
   const [filteredRows, setFilteredRows] = React.useState(originalRows);
   const [filters, setFilters] = React.useState({});
@@ -430,9 +443,6 @@ export default function SingleEmployeeWiseData({
       ...row,
       srNo: index + 1,
     }));
-
-    console.log("rowsWithSrNo", rowsWithSrNo);
-
     setFilteredRows(rowsWithSrNo);
   }, [
     filters,
@@ -1072,7 +1082,7 @@ export default function SingleEmployeeWiseData({
         >
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
             <Button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-              Open Filter
+              Filter
             </Button>
             {/* <DatePicker
               selectsRange
@@ -1278,7 +1288,7 @@ export default function SingleEmployeeWiseData({
 
             <CustomTextField
               type="text"
-              placeholder="Common Search..."
+              placeholder="Search..."
               value={commonSearch}
               customBorderColor="rgba(47, 43, 61, 0.2)"
               onChange={(e) => setCommonSearch(e.target.value)}
@@ -1343,6 +1353,9 @@ export default function SingleEmployeeWiseData({
               autoHeight={false}
               columnBuffer={20}
               disableColumnVirtualization
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[10, 20, 50, 100]}
               onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
               rowsPerPageOptions={[5, 10, 15, 25, 50]}
               className="simpleGridView"

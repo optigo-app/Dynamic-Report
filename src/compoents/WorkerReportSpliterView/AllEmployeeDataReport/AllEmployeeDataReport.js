@@ -134,6 +134,11 @@ export default function AllEmployeeDataReport({
   const [selectedDepartmentId, setSelectedDepartmentId] = React.useState();
   const [selectedEmployeeCode, setSelectedEmployeeCode] = React.useState();
   const [selectedEmployeeName, setSelectedEmployeeName] = React.useState();
+  const [showDeatilSelectedLocation, setShowDeatilSelectedLocation] = React.useState();
+  const [paginationModel, setPaginationModel] = React.useState({
+    page: 0,
+    pageSize: 10,
+  });
   const [selectedEmployeeBarCode, setSelectedEmployeeBarCode] =
     React.useState();
   const [lastUpdated, setLastUpdated] = React.useState("");
@@ -374,6 +379,8 @@ export default function AllEmployeeDataReport({
   //   }));
 
   const handleCellClick = (params) => {
+    console.log('paramsparams', params);
+    setShowDeatilSelectedLocation(params?.row?.location)
     setSelectedEmployeeName(params?.row?.employeename);
     setSelectedEmployeeBarCode(params?.row?.barcode);
     setSelectedDepartmentId(params?.row?.deptid);
@@ -1110,7 +1117,7 @@ export default function AllEmployeeDataReport({
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
               <Button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                Open Filter
+                Filter
               </Button>
               <p
                 style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
@@ -1271,7 +1278,7 @@ export default function AllEmployeeDataReport({
 
             <CustomTextField
               type="text"
-              placeholder="Common Search..."
+              placeholder="Search..."
               value={commonSearch}
               customBorderColor="rgba(47, 43, 61, 0.2)"
               onChange={(e) => setCommonSearch(e.target.value)}
@@ -1353,6 +1360,9 @@ export default function AllEmployeeDataReport({
               pageSize={pageSize}
               autoHeight={false}
               localeText={{ noRowsLabel: "No Data" }}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[10, 20, 50, 100]}
               columnBuffer={17}
               initialState={{
                 columns: {
@@ -1436,6 +1446,7 @@ export default function AllEmployeeDataReport({
               selectedEmployeeBarCode={selectedEmployeeBarCode}
               selectedEmployeeName={selectedEmployeeName}
               selectedMetalType={selectedMetalType}
+              showDeatilSelectedLocation={showDeatilSelectedLocation}
             />
           </Box>
         </Slide>
