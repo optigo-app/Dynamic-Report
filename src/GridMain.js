@@ -19,6 +19,8 @@ import EmployeeDepartmentReportSpliter from "./compoents/EmployeeDepartmentRepor
 import OSRReportSpliter from "./compoents/OSRReport/OSRReportSpliter";
 import ItaskReport from "./compoents/ItaskReport/ItaskReport";
 import SignageDisplayList from "./compoents/SignageDisplayList/SignageDisplayList";
+import FgSpliter from "./compoents/FgWiseWorkerReportSpliterView/FgSpliter";
+import RefiningReport from "./compoents/RefiningReport/RefiningReport";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -49,6 +51,7 @@ const GridMain = () => {
   };
 
   useEffect(() => {
+
     //      Cookies.set(
     //    "skey",
     //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
@@ -127,7 +130,8 @@ const GridMain = () => {
     } else if (pid == 18279) {
       return <OSRReportSpliter />; // 1553 Doc.
     } else if (pid == 18276) {
-      return <EmployeeDepartmentReportSpliter />; // 1553 Doc.
+      return <FgSpliter />; //fg loss 1553 Doc.
+      // return <EmployeeDepartmentReportSpliter />; //fg loss 1553 Doc.
     } else if (pid == 18226) {
       return <DustCollector />; // 1383 Doc.     ignore setting
     } else if (pid == 18227) {
@@ -146,6 +150,8 @@ const GridMain = () => {
       return <DeviceSpliter />; // 1045 Doc.
     } else if (pid == 18234) {
       return <JobCompletion />; // 1256 Doc.
+    } else if (pid == 1002) {
+      return <RefiningReport />; // 1256 Doc.
     } else if (pid == 1000) {
       return <ItaskReport />; // 1256 Doc.
     } else if (pid == 1001) {

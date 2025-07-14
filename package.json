@@ -1,7 +1,7 @@
 {
-  "homepage": "/testreport",
   "name": "reportmaindummy",
   "version": "0.1.0",
+  "homepage": "/testreport",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -9,11 +9,13 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@mui/material": "^7.0.2",
     "@mui/x-data-grid": "^8.6.0",
+    "@mui/x-date-pickers": "^8.8.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.8.4",
+    "dayjs": "^1.11.13",
     "emailjs-com": "^3.2.0",
     "file-saver": "^2.0.5",
     "js-cookie": "^3.0.5",

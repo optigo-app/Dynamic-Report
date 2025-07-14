@@ -1,13 +1,13 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
-import "./AllEmployeeDataReport.scss";
+import "./SingleEmployeeWiseData.scss";
 import DatePicker from "react-datepicker";
-import masterData from "./masterData.json";
-import mainButton from "../../images/Mail_32.png";
-import printButton from "../../images/print.png";
-import gridView from "../../images/GriedView.png";
-import imageView from "../../images/ImageView2.png";
+import masterData from "../masterData.json";
+import mainButton from "../../../images/Mail_32.png";
+import printButton from "../../../images/print.png";
+import gridView from "../../../images/GriedView.png";
+import imageView from "../../../images/ImageView2.png";
 import { RiFullscreenLine } from "react-icons/ri";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -25,19 +25,19 @@ import {
   MenuItem,
   Modal,
   Select,
-  Slide,
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
 import { MdExpandMore, MdOpenInFull } from "react-icons/md";
-import CustomTextField from "../../text-field/index";
+import CustomTextField from "../../../text-field/index";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiFillSetting } from "react-icons/ai";
-import OtherKeyData from "./AllEmployeeData.json";
+import OtherKeyData from "./SingleEmployeeWiseReport.json";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import SingleEmployeeWiseData from "./SingleEmployeeWiseData/SingleEmployeeWiseData";
-import Warper from "./warper";
+import { GetWorkerData } from "../../../../API/GetWorkerData/GetWorkerData";
+import { IoMdClose, IoMdCloseCircleOutline } from "react-icons/io";
+import { useSearchParams } from "react-router-dom";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -101,16 +101,17 @@ const DraggableColumn = ({ col, index, checkedColumns, setCheckedColumns }) => {
   );
 };
 
-export default function AllEmployeeDataReport({
-  selectedDepartment,
-  selectedLocation,
-  AllFinalData,
-  endDate,
+export default function SingleEmployeeWiseData({
+  selectedDepartmentId,
+  selectedEmployeeCode,
+  currentLocation,
   startDate,
-  selectedEmployee,
-  showDepartment,
+  endDate,
+  handleClose,
+  selectedEmployeeBarCode,
+  selectedEmployeeName,
   selectedMetalType,
-  showWithouLocationData,
+  showDeatilSelectedLocation
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -132,105 +133,63 @@ export default function AllEmployeeDataReport({
   const [allRowData, setAllRowData] = React.useState();
   const [isLoading, setIsLoading] = React.useState(false);
   const [checkedColumns, setCheckedColumns] = React.useState({});
-  const [selectedDepartmentId, setSelectedDepartmentId] = React.useState();
-  const [selectedEmployeeCode, setSelectedEmployeeCode] = React.useState();
-  const [selectedEmployeeName, setSelectedEmployeeName] = React.useState();
-  const [showDeatilSelectedLocation, setShowDeatilSelectedLocation] =
-    React.useState();
+
+  const [dateRange, setDateRange] = React.useState([null, null]);
+  const [NewStartDate, setNewStartDate] = React.useState(startDate);
+  const [newEndDate, setNewEndDate] = React.useState(endDate);
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
     pageSize: 10,
   });
-  const [selectedEmployeeBarCode, setSelectedEmployeeBarCode] =
-    React.useState();
-  const [lastUpdated, setLastUpdated] = React.useState("");
-  const gridRef = React.useRef(null);
+  const [start, end] = dateRange;
+  const [openDatePicker, setOpenDatePicker] = React.useState(false);
+  const [searchParams] = useSearchParams();
 
-  const APICall = () => {
-    console.log('rd1rd1...................');
-
+  const APICall = async () => {
+    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     setIsLoading(true);
-    const { rd, rd1 } = AllFinalData || {};
+    const body = {
+      con: `{"id":"","mode":"workerwithoutfindingdetail","appuserid":"${AllData?.uid}"}`,
+      p: `{\"fdate\":\"${NewStartDate}",\"tdate\":\"${newEndDate}",\"deptid\":\"${selectedDepartmentId}",\"locationname\":\"${currentLocation ?? showDeatilSelectedLocation}",\"employeecode\":\"${selectedEmployeeCode}"}`,
+      f: "Task Management (taskmaster)",
+    };
+    // e3tsaXZlMS5vcHRpZ29hcHBzLmNvbX19e3syMH19e3tlbHZlZXN0ZXJ9fXt7aGVubnlzfX0=
+    // e3tsaXZlMS5vcHRpZ29hcHBzLmNvbX19e3syMH19e3tlbHZlZXN0ZXJ9fXt7aGVubnlzfX0=
+    try {
+      const sp = searchParams.get("sp");
+      const fetchedData = await GetWorkerData(body, sp);
+      if (fetchedData?.Data?.rd[0]?.stat == 0) {
+        setAllRowData();
+        setIsLoading(false);
+      } else {
+        setMasterKeyData(OtherKeyData?.rd);
+        setAllColumData(OtherKeyData?.rd1);
+        setAllColumIdWiseName(fetchedData?.Data?.rd);
 
-    
-    if (!rd || !rd1) {
-      console.warn("Invalid data format");
-      return;
+        const filteredDataEmployee = fetchedData?.Data?.rd1.filter((entry) => {
+          return (
+            entry["24"]?.toLowerCase() === selectedMetalType?.toLowerCase()
+          );
+        });
+
+        console.log(
+          "originalRowsoriginalRows",
+          selectedMetalType,
+          filteredDataEmployee,
+          fetchedData
+        );
+
+        setAllRowData(filteredDataEmployee);
+      }
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Fetch error:", error);
     }
-    const filteredDataDepartment = rd1.filter((entry) => {
-      const matchDepartment =
-        entry["2"]?.toLowerCase() === selectedDepartment?.toLowerCase();
-
-      const matchMetal =
-        entry["22"]?.toLowerCase() === selectedMetalType?.toLowerCase();
-
-      const matchLocation =
-        showWithouLocationData ||
-        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase();
-
-      return matchDepartment && matchMetal && matchLocation;
-    });
-
-    console.log("filteredDataDepartment", filteredDataDepartment);
-
-    const filteredDataEmployee = rd1.filter((entry) => {
-      const matchEmployee =
-        entry["3"]?.toLowerCase() === selectedEmployee?.toLowerCase();
-
-      const matchMetal =
-        entry["22"]?.toLowerCase() === selectedMetalType?.toLowerCase();
-
-      const matchLocation =
-        showWithouLocationData ||
-        entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase();
-
-      return matchEmployee && matchMetal && matchLocation;
-    });
-
-    // const filteredDataDepartment = rd1.filter((entry) => {
-    //   return (
-    //     entry["2"]?.toLowerCase() === selectedDepartment?.toLowerCase() &&
-    //     entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase() &&
-    //     entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase()
-    //   );
-    // });
-
-    // const filteredDataEmployee = rd1.filter((entry) => {
-    //   return (
-    //     entry["3"]?.toLowerCase() === selectedEmployee?.toLowerCase() &&
-    //     entry["17"]?.toLowerCase() === selectedLocation?.toLowerCase() &&
-    //     entry["22"]?.toLowerCase() == selectedMetalType?.toLowerCase()
-    //   );
-    // });
-
-    setMasterKeyData(OtherKeyData?.rd);
-    setAllColumData(OtherKeyData?.rd1);
-    setAllColumIdWiseName(AllFinalData?.rd);
-
-    if (showDepartment) {
-      setAllRowData(filteredDataDepartment);
-    } else {
-      setAllRowData(filteredDataEmployee);
-    }
-    setIsLoading(false);
   };
 
   React.useEffect(() => {
     APICall();
-  }, [selectedDepartment, selectedLocation, selectedEmployee, showDepartment , AllFinalData]);
-
-  React.useEffect(() => {
-    const now = new Date();
-    const formatNumber = (n) => n.toString().padStart(2, "0");
-
-    const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
-      now.getMonth() + 1
-    )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
-      now.getMinutes()
-    )}:${formatNumber(now.getSeconds())}`;
-
-    setLastUpdated(formattedDate);
-  }, []);
+  }, [newEndDate]);
 
   React.useEffect(() => {
     if (allColumData) {
@@ -246,7 +205,7 @@ export default function AllEmployeeDataReport({
     if (!allColumData) return;
     const columnData = Object?.values(allColumData)
       ?.filter((col) => col.ColumShow)
-      ?.map((col, index) => {
+      ?.map((col) => {
         const isPriorityFilter = col.proiorityFilter === true;
         return {
           field: col.field,
@@ -255,7 +214,7 @@ export default function AllEmployeeDataReport({
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
           filterable: col.ColumFilter,
-          suggestionFilter: col.suggestionFilter,
+          suggestionFilter: col.SuggestionFilter,
           hrefLink: col.HrefLink,
           summuryValueKey: col.summuryValueKey,
           summaryTitle: col.summaryTitle,
@@ -263,10 +222,10 @@ export default function AllEmployeeDataReport({
           filterTypes: [
             col.NormalFilter && "NormalFilter",
             col.DateRangeFilter && "DateRangeFilter",
-            col.MultiSelection && "MultiSelection",
+            col.multiSelection && "multiSelection",
             col.RangeFilter && "RangeFilter",
             col.SuggestionFilter && "suggestionFilter",
-            col.selectDropdownFilter && "selectDropdownFilter",
+            col.SelectDropdownFilter && "selectDropdownFilter",
           ].filter(Boolean),
 
           renderCell: (params) => {
@@ -285,7 +244,12 @@ export default function AllEmployeeDataReport({
                   {params.value?.toFixed(col.ToFixedValue)}
                 </span>
               );
-            } else if (col.hrefLink) {
+            }
+            //  else if (col.field === "SrNo") {
+            //   const rowIndex = params.api.getRowIndex(params.id);
+            //   return <p>{rowIndex + 1}</p>;
+            // }
+            else if (col.hrefLink) {
               return (
                 <a
                   target="_blank"
@@ -296,10 +260,7 @@ export default function AllEmployeeDataReport({
                     fontSize: col.FontSize || "inherit",
                     padding: "5px 20px",
                     cursor: "pointer",
-                    width: "120px",
                     fontSize: col.FontSize || "inherit",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
                   }}
                   onClick={() => handleCellClick(params)}
                 >
@@ -314,7 +275,6 @@ export default function AllEmployeeDataReport({
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px 20px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
@@ -385,12 +345,6 @@ export default function AllEmployeeDataReport({
   //   }));
 
   const handleCellClick = (params) => {
-    console.log("paramsparams", params);
-    setShowDeatilSelectedLocation(params?.row?.location);
-    setSelectedEmployeeName(params?.row?.employeename);
-    setSelectedEmployeeBarCode(params?.row?.barcode);
-    setSelectedDepartmentId(params?.row?.deptid);
-    setSelectedEmployeeCode(params?.row?.employeecode);
     setOpen(true);
   };
 
@@ -409,14 +363,8 @@ export default function AllEmployeeDataReport({
   const [filters, setFilters] = React.useState({});
 
   React.useEffect(() => {
-    const hasActiveFilters = Object.values(filters).some(
-      (val) => val && (Array.isArray(val) ? val.length > 0 : val !== "")
-    );
-
-    if (!hasActiveFilters) {
-      setFilteredRows(originalRows);
-    }
-  }, [originalRows, filters]);
+    setFilteredRows(originalRows);
+  }, [originalRows]);
 
   React.useEffect(() => {
     const newFilteredRows = originalRows?.filter((row) => {
@@ -510,7 +458,7 @@ export default function AllEmployeeDataReport({
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
-      if (filterType === "MultiSelection") {
+      if (filterType === "multiSelection") {
         const selectedValues = prevFilters[field] || [];
         let newValues;
 
@@ -640,7 +588,6 @@ export default function AllEmployeeDataReport({
   const renderFilterDropDown = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
     const filtersToRender = col.filterTypes;
-
     return filtersToRender.map((filterType) => {
       switch (filterType) {
         case "selectDropdownFilter": {
@@ -667,7 +614,7 @@ export default function AllEmployeeDataReport({
                 variant="filled"
               >
                 <MenuItem value="">
-                  <em>{`Select Employee`}</em>
+                  <em>None</em>
                 </MenuItem>
                 {uniqueValues.map((value) => (
                   <MenuItem key={`select-${col.field}-${value}`} value={value}>
@@ -742,14 +689,14 @@ export default function AllEmployeeDataReport({
   const renderFilterMulti = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
     const filtersToRender = col.filterTypes;
-    return filtersToRender.map((filterType) => {
+    return filtersToRender?.map((filterType) => {
       switch (filterType) {
-        case "MultiSelection":
+        case "multiSelection":
           const uniqueValues = [
-            ...new Set(originalRows.map((row) => row[col.field])),
+            ...new Set(originalRows?.map((row) => row[col.field])),
           ];
           return (
-            <div key={col.field}>
+            <div key={col.field} style={{ margin: "7px" }}>
               <Accordion>
                 <AccordionSummary
                   expandIcon={<MdExpandMore />}
@@ -759,7 +706,7 @@ export default function AllEmployeeDataReport({
                   <Typography>{col.headerName}</Typography>
                 </AccordionSummary>
                 <AccordionDetails className="gridMetalComboMain">
-                  {uniqueValues.map((value) => (
+                  {uniqueValues?.map((value) => (
                     <label key={value}>
                       <input
                         type="checkbox"
@@ -769,7 +716,7 @@ export default function AllEmployeeDataReport({
                           handleFilterChange(
                             col.field,
                             { value, checked: e.target.checked },
-                            "MultiSelection"
+                            "multiSelection"
                           )
                         }
                       />
@@ -793,15 +740,12 @@ export default function AllEmployeeDataReport({
     setToDate(end);
   };
 
-  const handleClose = () => setOpen(false);
-
   const [sideFilterOpen, setSideFilterOpen] = React.useState(false);
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
   };
-
   const renderSummary = () => {
-    const summaryColumns = columns.filter((col) => {
+    const summaryColumns = columns?.filter((col) => {
       const columnData = Object.values(allColumData).find(
         (data) => data.field === col.field
       );
@@ -814,19 +758,30 @@ export default function AllEmployeeDataReport({
           let calculatedValue = 0;
 
           if (col.field === "lossperfm") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
+            const totalLossWt = filteredRows?.reduce(
+              (sum, row) => sum + (parseFloat(row.losswt) || 0),
+              0
+            );
             const totalNetReturnWt = filteredRows?.reduce(
               (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
               0
-            ); // prevent division by 0
-            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
+            );
+
             calculatedValue =
-              calculatedValue1 == Infinity ? 0 : calculatedValue1;
+              totalNetReturnWt !== 0
+                ? (totalLossWt / totalNetReturnWt) * 100
+                : 0;
+            // const totalLossWt = filteredRows?.reduce(
+            //   (sum, row) => sum + (parseFloat(row.losswt) || 0),
+            //   0
+            // );
+
+            // const totalNetReturnWt =
+            //   filteredRows?.reduce(
+            //     (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
+            //     0
+            //   ) || 0;
+            // calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
           } else if (col.field === "lossper") {
             const totalLossWt =
               filteredRows?.reduce(
@@ -838,11 +793,12 @@ export default function AllEmployeeDataReport({
               filteredRows?.reduce(
                 (sum, row) => sum + (parseFloat(row.netretunwtfm) || 0),
                 0
-              ) || 0; // prevent division by 0
+              ) || 0;
             // calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
             calculatedValue =
-              calculatedValue1 == Infinity ? 0 : calculatedValue1;
+              totalNetReturnWt !== 0
+                ? (totalLossWt / totalNetReturnWt) * 100
+                : 0;
           } else if (col.field === "losspergross") {
             const totalLossWt =
               filteredRows?.reduce(
@@ -855,9 +811,11 @@ export default function AllEmployeeDataReport({
                 (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
                 0
               ) || 0; // prevent division by 0
-            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
+            // calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
             calculatedValue =
-              calculatedValue1 == Infinity ? 0 : calculatedValue1;
+              totalNetReturnWt !== 0
+                ? (totalLossWt / totalNetReturnWt) * 100
+                : 0;
           } else {
             calculatedValue =
               filteredRows?.reduce(
@@ -865,12 +823,15 @@ export default function AllEmployeeDataReport({
                 0
               ) || 0;
           }
+
           return (
             <div className="summaryItem" key={col.field}>
               <div className="AllEmploe_boxViewTotal">
                 <div>
                   <p className="AllEmplo_boxViewTotalValue">
-                    {calculatedValue.toFixed(col?.summuryValueKey)}
+                    {calculatedValue == "Infinity"
+                      ? "0.00"
+                      : calculatedValue.toFixed(col?.summuryValueKey)}
                   </p>
                   <p className="boxViewTotalTitle">{col.summaryTitle}</p>
                 </div>
@@ -881,43 +842,6 @@ export default function AllEmployeeDataReport({
       </div>
     );
   };
-
-  // const renderSummary = () => {
-  //   const summaryColumns = columns.filter((col) => {
-  //     const columnData = Object.values(allColumData).find(
-  //       (data) => data.field === col.field
-  //     );
-  //     return columnData?.summary;
-  //   });
-
-  //   return (
-  //     <div className="summaryBox">
-  //       {summaryColumns.map((col) => (
-  //         <div className="summaryItem">
-  //           <div key={col.field} className="AllEmploe_boxViewTotal">
-  //             <div>
-  //               <p className="AllEmplo_boxViewTotalValue">
-  //                 {filteredRows
-  //                   ?.reduce(
-  //                     (sum, row) => sum + (parseFloat(row[col.field]) || 0),
-  //                     0
-  //                   )
-  //                   .toFixed(col?.summuryValueKey)}
-  //                 {/* {col.field === "jobCount"
-  //                   ? filteredRows?.reduce(
-  //                       (sum, row) => sum + (parseInt(row[col.field], 10) || 0),
-  //                       0
-  //                     )
-  //                   : filteredRows?.length} */}
-  //               </p>
-  //               <p className="boxViewTotalTitle">{col.summaryTitle}</p>
-  //             </div>
-  //           </div>
-  //         </div>
-  //       ))}
-  //     </div>
-  //   );
-  // };
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -1021,18 +945,39 @@ export default function AllEmployeeDataReport({
     console.log("Selected Rd3 Name:", selectedRd3Name);
   };
 
+  const handleDateChange = (update) => {
+    const [startDate, endDate] = update;
+    if (startDate && endDate) {
+      const diffInMs = endDate.getTime() - startDate.getTime();
+      const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+
+      if (diffInDays > 31) {
+        alert("You can select a maximum range of 1 month.");
+        return;
+      }
+      setNewStartDate(formatDate(startDate));
+      setNewEndDate(formatDate(endDate));
+      setOpenDatePicker(false); // close date picker
+    }
+    setDateRange(update);
+  };
+
+  const formatDate = (date) => {
+    return date
+      ? `${(date.getMonth() + 1).toString().padStart(2, "0")}/${date
+          .getDate()
+          .toString()
+          .padStart(2, "0")}/${date.getFullYear()}`
+      : "";
+  };
   const onDragEnd = () => {};
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div
-        className="worker_AllEmoployee_mainGridView"
-        sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
-        ref={gridContainerRef}
-      >
+      <div className="singleDataEmployee_mainDiv" ref={gridContainerRef}>
         {isLoading && (
-          <div className="loader-overlay">
-            {/* <CircularProgress className="loadingBarManage" /> */}
+          <div className="loader-overlay_signle">
+            <CircularProgress className="loadingBarManage" />
           </div>
         )}
 
@@ -1063,14 +1008,29 @@ export default function AllEmployeeDataReport({
         <Drawer
           open={sideFilterOpen}
           onClose={toggleDrawer(false)}
-          className="drawerMain"
+          className="SingleEmploe_drawerMain"
         >
-          <p style={{ margin: "20px 20px 0px 20px", fontSize: "25px" }}>
+          <p
+            style={{
+              margin: "20px 10px 0px 10px",
+              fontSize: "25px",
+              display: "flex",
+              justifyContent: "space-between",
+            }}
+          >
             Filter
+            <IoMdClose
+              style={{
+                cursor: "pointer",
+                fontSize: "25px",
+                marginTop: "-10px",
+              }}
+              onClick={() => setSideFilterOpen(false)}
+            />
           </p>
           {columns
             .filter((col) => col.filterable)
-            .map((col) => (
+            ?.map((col) => (
               <div key={col.field}>{renderFilterMulti(col)}</div>
             ))}
 
@@ -1105,13 +1065,13 @@ export default function AllEmployeeDataReport({
               <AiFillSetting style={{ height: "25px", width: "25px" }} />
             </div>
           )}
-          {masterKeyData?.fullScreenGridButton && (
-            <button className="fullScreenButton" onClick={toggleFullScreen}>
-              <RiFullscreenLine
-                style={{ marginInline: "5px", fontSize: "30px" }}
-              />
-            </button>
-          )}
+          {/* {masterKeyData?.fullScreenGridButton && ( */}
+          <button className="Grid_CloseIcone" onClick={handleClose}>
+            <IoMdCloseCircleOutline
+              style={{ marginInline: "5px", fontSize: "30px" }}
+            />
+          </button>
+          {/* )} */}
         </div>
         <div
           style={{
@@ -1121,17 +1081,44 @@ export default function AllEmployeeDataReport({
           }}
         >
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-              <Button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                Filter
-              </Button>
-              <p
-                style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
-              >
-                {" "}
-                Last Updated :- {lastUpdated}
-              </p>
-            </div>
+            <Button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
+              Filter
+            </Button>
+            {/* <DatePicker
+              selectsRange
+              showYearDropdown
+              showMonthDropdown
+              monthsShown={2}
+              shouldCloseOnSelect={false}
+              open={openDatePicker}
+              onClickOutside={() => setOpenDatePicker(false)}
+              onInputClick={() => setOpenDatePicker(true)}
+              startDate={start}
+              endDate={end}
+              onChange={handleDateChange}
+              customInput={
+                <CustomTextField
+                  customBorderColor="rgba(47, 43, 61, 0.2)"
+                  borderoutlinedColor="#00CFE8"
+                  customTextColor="#2F2B3DC7"
+                  customFontSize="0.8125rem"
+                  label="Date Filter"
+                />
+              }
+              dateFormat="dd-MM-yyyy"
+              placeholderText={"dd-mm-yyyy dd-mm-yyyy"}
+              className="rangeDatePicker"
+            /> */}
+
+            <p
+              style={{
+                marginBottom: "6px",
+                fontSize: "20px",
+                color: "#716565",
+              }}
+            >
+              {selectedEmployeeName} {selectedEmployeeBarCode}
+            </p>
             {columns
               .filter((col) => col.filterable)
               .map((col) => (
@@ -1139,7 +1126,6 @@ export default function AllEmployeeDataReport({
                   {renderDateFilter(col)}
                 </div>
               ))}
-
             <div
               className="date-selector"
               style={{ display: "flex", gap: "10px" }}
@@ -1274,6 +1260,24 @@ export default function AllEmployeeDataReport({
               </div>
             )}
 
+            {masterKeyData?.ExcelExport && (
+              <button onClick={exportToExcel} className="exportButton">
+                <svg
+                  stroke="currentColor"
+                  fill="currentColor"
+                  stroke-width="0"
+                  viewBox="0 0 384 512"
+                  class="mr-2"
+                  height="1em"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
+                </svg>
+                Export to Excel
+              </button>
+            )}
+
             {/* {masterKeyData?.fullScreenGridButton && (
               <button className="fullScreenButton" onClick={toggleFullScreen}>
                 <RiFullscreenLine
@@ -1289,22 +1293,6 @@ export default function AllEmployeeDataReport({
               customBorderColor="rgba(47, 43, 61, 0.2)"
               onChange={(e) => setCommonSearch(e.target.value)}
             />
-
-            {masterKeyData?.ExcelExport && (
-              <button onClick={exportToExcel} className="All_exportButton">
-                <svg
-                  stroke="currentColor"
-                  fill="currentColor"
-                  stroke-width="0"
-                  viewBox="0 0 384 512"
-                  height="2em"
-                  width="2em"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
-                </svg>
-              </button>
-            )}
 
             <Button onClick={handleClearFilter} className="ClearFilterButton">
               <svg
@@ -1324,10 +1312,7 @@ export default function AllEmployeeDataReport({
           </div>
         </div>
 
-        <div
-          ref={gridRef}
-          style={{ height: "calc(100vh - 305px)", margin: "5px" }}
-        >
+        <div style={{ height: "calc(100vh - 280px)" }}>
           {showImageView ? (
             <div>
               <img
@@ -1360,105 +1345,671 @@ export default function AllEmployeeDataReport({
               />
             </div>
           ) : (
-            <Warper>
-              <DataGrid
-                rows={filteredRows ?? []}
-                columns={columns ?? []}
-                pageSize={pageSize}
-                autoHeight={false}
-                localeText={{ noRowsLabel: "No Data" }}
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-                pageSizeOptions={[10, 20, 50, 100]}
-                columnBuffer={17}
-                initialState={{
-                  columns: {
-                    columnVisibilityModel: {
-                      status: false,
-                      traderName: false,
-                    },
-                  },
-                }}
-                loading={isLoading}
-                components={{
-                  Toolbar: () => null,
-                  LoadingOverlay: () => (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        height: "100%",
-                      }}
-                    >
-                      {/* Loading... */}
-                      <CircularProgress className="loadingBarManage" />
-                    </div>
-                  ),
-                }}
-                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                rowsPerPageOptions={[5, 10, 15, 25, 50]}
-                className="simpleGridView"
-                pagination
-                sx={{
-                  "& .MuiDataGrid-menuIcon": {
-                    display: "none",
-                  },
-                  marginLeft: 2,
-                  marginRight: 2,
-                  marginBottom: 2,
-                }}
-              />
-            </Warper>
+            <DataGrid
+              rows={filteredRows ?? []}
+              columns={columns}
+              pageSize={pageSize}
+              localeText={{ noRowsLabel: "No Data" }}
+              autoHeight={false}
+              columnBuffer={20}
+              disableColumnVirtualization
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              pageSizeOptions={[10, 20, 50, 100]}
+              onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+              rowsPerPageOptions={[5, 10, 15, 25, 50]}
+              className="simpleGridView"
+              pagination
+              sx={{
+                "& .MuiDataGrid-menuIcon": {
+                  display: "none",
+                },
+                marginLeft: 2,
+                marginRight: 2,
+                marginBottom: 2,
+              }}
+              loading={isLoading}
+              // components={{
+              //   Toolbar: () => null,
+              //   LoadingOverlay: () => (
+              //     <div
+              //       style={{
+              //         display: "flex",
+              //         justifyContent: "center",
+              //         alignItems: "center",
+              //         height: "100%",
+              //       }}
+              //     >
+              //       {/* Loading... */}
+              //     </div>
+              //   ),
+              // }}
+            />
           )}
         </div>
       </div>
-
-      <Modal
-        open={open}
-        // onClose={handleClose}
-        disableEnforceFocus
-        disableAutoFocus
-        hideBackdrop
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          border: "0px",
-          outline: "0px",
-          pointerEvents: "none",
-        }}
-      >
-        <Slide in={open} direction="down" timeout={500}>
-          <Box
-            sx={{
-              transform: "translate(-50%, -50%)",
-              bgcolor: "background.paper",
-              boxShadow: 24,
-              borderRadius: 2,
-              width: "97%",
-              maxHeight: "95vh",
-              overflowY: "auto",
-              border: "none",
-              outline: "none",
-              pointerEvents: "auto",
-            }}
-          >
-            <SingleEmployeeWiseData
-              selectedDepartmentId={selectedDepartmentId}
-              selectedEmployeeCode={selectedEmployeeCode}
-              currentLocation={selectedLocation}
-              startDate={startDate}
-              endDate={endDate}
-              handleClose={handleClose}
-              selectedEmployeeBarCode={selectedEmployeeBarCode}
-              selectedEmployeeName={selectedEmployeeName}
-              selectedMetalType={selectedMetalType}
-              showDeatilSelectedLocation={showDeatilSelectedLocation}
-            />
-          </Box>
-        </Slide>
-      </Modal>
     </DragDropContext>
   );
 }
+
+// {
+//   "rd": {
+//     "ExcelExport": false,
+//     "PrintButton": false,
+//     "mailButton": false,
+//     "fullScreenGridButton": true,
+//     "imageView": false,
+//     "progressFilter": false,
+//     "proiorityFilter": false,
+//     "ColumnSettingPopup": false
+//   },
+//   "rd1": [
+//     {
+//       "headerName": "Sr#",
+//       "field": "SrNo",
+//       "Width": 90,
+//       "Align": "center",
+//       "hrefLink": "",
+//       "dataType": "number",
+//       "ColumShow": true,
+//       "ColumFilter": false,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "ColumNumberSetting": 1,
+//       "ColumAlign": "center",
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": false,
+//       "proiorityFilter": false,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 1,
+//       "headerName": "Location",
+//       "field": "location",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": false,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 2,
+//       "headerName": "Department",
+//       "field": "deptname",
+//       "Width": 150,
+//       "Align": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "ColumNumberSetting": 4,
+//       "ColumAlign": "right",
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": false,
+//       "proiorityFilter": false,
+//       "copyButton": false,
+//       "EditData": true,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 3,
+//       "headerName": "serialjobno",
+//       "field": "serialjobno",
+//       "Width": 150,
+//       "Align": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": false,
+//       "ColumNumberSetting": 5,
+//       "ColumAlign": "center",
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": false,
+//       "copyButton": true,
+//       "EditData": false
+//     },
+//     {
+//       "colid": 4,
+//       "headerName": "Net Issue",
+//       "field": "netissuewt",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": true,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "Net Issues",
+//       "summuryValueKey": 3
+//     },
+//     {
+//       "colid": 5,
+//       "headerName": "Net Return",
+//       "field": "netretunwt",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "Net Return",
+//       "summuryValueKey": 3
+//     },
+//     {
+//       "colid": 6,
+//       "headerName": "Net Issue(F+M)",
+//       "field": "netissuewtfm",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": true,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "Net Issues(F+M)",
+//       "summuryValueKey": 3
+//     },
+//     {
+//       "colid": 7,
+//       "headerName": "Net Return(F+M)",
+//       "field": "netretunwtfm",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": true,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "Net Return(F+M)",
+//       "summuryValueKey": 3
+//     },
+//     {
+//       "colid": 8,
+//       "headerName": "Gross Return",
+//       "field": "grossnetretunwt",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": true,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "Gross Return",
+//       "summuryValueKey": 3
+//     },
+//     {
+//       "colid": 9,
+//       "headerName": "losswt",
+//       "field": "losswt",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 10,
+//       "headerName": "Pure Loss",
+//       "field": "pureloss",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": true,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "Pure Loss",
+//       "summuryValueKey": 3
+//     },
+//     {
+//       "colid": 11,
+//       "headerName": "employeename",
+//       "field": "employeename",
+//       "Width": 150,
+//       "Align": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": false,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": true,
+//       "RangeFilter": false,
+//       "ColumNumberSetting": 3,
+//       "ColumAlign": "right",
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "suggestionFilter": true,
+//       "selectDropdownFilter": false,
+//       "proiorityFilter": false,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 12,
+//       "headerName": "barcode",
+//       "field": "barcode",
+//       "Width": 150,
+//       "Align": "center",
+//       "hrefLink": false,
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": true,
+//       "DateRangeFilter": false,
+//       "multiSelection": true,
+//       "RangeFilter": false,
+//       "ColumNumberSetting": 2,
+//       "ColumAlign": "left",
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": false,
+//       "proiorityFilter": false,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 13,
+//       "headerName": "employeecode",
+//       "field": "employeecode",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+
+//     {
+//       "colid": 14,
+//       "headerName": "jobcount",
+//       "field": "jobcount",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 15,
+//       "headerName": "grossissuewt",
+//       "field": "grossissuewt",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 16,
+//       "headerName": "Loss%",
+//       "field": "lossper",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "Loss(F+M)%",
+//       "summuryValueKey": 2
+//     },
+//     {
+//       "colid": 17,
+//       "headerName": "lossperfm",
+//       "field": "lossperfm",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     },
+//     {
+//       "colid": 18,
+//       "headerName": "losspergross",
+//       "field": "losspergross",
+//       "Width": 150,
+//       "Align": "center",
+//       "ColumAlign": "center",
+//       "hrefLink": "",
+//       "ColumShow": true,
+//       "ColumFilter": true,
+//       "NormalFilter": false,
+//       "DateRangeFilter": false,
+//       "multiSelection": false,
+//       "RangeFilter": false,
+//       "suggestionFilter": false,
+//       "selectDropdownFilter": true,
+//       "ColumNumberSetting": 7,
+//       "ColumTitleCapital": false,
+//       "ColumTitleSmall": false,
+//       "FontSize": "12px",
+//       "borderRadius": "0px",
+//       "color": "",
+//       "backgroundColor": "",
+//       "summary": false,
+//       "columAscendion": false,
+//       "columDescending": false,
+//       "proiorityFilter": true,
+//       "copyButton": false,
+//       "EditData": false,
+//       "summaryTitle": "",
+//       "summuryValueKey": ""
+//     }
+//   ]
+// }

@@ -203,7 +203,13 @@ export default function StcokReport() {
       const grupCheckboxMap = (OtherKeyData?.rd1 || [])
         .filter((col) => col?.GrupChekBox)
         .reduce((acc, col) => {
-          acc[col.field] = true;
+          console.log("colcolcolcol", col);
+
+          if (col.defaultGrupChekBox) {
+            acc[col.field] = true;
+          } else {
+            acc[col.field] = false;
+          }
           return acc;
         }, {});
       setGrupEnChekBox(grupCheckboxMap);
@@ -290,7 +296,13 @@ export default function StcokReport() {
               return (
                 <p
                   style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px",
+                    borderRadius: col.BorderRadius,
+                    margin: '0px'
                   }}
                 >
                   {params.value?.toFixed(col.ToFixedValue)}
@@ -306,10 +318,33 @@ export default function StcokReport() {
               return (
                 <span
                   style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px",
+                    borderRadius: col.BorderRadius,
+                    margin: '0px'
+
                   }}
                 >
                   {formattedDate}
+                </span>
+              );
+            } else if (col.field == "jobCountTotal") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px",
+                    borderRadius: col.BorderRadius,
+                    margin: '0px'
+                  }}
+                >
+                  1
                 </span>
               );
             } else if (col.hrefLink) {
@@ -341,8 +376,9 @@ export default function StcokReport() {
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px 20px",
+                    padding: "5px",
                     borderRadius: col.BorderRadius,
+                    margin: '0px'
                   }}
                 >
                   {params.value}
@@ -987,17 +1023,26 @@ export default function StcokReport() {
   };
 
   const onDragEnd = () => {};
+
   const groupRows = (rows, groupCheckBox) => {
     const grouped = [];
     const adjustedCheckBox = { ...groupCheckBox };
-    const keysExceptJobNo = Object.keys(adjustedCheckBox).filter(
-      (key) => key !== "j_jobno"
-    );
-    const anyFalse = keysExceptJobNo.some((k) => !adjustedCheckBox[k]);
 
-    if (anyFalse && adjustedCheckBox["j_jobno"]) {
-      adjustedCheckBox["j_jobno"] = false;
-      setGrupEnChekBox(adjustedCheckBox); // <-- this is key
+    if (adjustedCheckBox["stockbarcode"]) {
+      Object.keys(adjustedCheckBox).forEach((key) => {
+        adjustedCheckBox[key] = true;
+      });
+      setGrupEnChekBox(adjustedCheckBox);
+    }
+
+    const keysExceptJobNo = Object.keys(adjustedCheckBox).filter(
+      (key) => key !== "stockbarcode"
+    );
+
+    const anyFalse = keysExceptJobNo.some((k) => !adjustedCheckBox[k]);
+    if (anyFalse && adjustedCheckBox["stockbarcode"]) {
+      adjustedCheckBox["stockbarcode"] = false;
+      setGrupEnChekBox(adjustedCheckBox);
     }
 
     if (!Array.isArray(rows)) {
@@ -1048,23 +1093,24 @@ export default function StcokReport() {
 
   // const groupRows = (rows, groupCheckBox) => {
   //   const grouped = [];
+  //   const adjustedCheckBox = { ...groupCheckBox };
+  //   console.log('adjustedCheckBox', adjustedCheckBox);
 
-  //   console.log('grupEnChekBox', grupEnChekBox);
+  //   const keysExceptJobNo = Object.keys(adjustedCheckBox).filter(
+  //     (key) => key !== "stockbarcode"
+  //   );
+  //   const anyFalse = keysExceptJobNo.some((k) => !adjustedCheckBox[k]);
+  //   if (anyFalse && adjustedCheckBox["stockbarcode"]) {
+  //     adjustedCheckBox["stockbarcode"] = false;
+  //     setGrupEnChekBox(adjustedCheckBox);
+  //   }
 
   //   if (!Array.isArray(rows)) {
   //     console.warn("groupRows: rows is not an array!", rows);
   //     return grouped;
   //   }
 
-  //   const groupCheckBoxClone = { ...groupCheckBox };
-  //   const isAnyUnchecked = Object.entries(groupCheckBoxClone).some(
-  //     ([key, val]) => key !== "j_jobno" && val === false
-  //   );
-  //   if (isAnyUnchecked) {
-  //     groupCheckBoxClone["j_jobno"] = false;
-  //   }
-
-  //   const allChecked = Object.values(groupCheckBoxClone).every(Boolean);
+  //   const allChecked = Object.values(adjustedCheckBox).every(Boolean);
   //   if (allChecked) {
   //     return rows.map((row, index) => ({
   //       ...row,
@@ -1077,7 +1123,7 @@ export default function StcokReport() {
   //     const newRow = { ...row };
   //     const keyParts = [];
 
-  //     for (const [field, checked] of Object.entries(groupCheckBox)) {
+  //     for (const [field, checked] of Object.entries(adjustedCheckBox)) {
   //       if (checked) {
   //         keyParts.push(newRow[field]);
   //       } else {
@@ -1109,10 +1155,12 @@ export default function StcokReport() {
     setIncludeCustomerStock(event.target.checked);
     console.log("Include Customer Stock:", event.target.checked);
   };
+
   const allChecked = useMemo(
     () => Object.values(grupEnChekBox).every((val) => val === true),
     [grupEnChekBox]
   );
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
@@ -1216,7 +1264,7 @@ export default function StcokReport() {
         </Drawer>
         <div
           style={{
-            position: "fixed",
+            position: showImageView && "fixed",
             top: "0px",
             backgroundColor: "#f8f7fa",
             width: "100%",
@@ -1494,7 +1542,7 @@ export default function StcokReport() {
           style={{
             height: "calc(100vh - 230px)",
             margin: "5px",
-            marginTop: "170px",
+            marginTop: showImageView && "170px",
           }}
         >
           {showImageView ? (
@@ -1650,3 +1698,37 @@ export default function StcokReport() {
     </DragDropContext>
   );
 }
+
+// {
+//     "colid": 2,
+//     "headerName": "Date",
+//     "field": "entrydate",
+//     "Width": 150,
+//     "Align": "left",
+//     "ColumAlign": "left",
+//     "hrefLink": "",
+//     "ColumShow": true,
+//     "ColumFilter": false,
+//     "NormalFilter": true,
+//     "DateRangeFilter": false,
+//     "MultiSelection": false,
+//     "RangeFilter": false,
+//     "suggestionFilter": false,
+//     "selectDropdownFilter": false,
+//     "ColumNumberSetting": 7,
+//     "ColumTitleCapital": false,
+//     "ColumTitleSmall": false,
+//     "FontSize": "12px",
+//     "borderRadius": "0px",
+//     "color": "",
+//     "backgroundColor": "",
+//     "summary": false,
+//     "columAscendion": false,
+//     "columDescending": false,
+//     "proiorityFilter": true,
+//     "copyButton": false,
+//     "EditData": false,
+//     "summaryTitle": "",
+//     "dateColumn": true,
+//     "summuryValueKey": 0
+//   },

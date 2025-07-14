@@ -1,4 +1,4 @@
-// http://localhost:3000/testreport/?sv=/e3tsaXZlMS5vcHRpZ29hcHBzLmNvbX19e3syMH19e3tlbHZlZXN0ZXJ9fXt7aGVubnlzfX0=/2&ifid=WorkerReportPro&pid=1128
+// http://localhost:3000/?sp=9&ifid=ConversionDetailsPro&pid=18229
 
 import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
@@ -410,6 +410,9 @@ export default function ConversionDeatil() {
           (col) =>
             col.filterTypes && col.filterTypes.includes("DateRangeFilter")
         );
+
+        console.log('dateColumn', dateColumn);
+        
         if (dateColumn) {
           const rowDate = new Date(row[dateColumn.field]);
           if (

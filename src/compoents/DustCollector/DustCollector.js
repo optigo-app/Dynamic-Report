@@ -806,7 +806,6 @@ export default function DustCollector() {
       <div className="summaryBox">
         {summaryColumns.map((col) => {
           let calculatedValue = 0;
-
           if (col.field === "lossperfm") {
             const totalLossWt =
               filteredRows?.reduce(

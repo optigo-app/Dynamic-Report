@@ -1,7 +1,8 @@
 // http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18276
+
 import React, { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
-import "./EmployeeDepartmentReportSpliter.scss";
+import "./Spliter.scss";
 import { Button, CircularProgress, Paper, Typography } from "@mui/material";
 import "react-datepicker/dist/react-datepicker.css";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
@@ -19,12 +20,13 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
+export default function FgSpliter() {
+  const [showWithouLocationData, setShowWithouLocationData] = useState(true);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [paneWidths, setPaneWidths] = useState(["18%", "18%", "74%"]);
-  const [isLoading, setIsLoading] = React.useState(isLoadingNew);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [status500, setStatus500] = useState(false);
   const [showDepartment, setShowDepartment] = useState(true);
   const [searchParams] = useSearchParams();
@@ -71,7 +73,6 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
-  const firstTimeLoadedRef = useRef(false);
 
   useEffect(() => {
     setTimeout(() => {
@@ -90,7 +91,9 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
     }, 100); // wait 100ms after popover opens
   }, []);
 
- useEffect(() => {
+  const firstTimeLoadedRef = useRef(false);
+
+  useEffect(() => {
     const now = new Date();
     const formattedDate = formatToMMDDYYYY(now);
     setStartDate(formattedDate);
@@ -113,6 +116,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
     if (s && e) {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
+
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
       fetchData(formattedStart, formattedEnd);
@@ -120,104 +124,119 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
   }, [filterState.dateRange]);
 
   const fetchData = async (stat, end) => {
-    console.log('filterStatefilterState', filterState);
+    console.log("filterStatefilterState", filterState);
     const sp = searchParams.get("sp");
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     setIsLoading(true);
-    // if (!AllFinalData?.rd1) {
-      const body = {
-        con: `{"id":"","mode":"fgworkerwithoutfinding","appuserid":"${AllData?.uid}"}`,
-        p: `{"fdate":"${stat}","tdate":"${end}"}`,
-        f: "Task Management (taskmaster)",
-      };
 
-      try {
-        const fetchedData = await GetWorkerData(body, sp);
-        const { rd, rd1 } = fetchedData?.Data || {};
+    const body = {
+      con: `{"id":"","mode":"fgworkerwithoutfinding","appuserid":"${AllData?.uid}"}`,
+      p: `{"fdate":"${stat}","tdate":"${end}"}`,
+      f: "Task Management (taskmaster)",
+    };
+
+    try {
+      const fetchedData = await GetWorkerData(body, sp);
+      const { rd, rd1 } = fetchedData?.Data || {};
+
+      console.log("callllll  111", rd1);
+
+      if (rd1?.length != 0) {
+        setFinalData(fetchedData?.Data);
         if (Array.isArray(rd) && Array.isArray(rd1)) {
+          const keyMap = Object.entries(rd[0]).reduce((acc, [numKey, name]) => {
+            acc[numKey] = name.toLowerCase();
+            return acc;
+          }, {});
+
+          const mergedData = rd1.map((record) => {
+            const mapped = {};
+            for (const [key, value] of Object.entries(record)) {
+              const newKey = keyMap[key] || key;
+              mapped[newKey] = value;
+            }
+            return mapped;
+          });
+
+          setAllEmployeeDataMain(mergedData);
+          const metalFilteredData = mergedData?.filter(
+            (item) =>
+              item.metaltypename?.toLowerCase() ==
+              selectedMetalType?.toLowerCase()
+          );
+          setAllEmployeeData(metalFilteredData);
+          GetTotlaData(metalFilteredData);
+        } else if (rd[0]?.stat == 0) {
+          setIsLoading(false);
+        }
+      } else {
+        setAllEmployeeDataMain([]);
+        setAllEmployeeData();
+        GetTotlaData();
+        if (rd?.length != 0) {
           setFinalData(fetchedData?.Data);
-          processAndFilterData(rd, rd1);
         } else {
-          setAllEmployeeData([]);
-          GetTotlaData([]);
+          setFinalData([]);
         }
-      } catch (error) {
-        if (error?.status === 500) {
-          setStatus500(true);
-        }
-        setAllEmployeeData([]);
-        GetTotlaData([]);
-      } finally {
         setIsLoading(false);
       }
-    // } else {
-    //   const { rd, rd1 } = AllFinalData;
-    //   processAndFilterData(rd, rd1);
-    //   setIsLoading(false);
-    // }
-  };
-
-  const processAndFilterData = (rd, rd1) => {
-    setIsLoading(true);
-    const parsedStartDate = new Date(startDate);
-    const parsedEndDate = new Date(endDate);
-    const keyMap = Object.entries(rd[0]).reduce((acc, [numKey, name]) => {
-      acc[numKey] = name.toLowerCase();
-      return acc;
-    }, {});
-    const filteredByDate = rd1.filter((entry) => {
-      const entryDate = new Date(entry["1"]);
-      return entryDate >= parsedStartDate && entryDate <= parsedEndDate;
-    });
-    const mappedData = filteredByDate.map((entry) => {
-      const mapped = {};
-      for (const [key, value] of Object.entries(entry)) {
-        const newKey = keyMap[key] || key;
-        mapped[newKey] = value;
+    } catch (error) {
+      if (error?.status == 500) {
+        setStatus500(true);
       }
-      return mapped;
-    });
-    const finalFiltered = mappedData.filter(
-      (item) => item.metaltype === selectedMetalType
-    );
-    setAllEmployeeDataMain(mappedData);
-    setAllEmployeeData(finalFiltered);
-    GetTotlaData(finalFiltered);
-    setIsLoading(false);
+      setAllEmployeeData();
+      GetTotlaData();
+      setFinalData();
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
     if (allEmployeeData?.length > 0) {
       const metalFilteredData = allEmployeeDataMain.filter(
-        (item) => item.metaltype === selectedMetalType
+        (item) => item.metaltypename === selectedMetalType
       );
       GetTotlaData(metalFilteredData);
     }
   }, [selectedMetalType, allEmployeeData]);
 
-  const GetTotlaData = (allEmployeeData) => {
-    if (allEmployeeData?.length === 0) {
-      setIsLoading(false);
-      return;
+  const handleToggleNew = () => {
+    const metalFilteredData = allEmployeeData?.filter(
+      (item) => item.metaltypename === selectedMetalType
+    );
+    showWithouLocationData
+      ? handleSelectLocation("", metalFilteredData, true)
+      : GetTotlaData(metalFilteredData, selectedLocation);
+
+    setShowDepartment(!showDepartment);
+  };
+
+  const showWithoutLocationData = () => {
+    if (allEmployeeData?.length > 0) {
+      const metalFilteredData = allEmployeeDataMain.filter(
+        (item) => item.metaltypename === selectedMetalType
+      );
+      handleSelectLocation("", metalFilteredData, true);
     }
+  };
 
-    console.log("summaryMap", allEmployeeData);
-
+  const GetTotlaData = (allEmployeeData, selectedL) => {
+    if (allEmployeeData?.length === 0) return;
     const summaryMap = new Map();
     allEmployeeData?.forEach((item) => {
       const {
-        locationname,
+        location,
         locationdisplayorder,
-        department_returnwt,
-        department_issuewt,
-        department_losswt,
-        loss_perc,
+        netretunwt,
+        netissuewt,
+        losswt,
+        lossper,
         deptid,
       } = item;
 
-      if (!summaryMap.has(locationname)) {
-        summaryMap.set(locationname, {
-          locationname,
+      if (!summaryMap.has(location)) {
+        summaryMap.set(location, {
+          location,
           locationdisplayorder,
           deptid,
           totalIssue: 0,
@@ -229,16 +248,16 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
         });
       }
 
-      const existing = summaryMap.get(locationname);
-      existing.totalIssue += department_issuewt || 0;
-      existing.netretunwt += department_returnwt || 0;
-      existing.totalLoss += department_losswt || 0;
-      existing.lossperSum += loss_perc || 0;
+      const existing = summaryMap.get(location);
+      existing.totalIssue += netissuewt || 0;
+      existing.netretunwt += netretunwt || 0;
+      existing.totalLoss += losswt || 0;
+      existing.lossperSum += lossper || 0;
       existing._count += 1;
     });
 
     const locationSummary = Array.from(summaryMap.values()).map((loc) => ({
-      location: loc.locationname,
+      location: loc.location,
       locationdisplayorder: loc.locationdisplayorder, // ✅ You are keeping it now
       deptid: loc.deptid,
       netissuewt: Number(loc.totalIssue),
@@ -250,24 +269,59 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
           : 0,
     }));
 
-    console.log("summaryMap locationSummary", locationSummary);
+    const sortedLocationSummary = [...locationSummary].sort(
+      (a, b) => a.locationdisplayorder - b.locationdisplayorder
+    );
 
-    // const sortedLocationSummary = [...locationSummary].sort(
-    //   (a, b) => a.locationdisplayorder - b.locationdisplayorder
-    // );
-    const firstLocation = locationSummary[0]?.location;
-    setLocationSummaryData(locationSummary);
-    handleSelectLocation(firstLocation, allEmployeeData);
-    handleSelecEmployee(firstLocation, allEmployeeData);
+    const firstLocation = selectedL ?? sortedLocationSummary[0]?.location;
+
+    console.log(
+      "sortedLocationSummarysortedLocationSummarysortedLocationSummary"
+    );
+
+    if (sortedLocationSummary?.length == 0) {
+      setLocationSummaryData([]);
+      setGroupedDepartments([]);
+      setGroupedEmployeeData([]);
+    } else {
+      setLocationSummaryData(sortedLocationSummary);
+      handleSelectLocation(firstLocation, allEmployeeData, true);
+      handleSelecEmployee(firstLocation, allEmployeeData, true);
+    }
   };
 
-  const handleSelectLocation = (location, allEmployeeData) => {
-    setSelectedLocation(location);
+  const handleSelectLocation = (
+    location,
+    allEmployeeData,
+    showData = false
+  ) => {
+    if (!showData) {
+      setSelectedLocation(location);
+    }
 
-    const filtered = allEmployeeDataMain?.filter(
-      (emp) =>
-        emp.locationname === location && emp.metaltype == selectedMetalType
+    const FilterDataTemp =
+      Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
+        ? allEmployeeDataMain
+        : allEmployeeData;
+
+    console.log(
+      "sortedLocationSummary",
+      allEmployeeDataMain,
+      allEmployeeData,
+      FilterDataTemp
     );
+
+    const filtered = showData
+      ? FilterDataTemp?.filter(
+          (emp) =>
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        )
+      : FilterDataTemp?.filter(
+          (emp) =>
+            emp.location === location &&
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        );
+
     const deptMap = new Map();
 
     filtered?.forEach((item) => {
@@ -275,10 +329,10 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
         deptid,
         deptname,
         deptdisplayorder,
-        department_returnwt,
-        department_issuewt,
-        department_losswt,
-        loss_perc,
+        netretunwt,
+        netissuewt,
+        losswt,
+        lossper,
       } = item;
 
       if (!deptMap.has(deptid)) {
@@ -295,10 +349,10 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
       }
 
       const existing = deptMap.get(deptid);
-      existing.totalIssue += department_issuewt || 0;
-      existing.netretunwt += department_returnwt || 0;
-      existing.totalLoss += department_losswt || 0;
-      existing.lossperSum += loss_perc || 0;
+      existing.totalIssue += netissuewt || 0;
+      existing.netretunwt += netretunwt || 0;
+      existing.totalLoss += losswt || 0;
+      existing.lossperSum += lossper || 0;
       existing._count += 1;
     });
 
@@ -319,50 +373,61 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
       (a, b) => a.deptdisplayorder - b.deptdisplayorder
     );
     const firstDepartment = sortedDepartmentSummary[0]?.deptname ?? "";
+    console.log("sortedDepartmentSummary", sortedDepartmentSummary);
+
     setGroupedDepartments(sortedDepartmentSummary);
     setSelectedDepartment(firstDepartment);
-    setExpandedEmployee(location);
+    if (!showData) {
+      setExpandedEmployee(location);
+    }
     setIsLoading(false);
   };
 
-  const handleSelecEmployee = (location, allEmployeeData) => {
-    setSelectedLocation(location);
+  const handleSelecEmployee = (location, allEmployeeData, showData) => {
+    console.log("locationlocation", location, showData, allEmployeeData);
 
-    const filtered = allEmployeeDataMain?.filter(
-      (emp) =>
-        emp.locationname === location && emp.metaltype == selectedMetalType
-    );
+    if (!showData) {
+      setSelectedLocation(location);
+    }
 
-    console.log("filtered", filtered);
+    const FilterDataTemp =
+      Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
+        ? allEmployeeDataMain
+        : allEmployeeData;
+
+    const filtered = showWithouLocationData
+      ? FilterDataTemp?.filter(
+          (emp) =>
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        )
+      : FilterDataTemp?.filter(
+          (emp) =>
+            emp.location === location &&
+            emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
+        );
 
     const employeeMap = new Map();
 
     filtered?.forEach((item) => {
-      const {
-        empname,
-        department_returnwt,
-        department_issuewt,
-        department_losswt,
-        loss_perc,
-      } = item;
+      const { employeename, netretunwt, netissuewt, losswt, lossper } = item;
 
-      if (!employeeMap.has(empname)) {
-        employeeMap.set(empname, {
-          empname,
+      if (!employeeMap.has(employeename)) {
+        employeeMap.set(employeename, {
+          employeename,
           totalIssue: 0,
-          department_returnwt: 0,
+          netretunwt: 0,
           totalLoss: 0,
           lossperSum: 0,
           _count: 0,
         });
       }
 
-      const existing = employeeMap.get(empname);
+      const existing = employeeMap.get(employeename);
 
-      existing.totalIssue += department_issuewt || 0;
-      existing.netretunwt += department_returnwt || 0;
-      existing.totalLoss += department_losswt || 0;
-      existing.lossperSum += loss_perc || 0;
+      existing.totalIssue += netissuewt || 0;
+      existing.netretunwt += netretunwt || 0;
+      existing.totalLoss += losswt || 0;
+      existing.lossperSum += lossper || 0;
       existing._count += 1;
     });
 
@@ -377,10 +442,11 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
           : 0,
     }));
 
-    console.log("filteredfiltered", grouped);
     setGroupedEmployeeData(grouped);
-    setSelectedEmployee(grouped[0]?.empname);
-    setExpandedEmployee(location);
+    setSelectedEmployee(grouped[0]?.employeename);
+    if (!showData) {
+      setExpandedEmployee(location);
+    }
     setIsLoading(false);
   };
 
@@ -395,25 +461,19 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
       setIsRefreshEnabled(true); // enable after 2 mins
     }, 2 * 60 * 1000); // 2 minutes in ms
   };
+
   useEffect(() => {
     startEnableTimer();
   }, []);
+
   const handleRefresh = () => {
     if (!isRefreshEnabled) return;
     window.location.reload();
     startEnableTimer();
   };
 
-  const handleToggleNew = () => {
-    const metalFilteredData = allEmployeeData?.filter(
-      (item) => item.metaltype === selectedMetalType
-    );
-    GetTotlaData(metalFilteredData);
-    setShowDepartment(!showDepartment);
-  };
-
   const uniqueMetalTypes = [
-    ...new Set(allEmployeeDataMain?.map((item) => item.metaltype)),
+    ...new Set(allEmployeeDataMain?.map((item) => item.metaltypename)),
   ];
 
   const Location_TotalLoss = locationSummaryData.reduce(
@@ -429,6 +489,8 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
     0
   );
 
+  const Location_TotalPer = (Location_TotalLoss / Location_TotalReturnWt) * 100;
+
   const department_TotalLoss = showDepartment
     ? groupedDepartments.reduce((sum, item) => sum + item.losswt, 0)
     : groupedEmployeeData.reduce((sum, item) => sum + item.losswt, 0);
@@ -439,17 +501,13 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
     ? groupedDepartments.reduce((sum, item) => sum + item.netissuewt, 0)
     : groupedEmployeeData.reduce((sum, item) => sum + item.netissuewt, 0);
 
-
-    
-
   return (
-    <div className="EmployeeDepartmentReportSpliter_top">
+    <div className="Fgreport_sliperViewMain_top">
       {isLoading && (
         <div className="loader-overlay">
           <CircularProgress className="loadingBarManage" />
         </div>
       )}
-
       <Box
         sx={{ height: "100vh", display: "flex", flexDirection: "row" }}
         ref={containerRef}
@@ -506,6 +564,106 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                   />
                 </div>
               </div>
+              {locationSummaryData?.length > 1 && (
+                <div style={{ margin: "0px 10px" }}>
+                  <div
+                    className={
+                      showWithouLocationData
+                        ? "employee_card_selected"
+                        : "employee-card"
+                    }
+                  >
+                    <div
+                      className="employee-header"
+                      onClick={() => {
+                        handleToggle("All");
+                        showWithoutLocationData();
+                        setShowWithouLocationData(true);
+                        setSelectedLocation(null);
+                      }}
+                    >
+                      <div className="location_first">
+                        <span
+                          className={
+                            showWithouLocationData && "location_top_name"
+                          }
+                        >
+                          ALL
+                        </span>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "15px",
+                          marginTop: "10px",
+                        }}
+                      >
+                        <p
+                          className={
+                            showWithouLocationData
+                              ? "employee_detail_title"
+                              : "employee_detail"
+                          }
+                          style={{ width: "50%" }}
+                        >
+                          Loss : <b> {Location_TotalLoss?.toFixed(3)} gm</b>
+                        </p>
+                        <p
+                          className={
+                            showWithouLocationData
+                              ? "employee_detail_title"
+                              : "employee_detail"
+                          }
+                          style={{ width: "50%" }}
+                        >
+                          Loss% :<b> {Location_TotalPer?.toFixed(2)} %</b>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`employee-details ${
+                        showWithouLocationData ? "expanded" : ""
+                      }`}
+                    >
+                      {showWithouLocationData && (
+                        <>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "15px",
+                            }}
+                          >
+                            <p
+                              className={
+                                showWithouLocationData
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Issue Wt :{" "}
+                              <b>{Location_TotalIssueWt?.toFixed(3)}</b>
+                            </p>
+                            <p
+                              className={
+                                showWithouLocationData
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Return Wt :{" "}
+                              <b>{Location_TotalReturnWt?.toFixed(3)} </b>
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               <div
                 className="employee-list"
                 style={{ padding: "0px 8px 0px 8px" }}
@@ -515,7 +673,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                       ?.sort(
                         (a, b) =>
                           a.locationdisplayorder - b.locationdisplayorder
-                      ) // ✨ Added sort
+                      )
                       .map((emp) => {
                         const isExpanded = expandedEmployee === emp.location;
                         return (
@@ -535,9 +693,11 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                                   emp.location,
                                   allEmployeeData
                                 );
+                                setShowWithouLocationData(false);
                                 handleSelecEmployee(
                                   emp.location,
-                                  allEmployeeData
+                                  allEmployeeData,
+                                  false
                                 );
                               }}
                             >
@@ -688,7 +848,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                       </div>
                     )}
               </div>
-              {locationSummaryData?.length != 0 && (
+              {/* {locationSummaryData?.length != 0 && (
                 <div
                   style={{
                     margin: "5px",
@@ -723,7 +883,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         )}
@@ -894,12 +1054,13 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                     <>
                       {groupedEmployeeData?.length != 0
                         ? groupedEmployeeData.map((emp) => {
-                            const isExpanded = expandedEmployee === emp.empname;
+                            const isExpanded =
+                              expandedEmployee === emp.employeename;
                             return (
                               <div
-                                key={emp.empname}
+                                key={emp.employeename}
                                 className={
-                                  selectedEmployee == emp.empname
+                                  selectedEmployee == emp.employeename
                                     ? "employee_card_selected"
                                     : "employee-card"
                                 }
@@ -907,18 +1068,18 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                                 <div
                                   className="employee-header"
                                   onClick={() => {
-                                    handleToggle(emp.empname);
-                                    setSelectedEmployee(emp.empname);
+                                    handleToggle(emp.employeename);
+                                    setSelectedEmployee(emp.employeename);
                                   }}
                                 >
                                   <div className="location_first">
                                     <span
                                       className={
-                                        selectedEmployee == emp.empname &&
+                                        selectedEmployee == emp.employeename &&
                                         "location_top_name"
                                       }
                                     >
-                                      {emp.empname}
+                                      {emp.employeename}
                                     </span>
                                   </div>
 
@@ -931,7 +1092,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                                   >
                                     <p
                                       className={
-                                        selectedEmployee == emp.empname
+                                        selectedEmployee == emp.employeename
                                           ? "employee_detail_title"
                                           : "employee_detail"
                                       }
@@ -941,7 +1102,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                                     </p>
                                     <p
                                       className={
-                                        selectedEmployee == emp.empname
+                                        selectedEmployee == emp.employeename
                                           ? "employee_detail_title"
                                           : "employee_detail"
                                       }
@@ -967,7 +1128,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                                       >
                                         <p
                                           className={
-                                            selectedEmployee == emp.empname
+                                            selectedEmployee == emp.employeename
                                               ? "employee_detail_title"
                                               : "employee_detail"
                                           }
@@ -978,7 +1139,7 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                                         </p>
                                         <p
                                           className={
-                                            selectedEmployee == emp.empname
+                                            selectedEmployee == emp.employeename
                                               ? "employee_detail_title"
                                               : "employee_detail"
                                           }
@@ -1053,12 +1214,11 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
           </>
         )}
 
-        {selectedLocation &&
-          selectedEmployee &&
-          selectedDepartment &&
-          selectedMetalType &&
-          startDate &&
-          paneWidths[2] !== "0%" && (
+        {
+          // selectedEmployee &&
+          //   selectedDepartment &&
+          //   selectedMetalType &&
+          AllFinalData && paneWidths[2] !== "0%" && (
             <>
               <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
               <div className="pane" style={{ width: paneWidths[2] }}>
@@ -1071,10 +1231,12 @@ export default function EmployeeDepartmentReportSpliter({ isLoadingNew }) {
                   selectedEmployee={selectedEmployee}
                   showDepartment={showDepartment}
                   selectedMetalType={selectedMetalType}
+                  showWithouLocationData={showWithouLocationData}
                 />
               </div>
             </>
-          )}
+          )
+        }
 
         {status500 && (
           <div

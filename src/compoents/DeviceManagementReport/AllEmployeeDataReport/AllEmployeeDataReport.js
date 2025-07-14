@@ -180,7 +180,7 @@ export default function AllEmployeeDataReport({
     page: 0,
     pageSize: 10,
   });
-  const [hoveredField, setHoveredField] = React.useState(null);
+  const [selectedIds, setSelectedIds] = React.useState([]);
 
   const useDeviceSummary = (AllFinalData) => {
     const [summary, setSummary] = React.useState({
@@ -633,7 +633,7 @@ export default function AllEmployeeDataReport({
                     }}
                     onClick={() => {
                       setOpenCustomerBideModel(true);
-                      handleGetCustomerBindData(params.row?.Id);
+                      handleGetCustomerBindData(params.row);
                     }}
                     // onClick={() => alert(JSON?.stringify(params.row?.Id))}
                   >
@@ -668,8 +668,6 @@ export default function AllEmployeeDataReport({
       })
     );
   }, [allColumData, allRowData]);
-
-  console.log("AllFinalData ", AllFinalData);
 
   const handleCellClick = (params) => {
     setSelectedEmployeeName(params?.row?.employeename);
@@ -835,9 +833,8 @@ export default function AllEmployeeDataReport({
   };
 
   const handleAccessChange = async (event, row) => {
-    console.log("rowrowrowrow", row?.UniqueID);
+    console.log("data customerrrr 2222222222 accsesss", row);
     const isChecked = event.target.checked;
-
     const body = {
       con: '{"id":"","mode":"DeviceEnbDcb","appuserid":"amrut@eg.com"}',
       p: `{"AppDevRowId":${row?.Id},"IsEnable":${isChecked ? 1 : 0}}`,
@@ -1326,8 +1323,6 @@ export default function AllEmployeeDataReport({
   };
 
   const onDragEnd = () => {};
-  console.log("filteredRows", filteredRows);
-
   const handleRecalculate = async () => {
     try {
       setLodingRecakulate(true);
@@ -1354,8 +1349,9 @@ export default function AllEmployeeDataReport({
     }
   };
 
-  const handleGetCustomerBindData = async (id) => {
-    setSelectedRowId(id);
+  const handleGetCustomerBindData = async (data) => {
+    console.log('data customer bind 11111111111111111',JSON.stringify(data))
+    setSelectedRowId(data?.UniqueID);
     setIsLoading(true);
     setCustomerBindIsLoading(true);
     const sp = searchParams.get("sp");
@@ -1363,7 +1359,7 @@ export default function AllEmployeeDataReport({
     const body = {
       con: `{"id":"","mode":"CustomerBindGrid","appuserid":"${AllData?.uid}"}`,
       p: "",
-      p: `{\"AppDevRowId\":${id}}`,
+      p: `{\"AppDevRowId\":${data?.id}}`,
       f: "Task Management (taskmaster)",
     };
 
@@ -1376,7 +1372,11 @@ export default function AllEmployeeDataReport({
 
   const [filterType, setFilterType] = React.useState("all"); // all | bound | unbound
   const [searchTerm, setSearchTerm] = React.useState(""); // text‑box filter
-  const [rowSelection, setRowSelection] = React.useState([]); // ids of selected rows
+  const [rowSelectionModel, setRowSelectionModel] = React.useState({
+    type: "include",
+    ids: new Set(),
+  });
+
   const columnsCustomerBind = [
     {
       field: "srNo",
@@ -1418,38 +1418,48 @@ export default function AllEmployeeDataReport({
   }, [customerBindAllData, filterType, searchTerm]);
 
   const handleBindToggle = async (shouldBind) => {
-    if (!rowSelection.length) return;
-
+    const idsArray = Array.from(rowSelectionModel.ids);
+    if (idsArray.length === 0) return;
     const sp = searchParams.get("sp");
     const AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
-
-    const selectedIds = rowSelection.join(","); // Convert to comma-separated string
+    const idsString = idsArray.join(",");
 
     const mode = shouldBind
       ? "CustomerBindWithDevice"
       : "CustomerUnBindWithDevice";
-
     const body = {
       con: JSON.stringify({
         id: "",
-        mode: mode,
+        mode,
         appuserid: AllData?.uid || "",
       }),
       p: JSON.stringify({
         AppDevRowId: selectedRowId,
-        CustomerIdList: selectedIds,
+        CustomerIdList: idsString,
       }),
       f: "Task Management (taskmaster)",
     };
 
     try {
       const fetchedData = await GetWorkerData(body, sp);
-      if (fetchedData?.Data?.rd[0]?.msg == "Success") {
+
+      if (fetchedData?.Data?.rd[0]?.msg === "Success") {
+        const updated = customerBindAllData.map((item) =>
+          idsArray.includes(item.id)
+            ? { ...item, IsBindCustomer: shouldBind ? 1 : 0 }
+            : item
+        );
+
+        setCustomerBindAllData(updated);
+
+        // ✅ Clear selection on grid
+        setRowSelectionModel({ type: "include", ids: new Set() });
         setDeviceStatus({
           type: "CustomerBindChanged",
           timestamp: Date.now(),
           uniqueId: selectedRowId,
         });
+
         showToast({
           message: shouldBind
             ? "Customer Bind Successfully"
@@ -1458,27 +1468,18 @@ export default function AllEmployeeDataReport({
           fontColor: "#fff",
           duration: 4000,
         });
-        const updatedData = customerBindAllData.map((item) =>
-          rowSelection.includes(item.id)
-            ? { ...item, IsBindCustomer: shouldBind ? 1 : 0 }
-            : item
-        );
-        setCustomerBindAllData(updatedData);
       } else {
         showToast({
-          message: "Can Not bind Or Unbind customer greater than 50",
+          message: "Cannot bind/unbind more than 50 customers",
           bgColor: "red",
           fontColor: "#fff",
           duration: 4000,
         });
       }
-
-      setRowSelection([]);
-    } catch (error) {
-      console.error("❌ API error:", error);
+    } catch (err) {
+      console.error("❌ API error:", err);
     }
   };
-
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <LoadingBackdrop isLoading={lodingRecakulate} />
@@ -1581,7 +1582,7 @@ export default function AllEmployeeDataReport({
               <Button
                 variant="contained"
                 color="success"
-                disabled={rowSelection.length === 0}
+                disabled={rowSelectionModel?.ids?.size === 0}
                 onClick={() => handleBindToggle(true)}
               >
                 Bind
@@ -1589,7 +1590,7 @@ export default function AllEmployeeDataReport({
               <Button
                 variant="contained"
                 color="error"
-                disabled={rowSelection.length === 0}
+                disabled={rowSelectionModel?.ids?.size === 0}
                 onClick={() => handleBindToggle(false)}
               >
                 Unbind
@@ -1598,36 +1599,30 @@ export default function AllEmployeeDataReport({
             <DataGrid
               rows={rows}
               columns={columnsCustomerBind}
-              sortModel={sortModel}
+              checkboxSelection
+              disableRowSelectionOnClick
+              getRowId={(row) => row.id} // make sure this is correct!
+              rowSelectionModel={rowSelectionModel}
+              onRowSelectionModelChange={setRowSelectionModel}
               paginationModel={paginationModel}
               onPaginationModelChange={setPaginationModel}
+              sortModel={sortModel}
+              onSortModelChange={setSortModel}
               pageSizeOptions={[10, 20, 50, 100]}
-              onSortModelChange={(model) => setSortModel(model)}
               initialState={{
                 pagination: {
                   paginationModel: {
-                    pageSize: 5,
+                    pageSize: 10,
+                    page: 0,
                   },
                 },
               }}
-              checkboxSelection
-              disableRowSelectionOnClick
-              rowSelectionModel={rowSelection}
-              onRowSelectionModelChange={setRowSelection}
-              onCellMouseEnter={(params) => setHoveredField(params.field)}
-              onColumnHeaderMouseEnter={(params) =>
-                setHoveredField(params.field)
-              }
-              onMouseLeave={() => setHoveredField(null)} // clear on full grid mouse‑out
               getRowClassName={(params) =>
-                params.row.IsBindCustomer == 1
+                params.row.IsBindCustomer === 1
                   ? "bound-customer-row"
                   : "unbound-customer-row"
               }
               sx={{
-                "& .MuiDataGrid-row:hover": {
-                  // backgroundColor: "transparent",
-                },
                 "& .bound-customer-row": {
                   backgroundColor: "#e0ffe0",
                 },

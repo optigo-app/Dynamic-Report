@@ -27,12 +27,11 @@
 //   SoPath: "/connect_socket_react/socket.io", //storeini.soket_path
 //   // iTaskCallBackURL: ''
 // };
-
 // export default config;
+
 
 // const storeInit = JSON.parse(sessionStorage.getItem("soketVariable")) ?? [];
 // console.log('storeInitstoreInitstoreInit', storeInit);
-
 // const config = {
 //   di: `${storeInit[0]?.Ufcc}` ?? '', //storeinit.ufcc
 //   // En_ufcc: 'orail24',
@@ -45,8 +44,8 @@
 //   // iTaskCallBackURL: ''
 // };
 // export default config;
-
 // socketConfig.js (replace previous config.js)
+
 export const getSocketConfig = () => {
   const storeInit = JSON.parse(sessionStorage.getItem("soketVariable")) ?? [];
 

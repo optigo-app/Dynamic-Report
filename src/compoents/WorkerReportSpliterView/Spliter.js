@@ -124,9 +124,11 @@ export default function Spliter() {
   }, [filterState.dateRange]);
 
   const fetchData = async (stat, end) => {
+    console.log("filterStatefilterState", filterState);
     const sp = searchParams.get("sp");
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     setIsLoading(true);
+
     const body = {
       con: `{"id":"","mode":"workerwithoutfinding","appuserid":"${AllData?.uid}"}`,
       p: `{"fdate":"${stat}","tdate":"${end}"}`,
@@ -135,8 +137,10 @@ export default function Spliter() {
 
     try {
       const fetchedData = await GetWorkerData(body, sp);
-
       const { rd, rd1 } = fetchedData?.Data || {};
+
+      console.log("callllll  111", rd1);
+
       if (rd1?.length != 0) {
         setFinalData(fetchedData?.Data);
         if (Array.isArray(rd) && Array.isArray(rd1)) {
@@ -166,9 +170,14 @@ export default function Spliter() {
           setIsLoading(false);
         }
       } else {
+        setAllEmployeeDataMain([]);
         setAllEmployeeData();
         GetTotlaData();
-        setFinalData();
+        if (rd?.length != 0) {
+          setFinalData(fetchedData?.Data);
+        } else {
+          setFinalData([]);
+        }
         setIsLoading(false);
       }
     } catch (error) {
@@ -195,7 +204,6 @@ export default function Spliter() {
     const metalFilteredData = allEmployeeData?.filter(
       (item) => item.metaltypename === selectedMetalType
     );
-    console.log("showWithouLocationData", showWithouLocationData);
     showWithouLocationData
       ? handleSelectLocation("", metalFilteredData, true)
       : GetTotlaData(metalFilteredData, selectedLocation);
@@ -266,9 +274,20 @@ export default function Spliter() {
     );
 
     const firstLocation = selectedL ?? sortedLocationSummary[0]?.location;
-    setLocationSummaryData(sortedLocationSummary);
-    handleSelectLocation(firstLocation, allEmployeeData, true);
-    handleSelecEmployee(firstLocation, allEmployeeData, true);
+
+    console.log(
+      "sortedLocationSummarysortedLocationSummarysortedLocationSummary"
+    );
+
+    if (sortedLocationSummary?.length == 0) {
+      setLocationSummaryData([]);
+      setGroupedDepartments([]);
+      setGroupedEmployeeData([]);
+    } else {
+      setLocationSummaryData(sortedLocationSummary);
+      handleSelectLocation(firstLocation, allEmployeeData, true);
+      handleSelecEmployee(firstLocation, allEmployeeData, true);
+    }
   };
 
   const handleSelectLocation = (
@@ -279,10 +298,18 @@ export default function Spliter() {
     if (!showData) {
       setSelectedLocation(location);
     }
+
     const FilterDataTemp =
       Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
         ? allEmployeeDataMain
         : allEmployeeData;
+
+    console.log(
+      "sortedLocationSummary",
+      allEmployeeDataMain,
+      allEmployeeData,
+      FilterDataTemp
+    );
 
     const filtered = showData
       ? FilterDataTemp?.filter(
@@ -294,6 +321,7 @@ export default function Spliter() {
             emp.location === location &&
             emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
         );
+
     const deptMap = new Map();
 
     filtered?.forEach((item) => {
@@ -345,6 +373,8 @@ export default function Spliter() {
       (a, b) => a.deptdisplayorder - b.deptdisplayorder
     );
     const firstDepartment = sortedDepartmentSummary[0]?.deptname ?? "";
+    console.log("sortedDepartmentSummary", sortedDepartmentSummary);
+
     setGroupedDepartments(sortedDepartmentSummary);
     setSelectedDepartment(firstDepartment);
     if (!showData) {
@@ -470,6 +500,9 @@ export default function Spliter() {
   const department_TotalIssueWt = showDepartment
     ? groupedDepartments.reduce((sum, item) => sum + item.netissuewt, 0)
     : groupedEmployeeData.reduce((sum, item) => sum + item.netissuewt, 0);
+
+  console.log("AllFinalDataAllFinalData", AllFinalData);
+
   return (
     <div className="sliperViewMain_top">
       {isLoading && (
@@ -1183,10 +1216,11 @@ export default function Spliter() {
           </>
         )}
 
-        {selectedEmployee &&
-          selectedDepartment &&
-          selectedMetalType &&
-          paneWidths[2] !== "0%" && (
+        {
+          // selectedEmployee &&
+          //   selectedDepartment &&
+          //   selectedMetalType &&
+          AllFinalData && paneWidths[2] !== "0%" && (
             <>
               <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
               <div className="pane" style={{ width: paneWidths[2] }}>
@@ -1203,7 +1237,8 @@ export default function Spliter() {
                 />
               </div>
             </>
-          )}
+          )
+        }
 
         {status500 && (
           <div
