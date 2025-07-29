@@ -1,4 +1,4 @@
-// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=1000
+// http://localhost:3000/testreport/?sp=6&ifid=ToolsReport&pid=1000
 
 import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
@@ -159,36 +159,34 @@ export default function ItaskReport() {
 
   const firstTimeLoadedRef = useRef(false);
 
+  // useEffect(() => {
+  //   const now = new Date();
+  //   const formattedDate = formatToMMDDYYYY(now);
+  //   setStartDate(formattedDate);
+  //   setEndDate(formattedDate);
+  //   fetchData(formattedDate, formattedDate);
+  //   setFilterState({
+  //     dateRange: {
+  //       startDate: now,
+  //       endDate: now,
+  //     },
+  //   });
+  //   setTimeout(() => {
+  //     firstTimeLoadedRef.current = true;
+  //   }, 0); // lets React finish updating state first
+  // }, []);
+
   useEffect(() => {
-    const now = new Date();
-    const formattedDate = formatToMMDDYYYY(now);
-    setStartDate(formattedDate);
-    setEndDate(formattedDate);
-    fetchData(formattedDate, formattedDate);
-    setFilterState({
-      dateRange: {
-        startDate: now,
-        endDate: now,
-      },
-    });
-    setTimeout(() => {
-      firstTimeLoadedRef.current = true;
-    }, 0); // lets React finish updating state first
+    // if (!firstTimeLoadedRef.current) return;
+    // const { startDate: s, endDate: e } = filterState.dateRange;
+    // if (s && e) {
+    //   const formattedStart = formatToMMDDYYYY(new Date(s));
+    //   const formattedEnd = formatToMMDDYYYY(new Date(e));
+    //   setStartDate(formattedStart);
+    //   setEndDate(formattedEnd);
+    // }
+    fetchData();
   }, []);
-
-  useEffect(() => {
-    if (!firstTimeLoadedRef.current) return;
-    const { startDate: s, endDate: e } = filterState.dateRange;
-    if (s && e) {
-      const formattedStart = formatToMMDDYYYY(new Date(s));
-      const formattedEnd = formatToMMDDYYYY(new Date(e));
-
-      setStartDate(formattedStart);
-      setEndDate(formattedEnd);
-
-      fetchData(formattedStart, formattedEnd);
-    }
-  }, [filterState.dateRange]);
 
   const fetchData = async (stat, end) => {
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
@@ -197,8 +195,8 @@ export default function ItaskReport() {
     setIsLoading(true);
 
     const body = {
-      con: `{"id":"","mode":"jobcompletionlead","appuserid":"${AllData?.uid}"}`,
-      p: `{"fdate":"${stat}","tdate":"${end}"}`,
+      con: `{"id":"","mode":"QUICKLIST","appuserid":"${AllData?.uid}"}`,
+      p: '{}',
       f: "Task Management (taskmaster)",
     };
 
@@ -211,16 +209,15 @@ export default function ItaskReport() {
       setIsLoading(false);
     } else {
       try {
-        // const fetchedData = await GetWorkerData(body, sp);
-        // console.log('fetchedData', fetchedData);
-        // setAllRowData(fetchedData?.Data?.rd1);
-        // setAllRowDataAll(fetchedData?.Data?.rd1);
-        // setAllColumIdWiseName(fetchedData?.Data?.rd);
-        // setAllColumIdWiseNameAll(fetchedData?.Data?.rd);
-        setAllRowData(OtherKeyData?.rd4);
-        setAllRowDataAll(OtherKeyData?.rd4);
-        setAllColumIdWiseName(OtherKeyData.rd3);
-        setAllColumIdWiseNameAll(OtherKeyData?.rd3);
+        const fetchedData = await GetWorkerData(body, sp);
+        setAllRowData(fetchedData?.Data?.rd1);
+        setAllRowDataAll(fetchedData?.Data?.rd1);
+        setAllColumIdWiseName(fetchedData?.Data?.rd);
+        setAllColumIdWiseNameAll(fetchedData?.Data?.rd);
+        // setAllRowData(OtherKeyData?.rd4);
+        // setAllRowDataAll(OtherKeyData?.rd4);
+        // setAllColumIdWiseName(OtherKeyData.rd3);
+        // setAllColumIdWiseNameAll(OtherKeyData?.rd3);
         setAllColumData(OtherKeyData?.rd1);
         setMasterKeyData(OtherKeyData?.rd);
         setStatus500(false);
@@ -264,10 +261,12 @@ export default function ItaskReport() {
 
   useEffect(() => {
     if (!allColumData) return;
+    
     const columnData = Object?.values(allColumData)
       ?.filter((col) => col.ColumShow)
       ?.map((col, index) => {
         const isPriorityFilter = col.proiorityFilter === true;
+
         return {
           field: col.field,
           headerName: (
@@ -410,7 +409,22 @@ export default function ItaskReport() {
                   {formattedDate}
                 </span>
               );
-            } else {
+            } else if(col?.extraColum){
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px",
+                    borderRadius: col.BorderRadius,
+                  }}
+                >
+                  -
+                </span>
+              );
+            }else {
               return (
                 <span
                   style={{
@@ -837,7 +851,7 @@ export default function ItaskReport() {
 
   const renderFilterMulti = (col) => {
     const uniqueValues = [
-      ...new Set(originalRows.map((row) => row[col.field])),
+      ...new Set(originalRows?.map((row) => row[col.field])),
     ];
 
     return (
@@ -858,8 +872,7 @@ export default function ItaskReport() {
               gap: "4px",
             }}
           >
-            {uniqueValues
-              .filter((value) => value?.trim() !== "") // Exclude empty or whitespace-only strings
+            {uniqueValues?.filter((value) => value?.trim() !== "") // Exclude empty or whitespace-only strings
               .map((value) => (
                 <label key={value}>
                   <input
@@ -1224,7 +1237,7 @@ export default function ItaskReport() {
               <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
                 Filter
               </button>
-              <FormControl size="small" sx={{ minWidth: 200, margin: "0px" }}>
+              {/* <FormControl size="small" sx={{ minWidth: 200, margin: "0px" }}>
                 <InputLabel>Date Type</InputLabel>
                 <Select
                   label="Date Type"
@@ -1243,7 +1256,7 @@ export default function ItaskReport() {
                 setFilterState={setFilterState}
                 validDay={186}
                 validMonth={6}
-              />
+              /> */}
               {/* <p
                 style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
               >

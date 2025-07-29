@@ -277,7 +277,7 @@ export default function MaterialWiseSaleReport() {
             col.DateRangeFilter && "DateRangeFilter",
             col.MultiSelection && "MultiSelection",
             col.RangeFilter && "RangeFilter",
-            col.SuggestionFilter && "suggestionFilter",
+            col.suggestionFilter && "suggestionFilter",
             col.selectDropdownFilter && "selectDropdownFilter",
           ].filter(Boolean),
 
@@ -813,6 +813,7 @@ export default function MaterialWiseSaleReport() {
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
   };
+  
   const renderSummary = () => {
     return (
       <div className="summaryBox">

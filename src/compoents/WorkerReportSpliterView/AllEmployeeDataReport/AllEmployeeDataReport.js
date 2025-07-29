@@ -147,12 +147,11 @@ export default function AllEmployeeDataReport({
   const gridRef = React.useRef(null);
 
   const APICall = () => {
-    console.log('rd1rd1...................');
+    console.log("rd1rd1...................");
 
     setIsLoading(true);
     const { rd, rd1 } = AllFinalData || {};
 
-    
     if (!rd || !rd1) {
       console.warn("Invalid data format");
       return;
@@ -217,7 +216,13 @@ export default function AllEmployeeDataReport({
 
   React.useEffect(() => {
     APICall();
-  }, [selectedDepartment, selectedLocation, selectedEmployee, showDepartment , AllFinalData]);
+  }, [
+    selectedDepartment,
+    selectedLocation,
+    selectedEmployee,
+    showDepartment,
+    AllFinalData,
+  ]);
 
   React.useEffect(() => {
     const now = new Date();
@@ -823,10 +828,16 @@ export default function AllEmployeeDataReport({
             const totalNetReturnWt = filteredRows?.reduce(
               (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
               0
-            ); // prevent division by 0
-            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
-            calculatedValue =
-              calculatedValue1 == Infinity ? 0 : calculatedValue1;
+            );
+
+            let calculatedValue1 =
+              totalNetReturnWt !== 0
+                ? (totalLossWt / totalNetReturnWt) * 100
+                : 0;
+
+            calculatedValue = Number.isFinite(calculatedValue1)
+              ? calculatedValue1
+              : 0;
           } else if (col.field === "lossper") {
             const totalLossWt =
               filteredRows?.reduce(
@@ -854,10 +865,16 @@ export default function AllEmployeeDataReport({
               filteredRows?.reduce(
                 (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
                 0
-              ) || 0; // prevent division by 0
-            let calculatedValue1 = (totalLossWt / totalNetReturnWt) * 100;
-            calculatedValue =
-              calculatedValue1 == Infinity ? 0 : calculatedValue1;
+              ) || 0;
+
+            let calculatedValue1 =
+              totalNetReturnWt !== 0
+                ? (totalLossWt / totalNetReturnWt) * 100
+                : 0;
+
+            calculatedValue = Number.isFinite(calculatedValue1)
+              ? calculatedValue1
+              : 0;
           } else {
             calculatedValue =
               filteredRows?.reduce(

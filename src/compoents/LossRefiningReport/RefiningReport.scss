@@ -20,7 +20,7 @@
     min-width: 130px;
     max-width: 130px;
   }
-  
+
   .FiletrBtnAll {
     height: 42px;
     width: 70px;
@@ -336,5 +336,79 @@
 
   .MuiDataGrid-menuIcon {
     display: none !important;
+  }
+
+
+
+  .month-picker-container {
+    position: relative;
+    width: 260px;
+    font-family: Arial, sans-serif;
+  }
+
+  .month-input-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  .clear-icon {
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+    display: flex;
+  }
+
+  .month-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid rgba(47, 43, 61, 0.2);
+    background-color: transparent !important;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .popup {
+    position: absolute;
+    top: 150px;
+    left: 20px;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 12px;
+    z-index: 1000;
+    width: 350px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+  }
+
+  .year-grid,
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .year-item,
+  .month-item {
+    padding: 8px;
+    text-align: center;
+    background-color: #f1f1f1;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s ease;
+  }
+
+  .year-item:hover,
+  .month-item:hover {
+    background-color: #dceeff;
+  }
+
+  .selected {
+    background-color: #1976d2;
+    color: white;
   }
 }

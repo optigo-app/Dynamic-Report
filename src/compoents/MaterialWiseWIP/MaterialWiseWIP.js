@@ -1,9 +1,10 @@
-// http://localhost:3000/testreport/?sp=12&ifid=ToolsReport&pid=18245
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18296
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import "./MaterialWiseWIP.scss";
+import OtherKeyData from "./MaterialWiseWIP.json";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
-import "./StcokReport.scss";
 import DatePicker from "react-datepicker";
 // import masterData from "./masterData.json";
 import "react-datepicker/dist/react-datepicker.css";
@@ -37,7 +38,6 @@ import CustomTextField from "../text-field/index";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiFillSetting } from "react-icons/ai";
-import OtherKeyData from "./StcokReport.json";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import DualDatePicker from "../DatePicker/DualDatePicker";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
@@ -117,7 +117,7 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-export default function StcokReport() {
+export default function MaterialWiseWIP() {
   const [isLoading, setIsLoading] = useState(false);
   const [toDate, setToDate] = useState(null);
   const [fromDate, setFromDate] = useState(null);
@@ -145,7 +145,6 @@ export default function StcokReport() {
   const [endDate, setEndDate] = useState();
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
-  const [includeCustomerStock, setIncludeCustomerStock] = useState(false);
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
@@ -193,34 +192,66 @@ export default function StcokReport() {
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     const sp = searchParams.get("sp");
     setIsLoading(true);
+
     const body = {
-      con: `{"id":"","mode":"StockReport","appuserid":"${AllData?.uid}"}`,
-      p: `{"fdate":"${stat}","tdate":"${end}"}`,
+      con: `{"id":"","mode":"materialwisewipreport","appuserid":"${AllData?.uid}"}`,
+      p: "{}",
+      f: "Task Management (taskmaster)",
+    };
+
+    const bodyMasterApi = {
+      con: `{"id":"","mode":"materialwisewipreport_master","appuserid":"${AllData?.uid}"}`,
+      p: "{}",
       f: "Task Management (taskmaster)",
     };
 
     try {
+      const bodyMaster = await GetWorkerData(bodyMasterApi, sp);
       const fetchedData = await GetWorkerData(body, sp);
-      setAllRowData(fetchedData?.Data?.rd1);
-      setAllColumIdWiseName(fetchedData?.Data?.rd);
+
+      const bodyMasterData = bodyMaster?.Data?.rd || [];
+      const fetchedRowData = fetchedData?.Data?.rd1 || [];
+      const fetchedColDefs = fetchedData?.Data?.rd;
+
+      // Create a lookup for quick access by serialjobno
+      const masterMap = bodyMasterData?.reduce((acc, curr) => {
+        acc[curr.serialjobno] = {
+          companyName: curr.companyName,
+          customercode: curr.customercode,
+        };
+        return acc;
+      }, {});
+
+      const enrichedRowData = fetchedRowData.map((row) => {
+        const jobNo = row["1"];
+        if (masterMap[jobNo]) {
+          return {
+            ...row,
+            14: masterMap[jobNo].companyName,
+            15: masterMap[jobNo].customercode,
+          };
+        }
+        return row;
+      });
+
+      setAllRowData(enrichedRowData); // Final updated data
+      setAllColumIdWiseName(fetchedColDefs);
+
       setMasterKeyData(OtherKeyData?.rd);
       setAllColumData(OtherKeyData?.rd1);
+
       const grupCheckboxMap = (OtherKeyData?.rd1 || [])
         .filter((col) => col?.GrupChekBox)
         .reduce((acc, col) => {
-          console.log("colcolcolcol", col);
-
-          if (col.defaultGrupChekBox) {
-            acc[col.field] = true;
-          } else {
-            acc[col.field] = false;
-          }
+          acc[col.field] = !!col.defaultGrupChekBox;
           return acc;
         }, {});
+
       setGrupEnChekBox(grupCheckboxMap);
       setStatus500(false);
       setIsLoading(false);
     } catch (error) {
+      console.error("Fetch failed", error);
       setStatus500(true);
       setIsLoading(false);
     }
@@ -229,7 +260,6 @@ export default function StcokReport() {
   useEffect(() => {
     const now = new Date();
     const formatNumber = (n) => n.toString().padStart(2, "0");
-
     const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
       now.getMonth() + 1
     )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
@@ -268,8 +298,7 @@ export default function StcokReport() {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               {col.GrupChekBox && (
                 <Checkbox
-                  checked={grupEnChekBox[col.field] ?? true}
-                  onClick={(e) => e.stopPropagation()} 
+                  checked={grupEnChekBox[col.field] ?? true} 
                   onChange={() => handleGrupEnChekBoxChange(col.field)}
                   size="small"
                   sx={{ p: 0 }}
@@ -278,7 +307,6 @@ export default function StcokReport() {
               {col.headerName}
             </div>
           ),
-
           width: col.Width,
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
@@ -292,9 +320,9 @@ export default function StcokReport() {
           filterTypes: [
             col.NormalFilter && "NormalFilter",
             col.DateRangeFilter && "DateRangeFilter",
-            col.MultiSelection && "MultiSelection",
+            col.multiSelection && "multiSelection",
             col.RangeFilter && "RangeFilter",
-            col.SuggestionFilter && "suggestionFilter",
+            col.suggestionFilter && "suggestionFilter",
             col.selectDropdownFilter && "selectDropdownFilter",
           ].filter(Boolean),
 
@@ -403,7 +431,7 @@ export default function StcokReport() {
     const defaultChecked = {};
     Object.values(allColumData).forEach((col) => {
       if (col.GrupChekBox) {
-        defaultChecked[col.field] = true; // ✅ By default checked if GrupChekBox is true
+        defaultChecked[col.field] = true;
       }
     });
 
@@ -416,10 +444,8 @@ export default function StcokReport() {
     setOpen(true);
   };
 
-  // Defensive check to make sure the column map is valid
-
   const columnMap =
-    Array.isArray(allColumIdWiseName) && allColumIdWiseName.length > 0
+    Array.isArray(allColumIdWiseName) && allColumIdWiseName?.length > 0
       ? allColumIdWiseName[0]
       : {};
   columnMap["49"] = "imageViewkey";
@@ -440,39 +466,13 @@ export default function StcokReport() {
       return { id: index, ...formattedRow };
     });
 
-  // console.log("allRowDataallRowData", allRowData);
-  // console.log("allColumIdWiseName", allColumIdWiseName);
-  // const originalRows =
-  //   allColumIdWiseName &&
-  //   allRowData?.map((row, index) => {
-  //     const formattedRow = {};
-  //     Object.keys(row).forEach((key) => {
-  //       formattedRow[allColumIdWiseName[0][key]] = row[key];
-  //     });
-  //     return { id: index, ...formattedRow };
-  //   });
-
   const [pageSize, setPageSize] = useState(10);
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
 
   useEffect(() => {
-    const hasActiveFilters = Object.values(filters).some(
-      (val) => val && (Array.isArray(val) ? val.length > 0 : val !== "")
-    );
-
-    if (!hasActiveFilters) {
-      setFilteredRows(originalRows);
-    }
-  }, [originalRows, filters]);
-
-  useEffect(() => {
     const newFilteredRows = originalRows?.filter((row) => {
       let isMatch = true;
-
-      if (!includeCustomerStock && row.iscompanystock !== 1) {
-        return false;
-      }
 
       for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
@@ -566,12 +566,11 @@ export default function StcokReport() {
     columns,
     originalRows,
     selectedColors,
-    includeCustomerStock,
   ]);
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
-      if (filterType === "MultiSelection") {
+      if (filterType === "multiSelection") {
         const selectedValues = prevFilters[field] || [];
         let newValues;
 
@@ -601,7 +600,7 @@ export default function StcokReport() {
       switch (filterType) {
         case "NormalFilter":
           return (
-            <div style={{ width: "100%", margin: "5px 20px" }}>
+            <div style={{ width: "100%", margin: "10px" }}>
               <CustomTextField
                 key={`filter-${col.field}-NormalFilter`}
                 type="text"
@@ -612,48 +611,141 @@ export default function StcokReport() {
               />
             </div>
           );
-        case "suggestionFilter": {
-          const uniqueValues = [
-            ...new Set(originalRows.map((row) => row[col.field])),
-          ];
-
-          return (
-            <div
-              key={`filter-${col.field}-suggestionFilter`}
-              style={{ width: "100%", margin: "10px 20px" }}
-            >
-              <CustomTextField
-                fullWidth
-                placeholder={`Search ${col.headerName}`}
-                value={filters[col.field] || ""}
-                onChange={(e) => handleFilterChange(col.field, e.target.value)}
-                InputProps={{
-                  inputProps: {
-                    list: `suggestions-${col.field}`,
-                  },
-                }}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                borderoutlinedColor="#00CFE8"
-                customTextColor="#2F2B3DC7"
-                customFontSize="0.8125rem"
-                size="small"
-                variant="filled"
-              />
-              <datalist id={`suggestions-${col.field}`}>
-                {uniqueValues.map((value) => (
-                  <option
-                    key={`suggestion-${col.field}-${value}`}
-                    value={value}
-                  />
-                ))}
-              </datalist>
-            </div>
-          );
-        }
-
         default:
           return null;
       }
+    });
+  };
+
+  const [suggestionVisibility, setSuggestionVisibility] = useState({});
+  const suggestionRefs = useRef({});
+  useEffect(() => {
+    function handleClickOutside(event) {
+      for (const field in suggestionRefs.current) {
+        if (
+          suggestionRefs.current[field] &&
+          !suggestionRefs.current[field].contains(event.target)
+        ) {
+          setSuggestionVisibility((prev) => ({
+            ...prev,
+            [field]: false,
+          }));
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const renderFilterSuggestionFilter = (col) => {
+    if (!col.filterTypes || col.filterTypes.length === 0) return null;
+
+    const filtersToRender = col.filterTypes;
+    return filtersToRender.map((filterType) => {
+      if (filterType !== "suggestionFilter") return null;
+
+      const inputValue = filters[col.field]?.toLowerCase() || "";
+      const filteredSuggestions =
+        inputValue.length > 0
+          ? [
+              ...new Set(
+                originalRows
+                  .map((row) => row[col.field])
+                  .filter(
+                    (val) =>
+                      val && val.toString().toLowerCase().includes(inputValue)
+                  )
+              ),
+            ]
+          : [];
+
+      const handleInputChange = (value) => {
+        handleFilterChange(col.field, value.trimStart());
+        setSuggestionVisibility((prev) => ({
+          ...prev,
+          [col.field]: true,
+        }));
+      };
+
+      const handleSelectSuggestion = (value) => {
+        handleFilterChange(col.field, value);
+        setSuggestionVisibility((prev) => ({
+          ...prev,
+          [col.field]: false,
+        }));
+      };
+
+      const refCallback = (node) => {
+        if (node) {
+          suggestionRefs.current[col.field] = node;
+        }
+      };
+
+      return (
+        <div
+          key={`filter-${col.field}-suggestionFilter`}
+          ref={refCallback}
+          style={{ margin: "10px", position: "relative" }}
+        >
+          <CustomTextField
+            fullWidth
+            placeholder={col.field}
+            value={filters[col.field] || ""}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={() => {
+              if ((filters[col.field] || "").trim().length > 0) {
+                setSuggestionVisibility((prev) => ({
+                  ...prev,
+                  [col.field]: true,
+                }));
+              }
+            }}
+            customBorderColor="rgba(47, 43, 61, 0.2)"
+            borderoutlinedColor="#00CFE8"
+            customTextColor="#2F2B3DC7"
+            customFontSize="0.8125rem"
+            size="small"
+            variant="filled"
+            autoComplete="off"
+          />
+
+          {suggestionVisibility[col.field] &&
+            filteredSuggestions.length > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  width: "100%",
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  background: "#fff",
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  zIndex: 10,
+                  borderRadius: "4px",
+                }}
+              >
+                {filteredSuggestions.map((value) => (
+                  <div
+                    key={`suggestion-${col.field}-${value}`}
+                    onClick={() => handleSelectSuggestion(value)}
+                    style={{
+                      padding: "8px 12px",
+                      cursor: "pointer",
+                      borderBottom: "1px solid #eee",
+                      fontSize: "0.8125rem",
+                    }}
+                  >
+                    {value}
+                  </div>
+                ))}
+              </div>
+            )}
+        </div>
+      );
     });
   };
 
@@ -805,16 +897,16 @@ export default function StcokReport() {
     const filtersToRender = col.filterTypes;
     return filtersToRender.map((filterType) => {
       switch (filterType) {
-        case "MultiSelection":
+        case "multiSelection":
           const uniqueValues = [
             ...new Set(originalRows.map((row) => row[col.field])),
           ];
+
           return (
             <div key={col.field} style={{ width: "100%" }}>
               <Accordion>
                 <AccordionSummary
                   expandIcon={<MdExpandMore />}
-                  aria-controls={`${col.field}-content`}
                   id={`${col.field}-header`}
                   sx={{
                     "& .MuiButtonBase-root": {
@@ -835,7 +927,7 @@ export default function StcokReport() {
                           handleFilterChange(
                             col.field,
                             { value, checked: e.target.checked },
-                            "MultiSelection"
+                            "multiSelection"
                           )
                         }
                       />
@@ -866,78 +958,89 @@ export default function StcokReport() {
     setSideFilterOpen(newOpen);
   };
 
-  const renderSummary = () => {
-    const summaryColumns = columns.filter((col) => {
-      const columnData = Object.values(allColumData).find(
-        (data) => data.field === col.field
-      );
-      return columnData?.summary;
+  const getSummaryData = () => {
+    let summary = {
+      diamond: { weight: 0, pcs: 0 },
+      cs: { weight: 0, pcs: 0 },
+      misc: { weight: 0, pcs: 0 },
+      finding: { weight: 0, pcs: 0 },
+      total: { weight: 0, pcs: 0, amount: 0 },
+    };
+
+    filteredRows?.forEach((row) => {
+      const wt = parseFloat(row.weight || 0);
+      const pcs = parseInt(row.pcs || 0);
+      const amt = parseFloat(row.amount || 0);
+      const name = row.itemname?.toUpperCase();
+
+      if (name === "DIAMOND") {
+        summary.diamond.weight += wt;
+        summary.diamond.pcs += pcs;
+      } else if (name === "COLOR STONE") {
+        summary.cs.weight += wt;
+        summary.cs.pcs += pcs;
+      } else if (name === "MISC") {
+        summary.misc.weight += wt;
+        summary.misc.pcs += pcs;
+      } else if (name === "FINDING") {
+        summary.finding.weight += wt;
+        summary.finding.pcs += pcs;
+      }
+
+      // Always add to total
+      summary.total.weight += wt;
+      summary.total.pcs += pcs;
+      summary.total.amount += amt;
     });
 
+    return [
+      {
+        field: "diamond",
+        summaryTitle: "Diamond Wt/Pcs",
+        value: `${summary.diamond.weight.toFixed(3)} / ${summary.diamond.pcs}`,
+      },
+      {
+        field: "cs",
+        summaryTitle: "CS Wt/Pcs",
+        value: `${summary.cs.weight.toFixed(3)} / ${summary.cs.pcs}`,
+      },
+      {
+        field: "misc",
+        summaryTitle: "Misc Wt/Pcs",
+        value: `${summary.misc.weight.toFixed(3)} / ${summary.misc.pcs}`,
+      },
+      {
+        field: "finding",
+        summaryTitle: "Finding Wt/Pcs",
+        value: `${summary.finding.weight.toFixed(3)} / ${summary.finding.pcs}`,
+      },
+      {
+        field: "total",
+        summaryTitle: "Total Wt/Pcs",
+        value: `${summary.total.weight.toFixed(3)} / ${summary.total.pcs}`,
+      },
+      {
+        field: "amount",
+        summaryTitle: "Total Amount",
+        value: `${summary.total.amount.toFixed(2)}`,
+      },
+    ];
+  };
+
+  const renderSummary = () => {
+    const summaryColumns = getSummaryData();
     return (
       <div className="summaryBox">
-        {summaryColumns.map((col) => {
-          let calculatedValue = 0;
-
-          if (col.field === "lossperfm") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else if (col.field === "lossper") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.netretunwtfm) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else if (col.field === "losspergross") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else {
-            calculatedValue =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row[col.field]) || 0),
-                0
-              ) || 0;
-          }
-          return (
-            <div className="summaryItem" key={col.field}>
-              <div className="AllEmploe_boxViewTotal">
-                <div>
-                  <p className="AllEmplo_boxViewTotalValue">
-                    {calculatedValue.toFixed(col?.summuryValueKey)}
-                  </p>
-                  <p className="boxViewTotalTitle">{col.summaryTitle}</p>
-                </div>
+        {summaryColumns.map((col) => (
+          <div className="summaryItem" key={col.field}>
+            <div className="AllEmploe_boxViewTotal">
+              <div>
+                <p className="AllEmplo_boxViewTotalValue">{col.value}</p>
+                <p className="boxViewTotalTitle">{col.summaryTitle}</p>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     );
   };
@@ -960,8 +1063,70 @@ export default function StcokReport() {
     }
   };
 
+  function mapRowsToHeaders(columns, rows) {
+    const isIsoDateTime = (str) =>
+      typeof str === "string" && /^\d{4}-\d{2}-\d{2}T/.test(str);
+    const fieldToHeader = {};
+    columns?.forEach((col) => {
+      let header = "";
+      if (typeof col.headerName === "string") {
+        header = col.headerName;
+      } else if (col.headerNamesingle) {
+        header = col.headerNamesingle;
+      } else if (
+        col.headerName?.props?.children &&
+        Array.isArray(col.headerName.props.children)
+      ) {
+        header = col.headerName.props.children[1];
+      }
+      fieldToHeader[col.field] = header;
+    });
+    return rows?.map((row, idx) => {
+      const ordered = {};
+      columns?.forEach((col) => {
+        const header = fieldToHeader[col.field];
+        let value = row[col.field] ?? "";
+        if (header === "Sr#") {
+          value = idx + 1;
+        }
+        if (col.field === "Venderfgage") {
+          let finalDate = 0;
+          const fgDateStr = row.fgdate;
+          const outsourceDateStr = row.outsourcedate;
+          if (fgDateStr && outsourceDateStr) {
+            const diff =
+              new Date(fgDateStr).getTime() -
+              new Date(outsourceDateStr).getTime();
+            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
+          }
+          value = finalDate;
+        } else if (col.field === "Fgage") {
+          let finalDate = 0;
+          const fgDateStr = row.fgdate;
+          const orderDateStr = row.orderdate;
+          if (fgDateStr && orderDateStr) {
+            const diff =
+              new Date(fgDateStr).getTime() - new Date(orderDateStr).getTime();
+            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
+          }
+          value = finalDate;
+        }
+        if (isIsoDateTime(value)) {
+          const dateObj = new Date(value);
+          const day = String(dateObj.getDate()).padStart(2, "0");
+          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const year = dateObj.getFullYear();
+          value = `${day}-${month}-${year}`;
+        }
+        ordered[header] = value;
+      });
+      return ordered;
+    });
+  }
+  const converted = mapRowsToHeaders(columns, filteredRows);
+
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredRows);
+    const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
 
@@ -969,8 +1134,26 @@ export default function StcokReport() {
       bookType: "xlsx",
       type: "array",
     });
+
     const data = new Blob([excelBuffer], { type: EXCEL_TYPE });
-    saveAs(data, "data.xlsx");
+
+    const now = new Date();
+    const dateString = now
+      .toLocaleString("en-GB", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(/[/:]/g, "-")
+      .replace(/, /g, "_"); // Format: dd-MM-yyyy_HH-mm-ss
+
+    const fileName = `Job Completion Lead Report_${dateString}.xlsx`;
+
+    saveAs(data, fileName);
   };
 
   const handleClearFilter = () => {
@@ -1092,79 +1275,15 @@ export default function StcokReport() {
     }));
   };
 
-  // const groupRows = (rows, groupCheckBox) => {
-  //   const grouped = [];
-  //   const adjustedCheckBox = { ...groupCheckBox };
-  //   console.log('adjustedCheckBox', adjustedCheckBox);
-
-  //   const keysExceptJobNo = Object.keys(adjustedCheckBox).filter(
-  //     (key) => key !== "stockbarcode"
-  //   );
-  //   const anyFalse = keysExceptJobNo.some((k) => !adjustedCheckBox[k]);
-  //   if (anyFalse && adjustedCheckBox["stockbarcode"]) {
-  //     adjustedCheckBox["stockbarcode"] = false;
-  //     setGrupEnChekBox(adjustedCheckBox);
-  //   }
-
-  //   if (!Array.isArray(rows)) {
-  //     console.warn("groupRows: rows is not an array!", rows);
-  //     return grouped;
-  //   }
-
-  //   const allChecked = Object.values(adjustedCheckBox).every(Boolean);
-  //   if (allChecked) {
-  //     return rows.map((row, index) => ({
-  //       ...row,
-  //       id: index,
-  //       srNo: index + 1,
-  //     }));
-  //   }
-
-  //   rows.forEach((row) => {
-  //     const newRow = { ...row };
-  //     const keyParts = [];
-
-  //     for (const [field, checked] of Object.entries(adjustedCheckBox)) {
-  //       if (checked) {
-  //         keyParts.push(newRow[field]);
-  //       } else {
-  //         newRow[field] = "-";
-  //       }
-  //     }
-
-  //     const groupKey = keyParts.join("|");
-  //     if (!grouped[groupKey]) {
-  //       grouped[groupKey] = { ...newRow };
-  //     } else {
-  //       for (const col of OtherKeyData?.rd1 || []) {
-  //         if (!col.GrupChekBox && typeof newRow[col.field] === "number") {
-  //           grouped[groupKey][col.field] =
-  //             (grouped[groupKey][col.field] || 0) + (newRow[col.field] || 0);
-  //         }
-  //       }
-  //     }
-  //   });
-
-  //   return Object.values(grouped).map((item, index) => ({
-  //     ...item,
-  //     id: index,
-  //     srNo: index + 1,
-  //   }));
-  // };
-
-  const handleChange = (event) => {
-    setIncludeCustomerStock(event.target.checked);
-    console.log("Include Customer Stock:", event.target.checked);
-  };
-
   const allChecked = useMemo(
     () => Object.values(grupEnChekBox).every((val) => val === true),
     [grupEnChekBox]
   );
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
-        className="StcokReportMain_mainGridView"
+        className="MaterialWiseWIP_mainGridView"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
         ref={gridContainerRef}
       >
@@ -1221,6 +1340,15 @@ export default function StcokReport() {
               onClick={() => setSideFilterOpen(false)}
             />
           </p>
+
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
+              <div key={col.field} style={{ gap: "10px" }}>
+                {renderFilterSuggestionFilter(col)}
+              </div>
+            ))}
+
           {columns
             .filter((col) => col.filterable)
             .map((col) => (
@@ -1247,7 +1375,7 @@ export default function StcokReport() {
 
           <div
             style={{
-              margin: "3px 15px",
+              margin: "10px",
               display: "flex",
               flexDirection: "column",
               gap: "5px",
@@ -1301,7 +1429,7 @@ export default function StcokReport() {
                   Open Filter
                 </button>
 
-                <div
+                {/* <div
                   style={{
                     display: "flex",
                     gap: "3px",
@@ -1320,7 +1448,7 @@ export default function StcokReport() {
                         ...filterState,
                         dateRange: {
                           startDate: new Date("2000-01-01T18:30:00.000Z"),
-                          endDate: new Date(),
+                          endDate: new Date(), // current date
                         },
                       })
                     }
@@ -1328,7 +1456,7 @@ export default function StcokReport() {
                   >
                     All
                   </Button>
-                </div>
+                </div> */}
                 {/* <p
                 style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
               >
@@ -1438,18 +1566,6 @@ export default function StcokReport() {
             </div> */}
             </div>
             <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={includeCustomerStock}
-                    onChange={handleChange}
-                    name="includeCustomerStock"
-                    color="primary"
-                  />
-                }
-                label="Include Customer Stock"
-              />
-
               {masterKeyData?.mailButton && (
                 <img
                   src={mainButton}
@@ -1551,12 +1667,7 @@ export default function StcokReport() {
                 const src =
                   String(item["imageViewkey"] ?? "").trim() || noFoundImg;
                 return (
-                  <div
-                    style={{
-                      width: "200px",
-                      height: "230px",
-                    }}
-                  >
+                  <div>
                     <img
                       key={idx}
                       src={src}
@@ -1580,45 +1691,34 @@ export default function StcokReport() {
                           style={{
                             margin: "0px",
                             fontWeight: 600,
-                            fontSize: "12px",
-                            lineHeight: "10px",
+                            fontSize: "15px",
                           }}
                         >
-                          <span>{item?.stockbarcode}</span>
+                          {item["5"]}
                         </p>
                         <p
                           style={{
                             margin: "0px",
                             fontWeight: 600,
-                            fontSize: "12px",
+                            fontSize: "14px",
                             display: "flex",
+                            gap: "2px",
                             color: "#CF4F7D",
-                            display: "flex",
-                            flexDirection: "column",
                           }}
                         >
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "3px",
-                              lineHeight: "10px",
-                            }}
-                          >
-                            <span>{item?.metaltype}</span>
-                            <span>{item?.metalpurity}</span>
-                          </div>
-                          <span>{item?.metalcolor}</span>
+                          <span>{item["16"]}</span>
+                          <span>{item["17"]}</span>
+                          <span>{item["18"]}</span>
                         </p>
                       </div>
                       <p
                         style={{
                           margin: "0px",
                           fontWeight: 600,
-                          fontSize: "13px",
-                          lineHeight: "10px",
+                          fontSize: "14px",
                         }}
                       >
-                        {item?.designno}
+                        {item["9"]}
                       </p>
                     </div>
                   </div>
@@ -1633,13 +1733,10 @@ export default function StcokReport() {
                 pageSize={pageSize}
                 autoHeight={false}
                 columnBuffer={17}
-                //For Sorting pagnation
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-                getRowId={(row) => row.id} // make sure this is correct!
                 sortModel={sortModel}
                 onSortModelChange={(model) => setSortModel(model)}
                 localeText={{ noRowsLabel: "No Data" }}
+                paginationModel={paginationModel}
                 initialState={{
                   columns: {
                     columnVisibilityModel: {
@@ -1655,14 +1752,13 @@ export default function StcokReport() {
                   },
                 }}
                 onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                pageSizeOptions={[10, 20, 50, 100]}
+                rowsPerPageOptions={[5, 10, 15, 25, 50]}
                 className="simpleGridView"
                 pagination
                 sx={{
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
-
                   marginLeft: 2,
                   marginRight: 2,
                   marginBottom: 2,
@@ -1711,14 +1807,6 @@ export default function StcokReport() {
                   We're sorry, but an unexpected error has occurred. Please try
                   again later.
                 </Typography>
-
-                {/* <Button
-                  variant="contained"
-                  color="error"
-                  sx={{ textTransform: "none", borderRadius: "10px", px: 4 }}
-                >
-                  Try Again
-                </Button> */}
               </Paper>
             </Box>
           </div>
@@ -1727,37 +1815,3 @@ export default function StcokReport() {
     </DragDropContext>
   );
 }
-
-// {
-//     "colid": 2,
-//     "headerName": "Date",
-//     "field": "entrydate",
-//     "Width": 150,
-//     "Align": "left",
-//     "ColumAlign": "left",
-//     "hrefLink": "",
-//     "ColumShow": true,
-//     "ColumFilter": false,
-//     "NormalFilter": true,
-//     "DateRangeFilter": false,
-//     "MultiSelection": false,
-//     "RangeFilter": false,
-//     "suggestionFilter": false,
-//     "selectDropdownFilter": false,
-//     "ColumNumberSetting": 7,
-//     "ColumTitleCapital": false,
-//     "ColumTitleSmall": false,
-//     "FontSize": "12px",
-//     "borderRadius": "0px",
-//     "color": "",
-//     "backgroundColor": "",
-//     "summary": false,
-//     "columAscendion": false,
-//     "columDescending": false,
-//     "proiorityFilter": true,
-//     "copyButton": false,
-//     "EditData": false,
-//     "summaryTitle": "",
-//     "dateColumn": true,
-//     "summuryValueKey": 0
-//   },

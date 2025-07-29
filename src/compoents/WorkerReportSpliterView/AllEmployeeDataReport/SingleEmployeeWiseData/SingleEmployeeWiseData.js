@@ -974,7 +974,7 @@ export default function SingleEmployeeWiseData({
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="singleDataEmployee_mainDiv" ref={gridContainerRef}>
+      <div className="singleDataEmployee_mainDiv_worker" ref={gridContainerRef}>
         {isLoading && (
           <div className="loader-overlay_signle">
             <CircularProgress className="loadingBarManage" />

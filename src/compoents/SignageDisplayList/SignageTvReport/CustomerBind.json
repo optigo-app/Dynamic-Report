@@ -1,18 +1,21 @@
 [
   {
     "id": 2,
-    "name": "All"
+    "name": "Banner 1"
   },
   {
     "id": 1,
-    "name": "ATM Binding"
+    "name": "Banner 2"
+
   },
   {
     "id": 3,
-    "name": "On Floor"
+    "name": "Banner 3"
+
   },
   {
     "id": 4,
-    "name": "ATM Binding + On Floor"
+    "name": "Banner 4"
+
   }
 ]

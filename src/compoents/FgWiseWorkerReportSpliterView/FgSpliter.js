@@ -11,6 +11,7 @@ import AllEmployeeDataReport from "./AllEmployeeDataReport/AllEmployeeDataReport
 import DualDatePicker from "../DatePicker/DualDatePicker";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import masterData from "../FgWiseWorkerReportSpliterView/AllEmployeeDataReport/AllEmployeeData.json";
 
 const formatToMMDDYYYY = (date) => {
   const d = new Date(date);
@@ -138,9 +139,6 @@ export default function FgSpliter() {
     try {
       const fetchedData = await GetWorkerData(body, sp);
       const { rd, rd1 } = fetchedData?.Data || {};
-
-      console.log("callllll  111", rd1);
-
       if (rd1?.length != 0) {
         setFinalData(fetchedData?.Data);
         if (Array.isArray(rd) && Array.isArray(rd1)) {
@@ -204,9 +202,12 @@ export default function FgSpliter() {
     const metalFilteredData = allEmployeeData?.filter(
       (item) => item.metaltypename === selectedMetalType
     );
-    showWithouLocationData
-      ? handleSelectLocation("", metalFilteredData, true)
-      : GetTotlaData(metalFilteredData, selectedLocation);
+    if (showWithouLocationData) {
+      handleSelecEmployee("", metalFilteredData, true);
+      handleSelectLocation("", metalFilteredData, true);
+    } else {
+      GetTotlaData(metalFilteredData, selectedLocation);
+    }
 
     setShowDepartment(!showDepartment);
   };
@@ -274,19 +275,22 @@ export default function FgSpliter() {
     );
 
     const firstLocation = selectedL ?? sortedLocationSummary[0]?.location;
-
-    console.log(
-      "sortedLocationSummarysortedLocationSummarysortedLocationSummary"
-    );
-
     if (sortedLocationSummary?.length == 0) {
       setLocationSummaryData([]);
       setGroupedDepartments([]);
       setGroupedEmployeeData([]);
     } else {
       setLocationSummaryData(sortedLocationSummary);
-      handleSelectLocation(firstLocation, allEmployeeData, true);
-      handleSelecEmployee(firstLocation, allEmployeeData, true);
+      handleSelecEmployee(
+        firstLocation,
+        allEmployeeData,
+        masterData?.rd?.ignoreFirstSpliter ? showWithouLocationData : false
+      );
+      handleSelectLocation(
+        firstLocation,
+        allEmployeeData,
+        masterData?.rd?.ignoreFirstSpliter ? showWithouLocationData : false
+      );
     }
   };
 
@@ -303,13 +307,6 @@ export default function FgSpliter() {
       Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
         ? allEmployeeDataMain
         : allEmployeeData;
-
-    console.log(
-      "sortedLocationSummary",
-      allEmployeeDataMain,
-      allEmployeeData,
-      FilterDataTemp
-    );
 
     const filtered = showData
       ? FilterDataTemp?.filter(
@@ -384,8 +381,6 @@ export default function FgSpliter() {
   };
 
   const handleSelecEmployee = (location, allEmployeeData, showData) => {
-    console.log("locationlocation", location, showData, allEmployeeData);
-
     if (!showData) {
       setSelectedLocation(location);
     }
@@ -395,7 +390,7 @@ export default function FgSpliter() {
         ? allEmployeeDataMain
         : allEmployeeData;
 
-    const filtered = showWithouLocationData
+    const filtered = showData
       ? FilterDataTemp?.filter(
           (emp) =>
             emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
@@ -579,6 +574,7 @@ export default function FgSpliter() {
                         handleToggle("All");
                         showWithoutLocationData();
                         setShowWithouLocationData(true);
+                        handleSelecEmployee(null, allEmployeeData, true);
                         setSelectedLocation(null);
                       }}
                     >

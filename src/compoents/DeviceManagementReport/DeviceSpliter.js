@@ -69,10 +69,17 @@ export default function DeviceSpliter({ isLoadingNew }) {
   const [groupedEmployeeData, setGroupedEmployeeData] = useState([]);
   const [AllFinalData, setFinalData] = useState();
   const [searchParams] = useSearchParams();
+  const [customerBindeChnaged, setCustomerBindeChnaged] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, [selectedFileter]);
+
+  useEffect(() => {
+    if (customerBindeChnaged) {
+      fetchData();
+    }
+  }, [customerBindeChnaged]);
 
   const fetchData = async (stat, end) => {
     try {
@@ -147,7 +154,23 @@ export default function DeviceSpliter({ isLoadingNew }) {
 
       setSideFilterData(filtered);
       setGroupedDepartments(nonEmptyAppData);
-      setSelectedDepartment(filteredData[0]?.app || "");
+
+      if (customerBindeChnaged) {
+        const expressAppEntry = filteredData?.find(
+          (item) => item.app === "ExpressApp"
+        );
+        if (expressAppEntry) {
+          setSelectedDepartment(expressAppEntry?.app);
+          setCustomerBindeChnaged(false);
+        } else {
+          setSelectedDepartment(filteredData[0]?.app || "");
+          setCustomerBindeChnaged(false);
+        }
+      } else {
+        setSelectedDepartment(filteredData[0]?.app || "");
+        console.log("calllllllllll else main");
+        setCustomerBindeChnaged(false);
+      }
     } catch (error) {
       console.error("Fetch failed:", error);
     } finally {
@@ -179,7 +202,6 @@ export default function DeviceSpliter({ isLoadingNew }) {
     if (subRef.current) {
       subRef.current.handleClearFilter();
     }
-
     // window.location.reload();
     // startEnableTimer();
   };
@@ -223,19 +245,6 @@ export default function DeviceSpliter({ isLoadingNew }) {
                   <p style={{ margin: "0px", lineHeight: "0px" }}>Location</p>
                 </div>
 
-                <div style={{ display: "flex", height: "100%" }}>
-                  <IoRefreshCircle
-                    onClick={handleRefresh}
-                    style={{
-                      color: "rebeccapurple",
-                      fontSize: "29px",
-                      cursor: "pointer",
-                      // cursor: isRefreshEnabled ? "pointer" : "not-allowed",
-                      // opacity: isRefreshEnabled ? 1 : 0.5,
-                      opacity: 1,
-                    }}
-                  />
-                </div>
               </div>
               <div
                 className="employee-list"
@@ -379,6 +388,8 @@ export default function DeviceSpliter({ isLoadingNew }) {
                 onClosePane={handleClose}
                 onOpenPane={handleOpen}
                 isPaneCollapsed={isPaneCollapsed}
+                setCustomerBindeChnaged={setCustomerBindeChnaged}
+                handleRefresh={handleRefresh}
               />
             </div>
           </>

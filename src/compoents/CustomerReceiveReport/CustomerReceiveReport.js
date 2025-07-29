@@ -1,17 +1,19 @@
-// http://localhost:3000/testreport/?sp=12&ifid=ToolsReport&pid=18245
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18297
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
-import "./StcokReport.scss";
+import "./CustomerReceiveReport.scss";
+import OtherKeyData from "./CustomerReceiveReport.json";
 import DatePicker from "react-datepicker";
 // import masterData from "./masterData.json";
-import "react-datepicker/dist/react-datepicker.css";
 import mainButton from "../images/Mail_32.png";
 import printButton from "../images/print.png";
+import customerR from "../images/customerR.png";
 import gridView from "../images/GriedView.png";
 import imageView from "../images/ImageView2.png";
 import { RiFullscreenLine } from "react-icons/ri";
+import "react-datepicker/dist/react-datepicker.css";
 import {
   Accordion,
   AccordionDetails,
@@ -23,6 +25,8 @@ import {
   Drawer,
   FormControl,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Modal,
@@ -32,19 +36,22 @@ import {
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
-import { MdExpandMore, MdOpenInFull } from "react-icons/md";
+import {
+  MdExpandMore,
+  MdOpenInFull,
+  MdOutlineFilterAlt,
+  MdOutlineFilterAltOff,
+} from "react-icons/md";
 import CustomTextField from "../text-field/index";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiFillSetting } from "react-icons/ai";
-import OtherKeyData from "./StcokReport.json";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import DualDatePicker from "../DatePicker/DualDatePicker";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, ImageUp, LayoutGrid } from "lucide-react";
+import { AlertTriangle, CircleX } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
-import noFoundImg from "../images/noFound.jpg";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
 
 let popperPlacement = "bottom-start";
@@ -117,7 +124,7 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-export default function StcokReport() {
+export default function CustomerReceiveReport() {
   const [isLoading, setIsLoading] = useState(false);
   const [toDate, setToDate] = useState(null);
   const [fromDate, setFromDate] = useState(null);
@@ -143,17 +150,28 @@ export default function StcokReport() {
   const [searchParams] = useSearchParams();
   const [startDate, setStartDate] = useState();
   const [endDate, setEndDate] = useState();
+  const [AllFinalData, setFinalData] = useState();
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
-  const [includeCustomerStock, setIncludeCustomerStock] = useState(false);
-  const [filterState, setFilterState] = useState({
-    dateRange: { startDate: null, endDate: null },
-  });
   const [sortModel, setSortModel] = useState([]);
-  const [grupEnChekBox, setGrupEnChekBox] = useState({});
-  const [paginationModel, setPaginationModel] = React.useState({
+  const [allUserNameList, setAllUserNameList] = useState([]);
+  const [selectedDateColumn, setSelectedDateColumn] = useState("ALL Users");
+  const [selectedCustomer, setSelectedCustomer] = useState("All");
+  const [selectedDateColumnHyBrid, setSelectedDateColumnHyBrid] =
+    useState("ALL");
+
+  const [grupEnChekBox, setGrupEnChekBox] = useState({
+    designation: true,
+    dept: true,
+    empname: true,
+  });
+  const [paginationModel, setPaginationModel] = useState({
     page: 0,
     pageSize: 10,
+  });
+
+  const [filterState, setFilterState] = useState({
+    dateRange: { startDate: null, endDate: null },
   });
 
   const firstTimeLoadedRef = useRef(false);
@@ -172,7 +190,7 @@ export default function StcokReport() {
     });
     setTimeout(() => {
       firstTimeLoadedRef.current = true;
-    }, 0); // lets React finish updating state first
+    }, 0);
   }, []);
 
   useEffect(() => {
@@ -190,11 +208,12 @@ export default function StcokReport() {
   }, [filterState.dateRange]);
 
   const fetchData = async (stat, end) => {
-    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     const sp = searchParams.get("sp");
+    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+
     setIsLoading(true);
     const body = {
-      con: `{"id":"","mode":"StockReport","appuserid":"${AllData?.uid}"}`,
+      con: `{"id":"","mode":"customerreceivereport","appuserid":"${AllData?.uid}"}`,
       p: `{"fdate":"${stat}","tdate":"${end}"}`,
       f: "Task Management (taskmaster)",
     };
@@ -202,26 +221,16 @@ export default function StcokReport() {
     try {
       const fetchedData = await GetWorkerData(body, sp);
       setAllRowData(fetchedData?.Data?.rd1);
+      setAllUserNameList(fetchedData?.Data?.rd3);
       setAllColumIdWiseName(fetchedData?.Data?.rd);
       setMasterKeyData(OtherKeyData?.rd);
       setAllColumData(OtherKeyData?.rd1);
-      const grupCheckboxMap = (OtherKeyData?.rd1 || [])
-        .filter((col) => col?.GrupChekBox)
-        .reduce((acc, col) => {
-          console.log("colcolcolcol", col);
-
-          if (col.defaultGrupChekBox) {
-            acc[col.field] = true;
-          } else {
-            acc[col.field] = false;
-          }
-          return acc;
-        }, {});
-      setGrupEnChekBox(grupCheckboxMap);
-      setStatus500(false);
+      setFinalData(fetchedData?.Data);
       setIsLoading(false);
     } catch (error) {
-      setStatus500(true);
+      if (error?.status == 500) {
+        setStatus500(true);
+      }
       setIsLoading(false);
     }
   };
@@ -249,13 +258,6 @@ export default function StcokReport() {
     }
   }, [allColumData]);
 
-  const handleGrupEnChekBoxChange = (field) => {
-    setGrupEnChekBox((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
-  };
-
   useEffect(() => {
     if (!allColumData) return;
     const columnData = Object?.values(allColumData)
@@ -268,9 +270,8 @@ export default function StcokReport() {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               {col.GrupChekBox && (
                 <Checkbox
-                  checked={grupEnChekBox[col.field] ?? true}
-                  onClick={(e) => e.stopPropagation()} 
-                  onChange={() => handleGrupEnChekBoxChange(col.field)}
+                  checked={grupEnChekBox[col.field] ?? true} // 👉 Correct binding to grupEnChekBox
+                  onChange={() => handleGrupEnChekBoxChange(col.field)} // 👉 Correct handler
                   size="small"
                   sx={{ p: 0 }}
                 />
@@ -278,60 +279,60 @@ export default function StcokReport() {
               {col.headerName}
             </div>
           ),
-
           width: col.Width,
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
           filterable: col.ColumFilter,
-          headerNamesingle: col.headerName,
           suggestionFilter: col.suggestionFilter,
           hrefLink: col.HrefLink,
           summuryValueKey: col.summuryValueKey,
           summaryTitle: col.summaryTitle,
           ToFixedValue: col.ToFixedValue,
+          flex: 1,
+          sortable: col.sortable,
           filterTypes: [
             col.NormalFilter && "NormalFilter",
             col.DateRangeFilter && "DateRangeFilter",
-            col.MultiSelection && "MultiSelection",
+            col.multiSelection && "multiSelection",
             col.RangeFilter && "RangeFilter",
-            col.SuggestionFilter && "suggestionFilter",
+            col.suggestionFilter && "suggestionFilter",
             col.selectDropdownFilter && "selectDropdownFilter",
           ].filter(Boolean),
 
           renderCell: (params) => {
             if (col.ToFixedValue) {
               return (
-                <p
+                <span
                   style={{
                     color: col.Color || "inherit",
-                    backgroundColor: col.backgroundColor || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
+                    padding: "0px",
                     borderRadius: col.BorderRadius,
-                    margin: "0px",
                   }}
                 >
                   {params.value?.toFixed(col.ToFixedValue)}
-                </p>
+                </span>
               );
             } else if (col.dateColumn == true) {
-              const date = new Date(params.value);
-              const formattedDate = date.toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              });
+              const formattedDate =
+                params.value && !isNaN(new Date(params.value).getTime())
+                  ? new Date(params.value).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "";
               return (
                 <span
                   style={{
                     color: col.Color || "inherit",
-                    backgroundColor: col.backgroundColor || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
+                    padding: "0px",
                     borderRadius: col.BorderRadius,
-                    margin: "0px",
                   }}
                 >
                   {formattedDate}
@@ -339,36 +340,43 @@ export default function StcokReport() {
               );
             } else if (col.hrefLink) {
               return (
-                <a
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: "blue",
-                    textDecoration: "underline",
-                    fontSize: col.FontSize || "inherit",
-                    padding: "5px 20px",
-                    cursor: "pointer",
-                    width: "120px",
-                    fontSize: col.FontSize || "inherit",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                  }}
-                  onClick={() => handleCellClick(params)}
-                >
-                  {params.value}
-                </a>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <a
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "blue",
+                      textDecoration: "underline",
+                      fontSize: col.FontSize || "inherit",
+                      padding: "0px",
+                      cursor: "pointer",
+                      fontSize: col.FontSize || "inherit",
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      width: "120px",
+                    }}
+                    onClick={() => handleClick(params)}
+                  >
+                    {params.value}
+                  </a>
+
+                  <img
+                    src={customerR}
+                    style={{ cursor: "pointer", width: "20px", height: "20px" }}
+                    onClick={() => handleClickInvoiceImg(params)}
+                  />
+                </div>
               );
             } else {
               return (
                 <span
                   style={{
                     color: col.Color || "inherit",
-                    backgroundColor: col.backgroundColor || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
+                    padding: "0px",
                     borderRadius: col.BorderRadius,
-                    margin: "0px",
                   }}
                 >
                   {params.value}
@@ -394,21 +402,8 @@ export default function StcokReport() {
         );
       },
     };
-
     setColumns([srColumn, ...columnData]);
   }, [allColumData, grupEnChekBox, sortModel, paginationModel]);
-
-  useEffect(() => {
-    if (!allColumData) return;
-    const defaultChecked = {};
-    Object.values(allColumData).forEach((col) => {
-      if (col.GrupChekBox) {
-        defaultChecked[col.field] = true; // ✅ By default checked if GrupChekBox is true
-      }
-    });
-
-    setCheckedColumns(defaultChecked);
-  }, [allColumData]);
 
   const handleCellClick = (params) => {
     setSelectedDepartmentId(params?.row?.deptid);
@@ -416,69 +411,50 @@ export default function StcokReport() {
     setOpen(true);
   };
 
-  // Defensive check to make sure the column map is valid
-
-  const columnMap =
-    Array.isArray(allColumIdWiseName) && allColumIdWiseName.length > 0
-      ? allColumIdWiseName[0]
-      : {};
-  columnMap["49"] = "imageViewkey";
-  const updatedRowData =
-    allRowData &&
-    allRowData?.map((row) => ({
-      ...row,
-    }));
-
   const originalRows =
-    updatedRowData &&
-    updatedRowData.map((row, index) => {
+    allColumIdWiseName &&
+    allRowData?.map((row, index) => {
       const formattedRow = {};
       Object.keys(row).forEach((key) => {
-        const columnName = columnMap[key] || `unknown_${key}`;
-        formattedRow[columnName] = row[key];
+        formattedRow[allColumIdWiseName[0][key]] = row[key];
       });
       return { id: index, ...formattedRow };
     });
 
-  // console.log("allRowDataallRowData", allRowData);
-  // console.log("allColumIdWiseName", allColumIdWiseName);
-  // const originalRows =
-  //   allColumIdWiseName &&
-  //   allRowData?.map((row, index) => {
-  //     const formattedRow = {};
-  //     Object.keys(row).forEach((key) => {
-  //       formattedRow[allColumIdWiseName[0][key]] = row[key];
-  //     });
-  //     return { id: index, ...formattedRow };
-  //   });
-
-  const [pageSize, setPageSize] = useState(10);
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
-
-  useEffect(() => {
-    const hasActiveFilters = Object.values(filters).some(
-      (val) => val && (Array.isArray(val) ? val.length > 0 : val !== "")
-    );
-
-    if (!hasActiveFilters) {
-      setFilteredRows(originalRows);
-    }
-  }, [originalRows, filters]);
+  const uniqueCustomers = [
+    "All",
+    ...Array.from(new Set(originalRows?.map((row) => row?.item))),
+  ];
 
   useEffect(() => {
     const newFilteredRows = originalRows?.filter((row) => {
       let isMatch = true;
 
-      if (!includeCustomerStock && row.iscompanystock !== 1) {
+      if (
+        selectedDateColumnHyBrid === "Hybrid" &&
+        parseInt(row.ishybridbill) !== 1
+      ) {
         return false;
+      }
+
+      if (
+        selectedDateColumn !== "ALL Users" &&
+        parseInt(selectedDateColumn) !== row.salesrep_id
+      ) {
+        return false;
+      }
+
+      if (isMatch && selectedCustomer !== "All") {
+        if (row.item !== selectedCustomer) {
+          isMatch = false;
+        }
       }
 
       for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
         if (!filterValue || filterValue.length === 0) continue;
-
-        const rawRowValue = row[filterField];
 
         if (filterField.includes("_min") || filterField.includes("_max")) {
           const baseField = filterField.replace("_min", "").replace("_max", "");
@@ -502,26 +478,23 @@ export default function StcokReport() {
             break;
           }
         } else if (Array.isArray(filterValue)) {
-          if (!filterValue.includes(rawRowValue)) {
+          if (!filterValue.includes(row[filterField])) {
             isMatch = false;
             break;
           }
         } else {
-          const rowValue = rawRowValue?.toString().toLowerCase() || "";
-          const filterValueLower = filterValue.toLowerCase();
-          if (rowValue !== filterValueLower) {
+          const rowValue = row[filterField]?.toString().toLowerCase() || "";
+          if (!rowValue.includes(filterValue.toLowerCase())) {
             isMatch = false;
             break;
           }
         }
       }
-
       if (isMatch && selectedColors.length > 0 && row.PriorityId) {
         if (!selectedColors.includes(row.PriorityId)) {
           isMatch = false;
         }
       }
-
       if (isMatch && fromDate && toDate) {
         const dateColumn = columns.find(
           (col) =>
@@ -538,7 +511,6 @@ export default function StcokReport() {
           }
         }
       }
-
       if (isMatch && commonSearch) {
         const searchText = commonSearch.toLowerCase();
         const hasMatch = Object.values(row).some((value) =>
@@ -550,14 +522,11 @@ export default function StcokReport() {
       }
       return isMatch;
     });
-
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
-
-    const groupedRows = groupRows(rowsWithSrNo, grupEnChekBox);
-    setFilteredRows(groupedRows);
+    setFilteredRows(rowsWithSrNo);
   }, [
     filters,
     commonSearch,
@@ -566,12 +535,14 @@ export default function StcokReport() {
     columns,
     originalRows,
     selectedColors,
-    includeCustomerStock,
+    selectedDateColumn,
+    selectedDateColumnHyBrid,
+    selectedCustomer,
   ]);
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
-      if (filterType === "MultiSelection") {
+      if (filterType === "multiSelection") {
         const selectedValues = prevFilters[field] || [];
         let newValues;
 
@@ -596,64 +567,174 @@ export default function StcokReport() {
   const renderFilter = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
     const filtersToRender = col.filterTypes;
-
     return filtersToRender.map((filterType) => {
       switch (filterType) {
         case "NormalFilter":
           return (
-            <div style={{ width: "100%", margin: "5px 20px" }}>
+            <div style={{ margin: "10px", width: "100%" }} key={col.field}>
               <CustomTextField
                 key={`filter-${col.field}-NormalFilter`}
                 type="text"
-                placeholder={`${col.headerNamesingle}`}
+                placeholder={`${col.field}`}
                 value={filters[col.field] || ""}
                 onChange={(e) => handleFilterChange(col.field, e.target.value)}
                 className="filter_column_box"
               />
             </div>
           );
-        case "suggestionFilter": {
-          const uniqueValues = [
-            ...new Set(originalRows.map((row) => row[col.field])),
-          ];
-
-          return (
-            <div
-              key={`filter-${col.field}-suggestionFilter`}
-              style={{ width: "100%", margin: "10px 20px" }}
-            >
-              <CustomTextField
-                fullWidth
-                placeholder={`Search ${col.headerName}`}
-                value={filters[col.field] || ""}
-                onChange={(e) => handleFilterChange(col.field, e.target.value)}
-                InputProps={{
-                  inputProps: {
-                    list: `suggestions-${col.field}`,
-                  },
-                }}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                borderoutlinedColor="#00CFE8"
-                customTextColor="#2F2B3DC7"
-                customFontSize="0.8125rem"
-                size="small"
-                variant="filled"
-              />
-              <datalist id={`suggestions-${col.field}`}>
-                {uniqueValues.map((value) => (
-                  <option
-                    key={`suggestion-${col.field}-${value}`}
-                    value={value}
-                  />
-                ))}
-              </datalist>
-            </div>
-          );
-        }
-
         default:
           return null;
       }
+    });
+  };
+
+  const [highlightedIndex, setHighlightedIndex] = useState({});
+  const [suggestionVisibility, setSuggestionVisibility] = useState({});
+  const suggestionRefs = useRef({});
+  useEffect(() => {
+    function handleClickOutside(event) {
+      for (const field in suggestionRefs.current) {
+        if (
+          suggestionRefs.current[field] &&
+          !suggestionRefs.current[field].contains(event.target)
+        ) {
+          setSuggestionVisibility((prev) => ({
+            ...prev,
+            [field]: false,
+          }));
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const renderFilterSuggestionFilter = (col) => {
+    if (!col.filterTypes || col.filterTypes.length === 0) return null;
+
+    const filtersToRender = col.filterTypes;
+
+    return filtersToRender.map((filterType) => {
+      if (filterType !== "suggestionFilter") return null;
+
+      const field = col.field;
+      const inputValue = filters[field]?.toLowerCase() || "";
+      const suggestions =
+        inputValue.length > 0
+          ? [
+              ...new Set(
+                originalRows
+                  .map((row) => row[field])
+                  .filter(
+                    (val) =>
+                      val && val.toString().toLowerCase().includes(inputValue)
+                  )
+              ),
+            ]
+          : [];
+
+      const handleInputChange = (value) => {
+        handleFilterChange(field, value.trimStart());
+        setSuggestionVisibility((prev) => ({ ...prev, [field]: true }));
+        setHighlightedIndex((prev) => ({ ...prev, [field]: 0 }));
+      };
+
+      const handleSelectSuggestion = (value) => {
+        handleFilterChange(field, value);
+        setSuggestionVisibility((prev) => ({ ...prev, [field]: false }));
+        setHighlightedIndex((prev) => ({ ...prev, [field]: 0 }));
+      };
+
+      const handleKeyDown = (e) => {
+        if (!suggestionVisibility[field] || suggestions.length === 0) return;
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setHighlightedIndex((prev) => ({
+            ...prev,
+            [field]: Math.min((prev[field] ?? 0) + 1, suggestions.length - 1),
+          }));
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setHighlightedIndex((prev) => ({
+            ...prev,
+            [field]: Math.max((prev[field] ?? 0) - 1, 0),
+          }));
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          const current = suggestions[highlightedIndex[field] ?? 0];
+          if (current) handleSelectSuggestion(current);
+        }
+      };
+
+      const refCallback = (node) => {
+        if (node) {
+          suggestionRefs.current[field] = node;
+        }
+      };
+
+      return (
+        <div
+          key={`filter-${field}-suggestionFilter`}
+          ref={refCallback}
+          style={{ margin: "10px", position: "relative" }}
+        >
+          <CustomTextField
+            fullWidth
+            placeholder={field}
+            value={filters[field] || ""}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={() => {
+              if ((filters[field] || "").trim().length > 0) {
+                setSuggestionVisibility((prev) => ({ ...prev, [field]: true }));
+              }
+            }}
+            onKeyDown={handleKeyDown}
+            size="small"
+            variant="filled"
+            autoComplete="off"
+          />
+
+          {suggestionVisibility[field] && suggestions.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                width: "100%",
+                maxHeight: "300px",
+                overflowY: "auto",
+                background: "#fff",
+                border: "1px solid rgba(0,0,0,0.1)",
+                zIndex: 10,
+                borderRadius: "4px",
+              }}
+            >
+              {suggestions.map((value, index) => (
+                <div
+                  key={`suggestion-${field}-${value}`}
+                  onClick={() => handleSelectSuggestion(value)}
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee",
+                    fontSize: "0.8125rem",
+                    background:
+                      index === highlightedIndex[field]
+                        ? "#eee"
+                        : "transparent",
+                  }}
+                >
+                  {value}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
     });
   };
 
@@ -805,22 +886,17 @@ export default function StcokReport() {
     const filtersToRender = col.filterTypes;
     return filtersToRender.map((filterType) => {
       switch (filterType) {
-        case "MultiSelection":
+        case "multiSelection":
           const uniqueValues = [
-            ...new Set(originalRows.map((row) => row[col.field])),
+            ...new Set(originalRows?.map((row) => row[col.field])),
           ];
           return (
-            <div key={col.field} style={{ width: "100%" }}>
+            <div key={col.field} style={{ width: "100%", margin: "10px" }}>
               <Accordion>
                 <AccordionSummary
                   expandIcon={<MdExpandMore />}
                   aria-controls={`${col.field}-content`}
                   id={`${col.field}-header`}
-                  sx={{
-                    "& .MuiButtonBase-root": {
-                      display: "none",
-                    },
-                  }}
                 >
                   <Typography>{col.headerName}</Typography>
                 </AccordionSummary>
@@ -835,7 +911,7 @@ export default function StcokReport() {
                           handleFilterChange(
                             col.field,
                             { value, checked: e.target.checked },
-                            "MultiSelection"
+                            "multiSelection"
                           )
                         }
                       />
@@ -866,78 +942,45 @@ export default function StcokReport() {
     setSideFilterOpen(newOpen);
   };
 
-  const renderSummary = () => {
-    const summaryColumns = columns.filter((col) => {
-      const columnData = Object.values(allColumData).find(
-        (data) => data.field === col.field
-      );
-      return columnData?.summary;
-    });
+  const itemSummaryMap = {
+    METAL: "Total Metal Weight",
+    DIAMOND: "Total Diamond",
+    "COLOR STONE": "Total Color Stone",
+    MISC: "Total Misc",
+    FINDING: "Total Finding",
+    "LAB GROWRN": "Total Lab Grown",
+    MOUNT: "Total Mount",
+    ALLOY: "Total Alloy",
+  };
 
+  const summaryColumns = Object.entries(itemSummaryMap).map(
+    ([itemKey, summaryTitle]) => {
+      const totalWeight = filteredRows
+        ?.filter((row) => row.item?.toUpperCase() === itemKey)
+        .reduce((sum, row) => sum + (parseFloat(row.weight) || 0), 0);
+
+      return {
+        summaryTitle,
+        totalWeight,
+      };
+    }
+  );
+
+  const renderSummary = () => {
     return (
       <div className="summaryBox">
-        {summaryColumns.map((col) => {
-          let calculatedValue = 0;
-
-          if (col.field === "lossperfm") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else if (col.field === "lossper") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.netretunwtfm) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else if (col.field === "losspergross") {
-            const totalLossWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.losswt) || 0),
-                0
-              ) || 0;
-
-            const totalNetReturnWt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
-                0
-              ) || 1; // prevent division by 0
-            calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
-          } else {
-            calculatedValue =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row[col.field]) || 0),
-                0
-              ) || 0;
-          }
-          return (
-            <div className="summaryItem" key={col.field}>
-              <div className="AllEmploe_boxViewTotal">
-                <div>
-                  <p className="AllEmplo_boxViewTotalValue">
-                    {calculatedValue.toFixed(col?.summuryValueKey)}
-                  </p>
-                  <p className="boxViewTotalTitle">{col.summaryTitle}</p>
-                </div>
+        {summaryColumns?.map((col) => (
+          <div className="summaryItem" key={col.summaryTitle}>
+            <div className="AllEmploe_boxViewTotal">
+              <div>
+                <p className="AllEmplo_boxViewTotalValue">
+                  {col.totalWeight?.toFixed(3)}
+                </p>
+                <p className="boxViewTotalTitle">{col.summaryTitle}</p>
               </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     );
   };
@@ -960,8 +1003,70 @@ export default function StcokReport() {
     }
   };
 
+  function mapRowsToHeaders(columns, rows) {
+    const isIsoDateTime = (str) =>
+      typeof str === "string" && /^\d{4}-\d{2}-\d{2}T/.test(str);
+    const fieldToHeader = {};
+    columns?.forEach((col) => {
+      let header = "";
+      if (typeof col.headerName === "string") {
+        header = col.headerName;
+      } else if (col.headerNamesingle) {
+        header = col.headerNamesingle;
+      } else if (
+        col.headerName?.props?.children &&
+        Array.isArray(col.headerName.props.children)
+      ) {
+        header = col.headerName.props.children[1];
+      }
+      fieldToHeader[col.field] = header;
+    });
+    return rows?.map((row, idx) => {
+      const ordered = {};
+      columns?.forEach((col) => {
+        const header = fieldToHeader[col.field];
+        let value = row[col.field] ?? "";
+        if (header === "Sr#") {
+          value = idx + 1;
+        }
+        if (col.field === "Venderfgage") {
+          let finalDate = 0;
+          const fgDateStr = row.fgdate;
+          const outsourceDateStr = row.outsourcedate;
+          if (fgDateStr && outsourceDateStr) {
+            const diff =
+              new Date(fgDateStr).getTime() -
+              new Date(outsourceDateStr).getTime();
+            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
+          }
+          value = finalDate;
+        } else if (col.field === "Fgage") {
+          let finalDate = 0;
+          const fgDateStr = row.fgdate;
+          const orderDateStr = row.orderdate;
+          if (fgDateStr && orderDateStr) {
+            const diff =
+              new Date(fgDateStr).getTime() - new Date(orderDateStr).getTime();
+            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
+          }
+          value = finalDate;
+        }
+        if (isIsoDateTime(value)) {
+          const dateObj = new Date(value);
+          const day = String(dateObj.getDate()).padStart(2, "0");
+          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const year = dateObj.getFullYear();
+          value = `${day}-${month}-${year}`;
+        }
+        ordered[header] = value;
+      });
+      return ordered;
+    });
+  }
+  const converted = mapRowsToHeaders(columns, filteredRows);
+
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredRows);
+    const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
 
@@ -969,8 +1074,26 @@ export default function StcokReport() {
       bookType: "xlsx",
       type: "array",
     });
+
     const data = new Blob([excelBuffer], { type: EXCEL_TYPE });
-    saveAs(data, "data.xlsx");
+
+    const now = new Date();
+    const dateString = now
+      .toLocaleString("en-GB", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(/[/:]/g, "-")
+      .replace(/, /g, "_"); // Format: dd-MM-yyyy_HH-mm-ss
+
+    const fileName = `Job Completion Lead Report_${dateString}.xlsx`;
+
+    saveAs(data, fileName);
   };
 
   const handleClearFilter = () => {
@@ -1009,12 +1132,33 @@ export default function StcokReport() {
     setShowImageView((prevState) => !prevState);
   };
 
+  const toggleColorSelection = (colorId) => {
+    setSelectedColors((prevSelected) => {
+      if (prevSelected.includes(colorId)) {
+        return prevSelected.filter((id) => id !== colorId);
+      } else {
+        return [...prevSelected, colorId];
+      }
+    });
+  };
+
+  const handleGrupEnChekBoxChange = (field) => {
+    setGrupEnChekBox((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
+
   const handleClickOpenPoup = () => {
     setOpenPopup(true);
   };
 
   const handleClosePopup = () => {
     setOpenPopup(false);
+  };
+
+  const handleCheckboxChange = (event) => {
+    setIsChecked(event.target.checked);
   };
 
   const handleSave = () => {
@@ -1026,62 +1170,37 @@ export default function StcokReport() {
   const onDragEnd = () => {};
 
   const groupRows = (rows, groupCheckBox) => {
-    const grouped = [];
-    const adjustedCheckBox = { ...groupCheckBox };
+    const grouped = {};
 
-    if (adjustedCheckBox["stockbarcode"]) {
-      Object.keys(adjustedCheckBox).forEach((key) => {
-        adjustedCheckBox[key] = true;
-      });
-      setGrupEnChekBox(adjustedCheckBox);
-    }
-
-    const keysExceptJobNo = Object.keys(adjustedCheckBox).filter(
-      (key) => key !== "stockbarcode"
-    );
-
-    const anyFalse = keysExceptJobNo.some((k) => !adjustedCheckBox[k]);
-    if (anyFalse && adjustedCheckBox["stockbarcode"]) {
-      adjustedCheckBox["stockbarcode"] = false;
-      setGrupEnChekBox(adjustedCheckBox);
-    }
-
-    if (!Array.isArray(rows)) {
-      console.warn("groupRows: rows is not an array!", rows);
-      return grouped;
-    }
-
-    const allChecked = Object.values(adjustedCheckBox).every(Boolean);
-    if (allChecked) {
-      return rows.map((row, index) => ({
-        ...row,
-        id: index,
-        srNo: index + 1,
-      }));
-    }
-
-    rows.forEach((row) => {
+    rows?.forEach((row) => {
       const newRow = { ...row };
-      const keyParts = [];
 
-      for (const [field, checked] of Object.entries(adjustedCheckBox)) {
-        if (checked) {
-          keyParts.push(newRow[field]);
-        } else {
-          newRow[field] = "-";
-        }
-      }
+      const deptChecked = groupCheckBox["dept"];
+      const designationChecked = groupCheckBox["designation"];
+      const empnameChecked = groupCheckBox["empname"];
+
+      if (!deptChecked) newRow.dept = "-";
+      if (!designationChecked) newRow.designation = "-";
+      if (!empnameChecked) newRow.empname = "-";
+
+      let keyParts = [];
+
+      // 🔥 Always group by item at least
+      if (deptChecked) keyParts.push(newRow.dept);
+      if (designationChecked) keyParts.push(newRow.designation);
+      if (empnameChecked) keyParts.push(newRow.empname);
+
+      // 👉 Always push item into keyParts even if itemChecked is false
+      keyParts.push(newRow.item);
 
       const groupKey = keyParts.join("|");
+
       if (!grouped[groupKey]) {
         grouped[groupKey] = { ...newRow };
       } else {
-        for (const col of OtherKeyData?.rd1 || []) {
-          if (!col.GrupChekBox && typeof newRow[col.field] === "number") {
-            grouped[groupKey][col.field] =
-              (grouped[groupKey][col.field] || 0) + (newRow[col.field] || 0);
-          }
-        }
+        grouped[groupKey].issqty += newRow.issqty || 0;
+        grouped[groupKey].retqty += newRow.retqty || 0;
+        grouped[groupKey].remqty += newRow.remqty || 0;
       }
     });
 
@@ -1092,79 +1211,55 @@ export default function StcokReport() {
     }));
   };
 
-  // const groupRows = (rows, groupCheckBox) => {
-  //   const grouped = [];
-  //   const adjustedCheckBox = { ...groupCheckBox };
-  //   console.log('adjustedCheckBox', adjustedCheckBox);
-
-  //   const keysExceptJobNo = Object.keys(adjustedCheckBox).filter(
-  //     (key) => key !== "stockbarcode"
-  //   );
-  //   const anyFalse = keysExceptJobNo.some((k) => !adjustedCheckBox[k]);
-  //   if (anyFalse && adjustedCheckBox["stockbarcode"]) {
-  //     adjustedCheckBox["stockbarcode"] = false;
-  //     setGrupEnChekBox(adjustedCheckBox);
-  //   }
-
-  //   if (!Array.isArray(rows)) {
-  //     console.warn("groupRows: rows is not an array!", rows);
-  //     return grouped;
-  //   }
-
-  //   const allChecked = Object.values(adjustedCheckBox).every(Boolean);
-  //   if (allChecked) {
-  //     return rows.map((row, index) => ({
-  //       ...row,
-  //       id: index,
-  //       srNo: index + 1,
-  //     }));
-  //   }
-
-  //   rows.forEach((row) => {
-  //     const newRow = { ...row };
-  //     const keyParts = [];
-
-  //     for (const [field, checked] of Object.entries(adjustedCheckBox)) {
-  //       if (checked) {
-  //         keyParts.push(newRow[field]);
-  //       } else {
-  //         newRow[field] = "-";
+  // function openInvoiceList(invoiceno) {
+  //           if ($.trim(_hdn_invoiceof) == 'supplier') {
+  //               parent.CloseTab('Material Purchase');
+  //               parent.CloseTab('Customer Receive');
+  //               parent.addTab('Material Purchase', 'icon-InventoryManagement_invoiceSummary', ADPT + 'mfg/app/InventoryManagement_invoiceList?invoiceof=supplier&invoiceno=' + invoiceno + '&IsOldMetal=' + IsOldMetal)
+  //           }
+  //           else {
+  //               parent.CloseTab('Material Purchase');
+  //               parent.CloseTab('Customer Receive');
+  //               parent.addTab('Customer Receive', 'icon-InventoryManagement_invoiceSummary', ADPT + 'mfg/app/InventoryManagement_invoiceList?invoiceof=customer&invoiceno=' + invoiceno + '&IsOldMetal=' + IsOldMetal)
+  //           }
   //       }
-  //     }
+  // window.parent.addTab(
+  //   "Job Completion Report",
+  //   "tabs-icon icon-report",
+  //   "http://nzen/R50B3/mfg/app/InventoryManagement_invoiceList?invoiceof=customer&invoiceno=Q1IvMTI3LzIwMjU=-AdQ2EGwrOJI=&IsOldMetal=0&ifid=CustomerReceive&pid=undefined"
+  // );
 
-  //     const groupKey = keyParts.join("|");
-  //     if (!grouped[groupKey]) {
-  //       grouped[groupKey] = { ...newRow };
-  //     } else {
-  //       for (const col of OtherKeyData?.rd1 || []) {
-  //         if (!col.GrupChekBox && typeof newRow[col.field] === "number") {
-  //           grouped[groupKey][col.field] =
-  //             (grouped[groupKey][col.field] || 0) + (newRow[col.field] || 0);
-  //         }
-  //       }
-  //     }
-  //   });
-
-  //   return Object.values(grouped).map((item, index) => ({
-  //     ...item,
-  //     id: index,
-  //     srNo: index + 1,
-  //   }));
-  // };
-
-  const handleChange = (event) => {
-    setIncludeCustomerStock(event.target.checked);
-    console.log("Include Customer Stock:", event.target.checked);
+  const handleClick = (params) => {
+    let url_optigo = sessionStorage.getItem("url_optigo");
+    window.parent.addTab(
+      "Customer Receive",
+      "icon-InventoryManagement_invoiceSummary",
+      url_optigo +
+        "mfg/app/InventoryManagement_invoiceList?invoiceof=customer&invoiceno=" +
+        btoa(params?.formattedValue) +
+        "&IsOldMetal=" +
+        0
+    );
   };
 
-  const allChecked = useMemo(
-    () => Object.values(grupEnChekBox).every((val) => val === true),
-    [grupEnChekBox]
-  );
+  const handleClickInvoiceImg = (params) => {
+    let url_optigo = sessionStorage.getItem("url_optigo");
+    window.parent.addTab(
+      "Transaction Log",
+      "icon-TransactionLog",
+      url_optigo +
+        "login/app/LoginManagement_LogHistory?mode=logsearch&sf=" +
+        params?.formattedValue
+      // +
+      // "&-=" +
+      // ""
+    );
+  };
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
-        className="StcokReportMain_mainGridView"
+        className="CustomerReceiveReportMain_mainGridView"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
         ref={gridContainerRef}
       >
@@ -1203,38 +1298,42 @@ export default function StcokReport() {
           onClose={toggleDrawer(false)}
           className="drawerMain"
         >
-          <p
+          <div
             style={{
               margin: "20px 10px 0px 10px",
               fontSize: "25px",
               display: "flex",
               justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
-            Filter
-            <IoMdClose
+            <button onClick={handleClearFilter} className="ClearFilterButton">
+              <MdOutlineFilterAltOff style={{ fontSize: "25px" }} />
+              Clear
+            </button>
+
+            <CircleX
               style={{
                 cursor: "pointer",
-                fontSize: "25px",
-                marginTop: "-10px",
+                height: "30px",
+                width: "30px",
               }}
               onClick={() => setSideFilterOpen(false)}
             />
-          </p>
+          </div>
+
           {columns
             .filter((col) => col.filterable)
             .map((col) => (
               <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                {renderFilter(col)}
+                {renderFilterMulti(col)}
               </div>
             ))}
 
           {columns
             .filter((col) => col.filterable)
             .map((col) => (
-              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                {renderFilterRange(col)}
-              </div>
+              <div key={col.field}>{renderFilterRange(col)}</div>
             ))}
 
           {columns
@@ -1245,147 +1344,168 @@ export default function StcokReport() {
               </div>
             ))}
 
-          <div
-            style={{
-              margin: "3px 15px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "5px",
-            }}
-          >
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
+              <div key={col.field} style={{ gap: "10px" }}>
+                {renderFilterSuggestionFilter(col)}
+              </div>
+            ))}
+
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
+              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                {renderFilter(col)}
+              </div>
+            ))}
+        </Drawer>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          {renderSummary()}
+
+          {masterKeyData?.ColumnSettingPopup && (
+            <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
+              <AiFillSetting style={{ height: "25px", width: "25px" }} />
+            </div>
+          )}
+          {masterKeyData?.fullScreenGridButton && (
+            <button className="fullScreenButton" onClick={toggleFullScreen}>
+              <RiFullscreenLine
+                style={{ marginInline: "5px", fontSize: "30px" }}
+              />
+            </button>
+          )}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "10px 5px",
+          }}
+        >
+          <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+              <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
+                <MdOutlineFilterAlt style={{ height: "30px", width: "30px" }} />
+              </button>
+
+              <div style={{ display: "flex", gap: "5px" }}>
+                <DualDatePicker
+                  filterState={filterState}
+                  setFilterState={setFilterState}
+                  validDay={186}
+                  validMonth={6}
+                />
+                <Button
+                  onClick={() =>
+                    setFilterState({
+                      ...filterState,
+                      dateRange: {
+                        startDate: new Date("2000-01-01T18:30:00.000Z"),
+                        endDate: new Date(),
+                      },
+                    })
+                  }
+                  className="FiletrBtnAll"
+                >
+                  All
+                </Button>
+              </div>
+              <FormControl size="small" sx={{ minWidth: 150, margin: "0px" }}>
+                <Select
+                  value={selectedCustomer}
+                  onChange={(e) => setSelectedCustomer(e.target.value)}
+                  displayEmpty
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        overflowY: "auto",
+                      },
+                    },
+                  }}
+                >
+                  {uniqueCustomers?.map((cust, index) => (
+                    <MenuItem key={index} value={cust}>
+                      {cust}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <CustomTextField
+                type="text"
+                placeholder="Search..."
+                value={commonSearch}
+                onChange={(e) => setCommonSearch(e.target.value)}
+                customBorderColor="rgba(47, 43, 61, 0.2)"
+                InputProps={{
+                  endAdornment: commonSearch && (
+                    <InputAdornment position="end">
+                      <IconButton
+                        edge="end"
+                        size="small"
+                        onClick={() => setCommonSearch("")}
+                        aria-label="clear"
+                      >
+                        <CircleX size={20} color="#888" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                style={{ width: "250px" }}
+              />
+            </div>
             {columns
               .filter((col) => col.filterable)
               .map((col) => (
                 <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                  {renderFilterMulti(col)}
+                  {renderDateFilter(col)}
                 </div>
               ))}
-          </div>
-        </Drawer>
-        <div
-          style={{
-            position: showImageView && "fixed",
-            top: "0px",
-            backgroundColor: "#f8f7fa",
-            width: "100%",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            {renderSummary()}
 
-            {masterKeyData?.ColumnSettingPopup && (
-              <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
-                <AiFillSetting style={{ height: "25px", width: "25px" }} />
-              </div>
-            )}
-            {masterKeyData?.fullScreenGridButton && (
-              <button className="fullScreenButton" onClick={toggleFullScreen}>
-                <RiFullscreenLine
-                  style={{ marginInline: "5px", fontSize: "30px" }}
-                />
-              </button>
-            )}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "20px",
-            }}
-          >
-            <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "20px" }}
-              >
-                <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                  Open Filter
+            <div
+              className="date-selector"
+              style={{ display: "flex", gap: "10px" }}
+            >
+              {masterKeyData?.progressFilter && (
+                <button
+                  className="FiletrBtnOpen"
+                  onClick={() => setOpenPDate(!openPDate)}
+                >
+                  Set P.Date
                 </button>
-
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "3px",
-                  }}
-                >
-                  <DualDatePicker
-                    filterState={filterState}
-                    setFilterState={setFilterState}
-                    validDay={186}
-                    validMonth={6}
-                    withountDateFilter={true}
-                  />
-                  <Button
-                    onClick={() =>
-                      setFilterState({
-                        ...filterState,
-                        dateRange: {
-                          startDate: new Date("2000-01-01T18:30:00.000Z"),
-                          endDate: new Date(),
-                        },
-                      })
-                    }
-                    className="FiletrBtnAll"
-                  >
-                    All
-                  </Button>
-                </div>
-                {/* <p
-                style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
-              >
-                {" "}
-                Last Updated :- {lastUpdated}
-              </p> */}
-              </div>
-              {columns
-                .filter((col) => col.filterable)
-                .map((col) => (
-                  <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                    {renderDateFilter(col)}
-                  </div>
-                ))}
-
+              )}
               <div
-                className="date-selector"
-                style={{ display: "flex", gap: "10px" }}
+                className={`transition-container ${
+                  openPDate ? "open" : "closed"
+                }`}
+                style={{
+                  transition: "0.5s ease",
+                  opacity: openPDate ? 1 : 0,
+                  maxHeight: openPDate ? "300px" : "0",
+                  overflow: "hidden",
+                  display: openPDate ? "flex" : "none",
+                  gap: "10px",
+                }}
               >
-                {masterKeyData?.progressFilter && (
-                  <button
-                    className="FiletrBtnOpen"
-                    onClick={() => setOpenPDate(!openPDate)}
-                  >
-                    Set P.Date
-                  </button>
-                )}
-                <div
-                  className={`transition-container ${
-                    openPDate ? "open" : "closed"
-                  }`}
-                  style={{
-                    transition: "0.5s ease",
-                    opacity: openPDate ? 1 : 0,
-                    maxHeight: openPDate ? "300px" : "0",
-                    overflow: "hidden",
-                    display: openPDate ? "flex" : "none",
-                    gap: "10px",
-                  }}
-                >
-                  <DatePicker
-                    selected={selectedDate}
-                    onChange={(date) => setSelectedDate(date)}
-                    dateFormat="dd-MM-yyyy"
-                    customInput={
-                      <CustomTextField
-                        customBorderColor="rgba(47, 43, 61, 0.2)"
-                        borderoutlinedColor="#00CFE8"
-                        customTextColor="#2F2B3DC7"
-                        customFontSize="0.8125rem"
-                        style={{ Width: "100px" }}
-                      />
-                    }
-                    placeholderText="Select Date"
-                  />
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={(date) => setSelectedDate(date)}
+                  dateFormat="dd-MM-yyyy"
+                  customInput={
+                    <CustomTextField
+                      customBorderColor="rgba(47, 43, 61, 0.2)"
+                      borderoutlinedColor="#00CFE8"
+                      customTextColor="#2F2B3DC7"
+                      customFontSize="0.8125rem"
+                      style={{ Width: "100px" }}
+                    />
+                  }
+                  placeholderText="Select Date"
+                />
 
-                  {/* <CustomTextField
+                {/* <CustomTextField
                   select
                   fullWidth
                   value={filters.someField || ""}
@@ -1408,17 +1528,17 @@ export default function StcokReport() {
                   ))}
                 </CustomTextField> */}
 
-                  <button
-                    onClick={handleSave}
-                    variant="contained"
-                    className="FiletrBtnOpen"
-                    sx={{ marginTop: 2 }}
-                  >
-                    Save
-                  </button>
-                </div>
+                <button
+                  onClick={handleSave}
+                  variant="contained"
+                  className="FiletrBtnOpen"
+                  sx={{ marginTop: 2 }}
+                >
+                  Save
+                </button>
               </div>
-              {/* <div style={{ display: "flex" }}>
+            </div>
+            {/* <div style={{ display: "flex" }}>
               {masterData?.rd3.map((data) => (
                 <abbr title={data?.name}>
                   <p
@@ -1436,209 +1556,149 @@ export default function StcokReport() {
                 </abbr>
               ))}
             </div> */}
-            </div>
-            <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={includeCustomerStock}
-                    onChange={handleChange}
-                    name="includeCustomerStock"
-                    color="primary"
-                  />
-                }
-                label="Include Customer Stock"
+          </div>
+          <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
+            {masterKeyData?.mailButton && (
+              <img
+                src={mainButton}
+                style={{ cursor: "pointer" }}
+                onClick={handleSendEmail}
               />
+            )}
 
-              {masterKeyData?.mailButton && (
-                <img
-                  src={mainButton}
-                  style={{ cursor: "pointer" }}
-                  onClick={handleSendEmail}
-                />
-              )}
+            {masterKeyData?.PrintButton && (
+              <img
+                src={printButton}
+                style={{ cursor: "pointer", height: "40px", width: "40px" }}
+                onClick={handlePrint}
+              />
+            )}
 
-              {masterKeyData?.PrintButton && (
-                <img
-                  src={printButton}
-                  style={{ cursor: "pointer", height: "40px", width: "40px" }}
-                  onClick={handlePrint}
-                />
-              )}
+            {masterKeyData?.imageView && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {showImageView ? (
+                  <img
+                    src={gridView}
+                    className="imageViewImgGrid"
+                    onClick={handleImg}
+                  />
+                ) : (
+                  <img
+                    src={imageView}
+                    className="imageViewImg"
+                    onClick={handleImg}
+                  />
+                )}
+              </div>
+            )}
 
-              {allChecked && masterKeyData?.imageView && (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {showImageView ? (
-                    <div onClick={() => setShowImageView(false)}>
-                      <LayoutGrid className="imageViewImgGrid" />
-                    </div>
-                  ) : (
-                    <div onClick={() => setShowImageView(true)}>
-                      <ImageUp className="imageViewImg" />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* {masterKeyData?.fullScreenGridButton && (
+            {masterKeyData?.fullScreenGridButton && (
               <button className="fullScreenButton" onClick={toggleFullScreen}>
                 <RiFullscreenLine
                   style={{ marginInline: "5px", fontSize: "30px" }}
                 />
               </button>
-            )} */}
+            )}
 
-              <CustomTextField
-                type="text"
-                placeholder="Common Search..."
-                value={commonSearch}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                onChange={(e) => setCommonSearch(e.target.value)}
-              />
-
-              {masterKeyData?.ExcelExport && (
-                <button onClick={exportToExcel} className="All_exportButton">
-                  <svg
-                    stroke="currentColor"
-                    fill="currentColor"
-                    stroke-width="0"
-                    viewBox="0 0 384 512"
-                    height="2em"
-                    width="2em"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
-                  </svg>
-                </button>
-              )}
-
-              <button onClick={handleClearFilter} className="ClearFilterButton">
+            {masterKeyData?.ExcelExport && (
+              <button onClick={exportToExcel} className="All_exportButton">
                 <svg
                   stroke="currentColor"
                   fill="currentColor"
                   stroke-width="0"
-                  viewBox="0 0 512 512"
-                  class="mr-2"
-                  height="1em"
-                  width="1em"
+                  viewBox="0 0 384 512"
+                  height="2em"
+                  width="2em"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
+                  <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
                 </svg>
-                Clear Filters
               </button>
-            </div>
+            )}
+
+            <FormControl size="small" sx={{ minWidth: 100, margin: "0px" }}>
+              <Select
+                value={selectedDateColumnHyBrid}
+                onChange={(e) => setSelectedDateColumnHyBrid(e.target.value)}
+              >
+                <MenuItem value="ALL">ALL</MenuItem>
+                <MenuItem value="Hybrid">Hybrid</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 100, margin: "0px" }}>
+              <Select
+                value={selectedDateColumn}
+                onChange={(e) => setSelectedDateColumn(e.target.value)}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 300,
+                      overflowY: "auto",
+                    },
+                  },
+                }}
+              >
+                <MenuItem value="ALL Users">ALL Users</MenuItem>
+                {allUserNameList?.map((col) => (
+                  <MenuItem key={col["1"]} value={col["1"]}>
+                    {col["2"]}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </div>
         </div>
-
         <div
           ref={gridRef}
-          style={{
-            height: "calc(100vh - 230px)",
-            margin: "5px",
-            marginTop: showImageView && "170px",
-          }}
+          style={{ height: "calc(100vh - 170px)", margin: "5px" }}
         >
           {showImageView ? (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-              {filteredRows.map((item, idx) => {
-                const src =
-                  String(item["imageViewkey"] ?? "").trim() || noFoundImg;
-                return (
-                  <div
-                    style={{
-                      width: "200px",
-                      height: "230px",
-                    }}
-                  >
-                    <img
-                      key={idx}
-                      src={src}
-                      alt={`record-${idx}`}
-                      height="auto"
-                      loading="lazy"
-                      style={{
-                        width: "200px",
-                        height: "200px",
-                        border: "1px solid lightgray",
-                      }}
-                    />
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div style={{ display: "flex", gap: "10px" }}>
-                        <p
-                          style={{
-                            margin: "0px",
-                            fontWeight: 600,
-                            fontSize: "12px",
-                            lineHeight: "10px",
-                          }}
-                        >
-                          <span>{item?.stockbarcode}</span>
-                        </p>
-                        <p
-                          style={{
-                            margin: "0px",
-                            fontWeight: 600,
-                            fontSize: "12px",
-                            display: "flex",
-                            color: "#CF4F7D",
-                            display: "flex",
-                            flexDirection: "column",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "3px",
-                              lineHeight: "10px",
-                            }}
-                          >
-                            <span>{item?.metaltype}</span>
-                            <span>{item?.metalpurity}</span>
-                          </div>
-                          <span>{item?.metalcolor}</span>
-                        </p>
-                      </div>
-                      <p
-                        style={{
-                          margin: "0px",
-                          fontWeight: 600,
-                          fontSize: "13px",
-                          lineHeight: "10px",
-                        }}
-                      >
-                        {item?.designno}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+            <div>
+              <img
+                className="imageViewImgage"
+                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVXLW1j3zO3UP6dIu96A3IpZihTe3fVRsm9g&s"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://help.earthsoft.com/ent-data_grid_widget-sample.png"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://i0.wp.com/thewwwmagazine.com/wp-content/uploads/2020/07/Screenshot-2020-07-09-at-7.36.56-PM.png?resize=1404%2C1058&ssl=1"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://docs.devexpress.com/WPF/images/wpf-data-grid.png"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://www.infragistics.com/products/ignite-ui-web-components/web-components/images/general/landing-grid-page.png"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://i0.wp.com/angularscript.com/wp-content/uploads/2020/04/Angular-Data-Grid-For-The-Enterprise-nGrid.png?fit=1245%2C620&ssl=1"
+              />
+              <img
+                className="imageViewImgage"
+                src="https://angularscript.com/wp-content/uploads/2015/12/ng-bootstrap-grid-370x297.jpg"
+              />
             </div>
           ) : (
             <Warper>
               <DataGrid
                 rows={filteredRows ?? []}
                 columns={columns ?? []}
-                pageSize={pageSize}
                 autoHeight={false}
+                rowHeight={40}
+                headerHeight={40}
                 columnBuffer={17}
-                //For Sorting pagnation
-                paginationModel={paginationModel}
-                onPaginationModelChange={setPaginationModel}
-                getRowId={(row) => row.id} // make sure this is correct!
-                sortModel={sortModel}
-                onSortModelChange={(model) => setSortModel(model)}
                 localeText={{ noRowsLabel: "No Data" }}
                 initialState={{
                   columns: {
@@ -1654,15 +1714,50 @@ export default function StcokReport() {
                     },
                   },
                 }}
-                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                sortModel={sortModel}
+                onSortModelChange={(model) => setSortModel(model)}
+                sortingOrder={["asc", "desc"]} // For Sorting.....
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
                 pageSizeOptions={[10, 20, 50, 100]}
                 className="simpleGridView"
                 pagination
                 sx={{
+                  // "& .MuiDataGrid-cell": {
+                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
+                  // },
+                  // "& .MuiDataGrid-columnHeaders": {
+                  //   borderBottom: "1px solid rgba(224, 224, 224, 1)",
+                  // },
+                  // "& .MuiDataGrid-columnHeader": {
+                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
+                  // },
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
 
+                  "& .MuiTablePagination-selectLabel": {
+                    margin: "0px",
+                    padding: "0px",
+                  },
+
+                  "& .MuiTablePagination-displayedRows": {
+                    margin: "0px",
+                    padding: "0px",
+                  },
+
+                  "& .MuiTablePagination-actions .MuiButtonBase-root": {
+                    padding: "0px",
+                    margin: "0px",
+                  },
+
+                  "& .MuiDataGrid-footerContainer": {
+                    minHeight: "30px",
+                  },
+
+                  "& .MuiTablePagination-toolbar": {
+                    minHeight: "30px",
+                  },
                   marginLeft: 2,
                   marginRight: 2,
                   marginBottom: 2,
@@ -1727,37 +1822,3 @@ export default function StcokReport() {
     </DragDropContext>
   );
 }
-
-// {
-//     "colid": 2,
-//     "headerName": "Date",
-//     "field": "entrydate",
-//     "Width": 150,
-//     "Align": "left",
-//     "ColumAlign": "left",
-//     "hrefLink": "",
-//     "ColumShow": true,
-//     "ColumFilter": false,
-//     "NormalFilter": true,
-//     "DateRangeFilter": false,
-//     "MultiSelection": false,
-//     "RangeFilter": false,
-//     "suggestionFilter": false,
-//     "selectDropdownFilter": false,
-//     "ColumNumberSetting": 7,
-//     "ColumTitleCapital": false,
-//     "ColumTitleSmall": false,
-//     "FontSize": "12px",
-//     "borderRadius": "0px",
-//     "color": "",
-//     "backgroundColor": "",
-//     "summary": false,
-//     "columAscendion": false,
-//     "columDescending": false,
-//     "proiorityFilter": true,
-//     "copyButton": false,
-//     "EditData": false,
-//     "summaryTitle": "",
-//     "dateColumn": true,
-//     "summuryValueKey": 0
-//   },

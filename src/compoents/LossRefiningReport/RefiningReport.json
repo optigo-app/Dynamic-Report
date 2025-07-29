@@ -183,7 +183,7 @@
     {
       "colid": 7,
       "headerName": "Net Loss %",
-      "field": "netloss_per",
+      "field": "netloss_per_sta",
       "Width": 150,
       "Align": "right",
       "ColumAlign": "right",
@@ -211,8 +211,7 @@
       "EditData": false,
       "dateColumn": false,
       "summaryTitle": "Net Loss%",
-      "summuryValueKey": 2,
-      "ToFixedValue": 3
+      "summuryValueKey": 2
     },
     {
       "colid": 8,
@@ -245,13 +244,12 @@
       "EditData": false,
       "dateColumn": false,
       "summaryTitle": "Total Recovery(%)",
-      "summuryValueKey": 0,
-      "ToFixedValue": 3
-    },
+      "summuryValueKey": 0
+     },
     {
       "colid": 9,
       "headerName": "Comparison",
-      "field": "",
+      "field": "comparison",
       "Width": 150,
       "Align": "right",
       "ColumAlign": "right",

@@ -7,7 +7,8 @@
     "imageView": false,
     "progressFilter": false,
     "proiorityFilter": false,
-    "ColumnSettingPopup": false
+    "ColumnSettingPopup": false,
+    "ignoreFirstSpliter": true
   },
   "rd1": [
     {
@@ -45,6 +46,40 @@
     },
     {
       "colid": 2,
+      "headerName": "FG Date",
+      "field": "fgdate",
+      "Width": 150,
+      "Align": "center",
+      "ColumAlign": "center",
+      "hrefLink": "",
+      "ColumShow": true,
+      "ColumFilter": true,
+      "NormalFilter": false,
+      "DateRangeFilter": false,
+      "multiSelection": false,
+      "RangeFilter": false,
+      "suggestionFilter": false,
+      "selectDropdownFilter": false,
+      "ColumNumberSetting": 7,
+      "ColumTitleCapital": false,
+      "ColumTitleSmall": false,
+      "FontSize": "12px",
+      "borderRadius": "0px",
+      "color": "",
+      "backgroundColor": "",
+      "summary": false,
+      "columAscendion": false,
+      "columDescending": false,
+      "proiorityFilter": true,
+      "copyButton": false,
+      "EditData": false,
+      "summaryTitle": "",
+      "summuryValueKey": 0,
+      "dateColumn": true
+
+    },
+    {
+      "colid": 2,
       "headerName": "Location",
       "field": "location",
       "Width": 150,
@@ -75,6 +110,7 @@
       "summaryTitle": "",
       "summuryValueKey": 0
     },
+
     {
       "colid": 3,
       "headerName": "Department",

@@ -1295,7 +1295,7 @@ export default function ToolReport() {
         </div>
         <div
           ref={gridRef}
-          style={{ height: "calc(100vh - 180px)", margin: "5px" }}
+          style={{ height: "calc(100vh - 220px)", margin: "5px" }}
         >
           {showImageView ? (
             <div>

@@ -453,7 +453,7 @@ export default function SignageDisplayList({ isLoadingNew }) {
                   backgroundColor: "rgb(112, 98, 238)",
                   color: "white",
                   position: "absolute",
-                  left: "33%",
+                  left: isPaneCollapsed ? '3%' : "33%",
                   width: "120px",
                   top: "5px",
                 }}

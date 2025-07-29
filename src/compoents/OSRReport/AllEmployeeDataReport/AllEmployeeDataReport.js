@@ -107,6 +107,7 @@ export default function AllEmployeeDataReport({
   onClosePane,
   onOpenPane,
   isPaneCollapsed,
+  showAllSalesrepData,
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -129,28 +130,31 @@ export default function AllEmployeeDataReport({
   const [selectedDepartmentId, setSelectedDepartmentId] = React.useState();
   const [selectedEmployeeCode, setSelectedEmployeeCode] = React.useState();
   const [selectedEmployeeName, setSelectedEmployeeName] = React.useState();
+  const [sortModel, setSortModel] = React.useState([]);
   const [selectedEmployeeBarCode, setSelectedEmployeeBarCode] =
     React.useState();
   const [grupEnChekBox, setGrupEnChekBox] = React.useState({
     po: true,
     skuno: true,
   });
+  const [paginationModel, setPaginationModel] = React.useState({
+    page: 0,
+    pageSize: 10,
+  });
 
   const [lastUpdated, setLastUpdated] = React.useState("");
   const gridRef = React.useRef(null);
+
   const APICall = () => {
     setIsLoading(true);
-    // if (AllFinalData?.length == 0) {
-    //   setAllRowData([]);
-    //   console.warn("Invalid data format");
-    //   return;
-    // }
-    const filteredCustomerData = AllFinalData?.filter(
-      (item) => item.customercode === selectCustomerCode
-    ).map((item) => ({
+    const filteredCustomerData = AllFinalData?.filter((item) => {
+      if (showAllSalesrepData) return true;
+      return item.customercode === selectCustomerCode;
+    }).map((item) => ({
       ...item,
-      id: item.skuno, // or use srNo if guaranteed unique
+      id: item.skuno,
     }));
+
     setMasterKeyData(OtherKeyData?.rd);
     setAllColumData(OtherKeyData?.rd1);
     setAllRowData(filteredCustomerData);
@@ -169,7 +173,7 @@ export default function AllEmployeeDataReport({
       now.getMonth() + 1
     )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
       now.getMinutes()
-    )}:${formatNumber(now.getSeconds())}`;
+    )}`;
 
     setLastUpdated(formattedDate);
   }, []);
@@ -217,7 +221,7 @@ export default function AllEmployeeDataReport({
           headerAlign: col.Align,
           filterable: col.ColumFilter,
           suggestionFilter: col.suggestionFilter,
-          hrefLink: col.HrefLink,
+          hrefLink: col.hrefLink,
           summuryValueKey: col.summuryValueKey,
           summaryTitle: col.summaryTitle,
           ToFixedValue: col.ToFixedValue,
@@ -239,7 +243,7 @@ export default function AllEmployeeDataReport({
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px 20px",
+                    padding: "5px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
@@ -253,9 +257,8 @@ export default function AllEmployeeDataReport({
                   rel="noopener noreferrer"
                   style={{
                     color: "blue",
-                    textDecoration: "underline",
                     fontSize: col.FontSize || "inherit",
-                    padding: "5px 20px",
+                    padding: "5px",
                     cursor: "pointer",
                     width: "120px",
                     fontSize: col.FontSize || "inherit",
@@ -263,6 +266,7 @@ export default function AllEmployeeDataReport({
                     overflow: "hidden",
                   }}
                   onClick={() => handleCellClick(params)}
+                  className="hyperLinkShow"
                 >
                   {params.value}
                 </a>
@@ -275,7 +279,7 @@ export default function AllEmployeeDataReport({
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px 20px",
+                    padding: "5px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
@@ -286,26 +290,69 @@ export default function AllEmployeeDataReport({
           },
         };
       });
-    setColumns(columnData);
-  }, [allColumData, grupEnChekBox]);
+
+    const srColumn = {
+      field: "sr",
+      headerName: "Sr#",
+      width: 70,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) =>
+        params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+    };
+
+    setColumns([srColumn, ...columnData]);
+  }, [allColumData, grupEnChekBox, sortModel, paginationModel]);
 
   const handleCellClick = (params) => {
-    setSelectedEmployeeName(params?.row?.employeename);
-    setSelectedEmployeeBarCode(params?.row?.barcode);
-    setSelectedDepartmentId(params?.row?.deptid);
-    setSelectedEmployeeCode(params?.row?.employeecode);
-    setOpen(true);
-  };
+    console.log("paramsparams", params, params?.skuno);
+    let url_optigo = sessionStorage.getItem("url_optigo");
 
-  // const originalRows =
-  //   allColumIdWiseName &&
-  //   allRowData?.map((row, index) => {
-  //     const formattedRow = {};
-  //     Object.keys(row).forEach((key) => {
-  //       formattedRow[allColumIdWiseName[0][key]] = row[key];
-  //     });
-  //     return { id: index, ...formattedRow };
-  //   });
+    if (params?.field == "wipcnt") {
+      window?.parent.parent.addTab(
+        "WIP Report",
+        "icon-pipbook",
+        url_optigo +
+          "/mfg/app/ReportManagement_WIPReport?SKUNO=" +
+          btoa(params?.row?.skuno) +
+          "&ifid=PIPBOOK&pid=18096&-="
+        // +
+        // _tkn
+      );
+    } else if (params?.field == "pipcnt") {
+      window?.parent.parent.addTab(
+        "PIP BOOK",
+        "icon-pipbook",
+        url_optigo +
+          "/mfg/app/ReportManagement_WIPReport?procurement=1&SKUNO=" +
+          btoa(params?.row?.skuno) +
+          "&ifid=PIPBOOK&pid=18096&-="
+        //  +
+        // _tkn
+      );
+    } 
+    // else if (params?.field == "inqamcnt") {
+    //   window?.parent.parent.addTab(
+    //     "QA Book",
+    //     "icon-StockBook",
+    //     url_optigo +
+    //       "salescrm/app/StockManagement_StockBook_Inward?-=" +
+    //       _tkn +
+    //       "&JobCompleteStatusId=1&SKUNO=" +
+    //       btoa(params?.row?.skuno)
+    //   );
+    // } else if (params?.field == "inqccnt") {
+    //   window?.parent.parent.addTab(
+    //     "Stock Book",
+    //     "icon-StockBook",
+    //     url_optigo +
+    //       "salescrm/app/StockManagement_StockBook_Inward?-=" +
+    //       _tkn +
+    //       "&SKUNO=" +
+    //       btoa(params?.row?.skuno)
+    //   );
+    // }
+  };
 
   const [pageSize, setPageSize] = React.useState(10);
   const [filteredRows, setFilteredRows] = React.useState(originalRows);
@@ -927,38 +974,45 @@ export default function AllEmployeeDataReport({
   };
 
   const groupRows = (rows, groupCheckBox) => {
-    const grouped = [];
+    const allGroupTrue = Object.values(groupCheckBox).every(
+      (val) => val === true
+    );
 
-    if (!Array.isArray(rows)) {
-      console.warn("groupRows: rows is not an array!", rows);
-      return grouped;
+    if (allGroupTrue) {
+      return rows?.map((row, index) => ({
+        ...row,
+        id: index,
+        srNo: index + 1,
+      }));
     }
 
+    const groupedMap = {};
     rows.forEach((row) => {
       const newRow = { ...row };
       const keyParts = [];
       for (const [field, checked] of Object.entries(groupCheckBox)) {
         if (checked) {
-          keyParts.push(newRow[field]);
+          keyParts.push(newRow[field] ?? "");
         } else {
           newRow[field] = "-";
         }
       }
 
       const groupKey = keyParts.join("|");
-      if (!grouped[groupKey]) {
-        grouped[groupKey] = { ...newRow };
+      if (!groupedMap[groupKey]) {
+        groupedMap[groupKey] = { ...newRow };
       } else {
-        for (const col of OtherKeyData?.rd1) {
-          if (!col.GrupChekBox && typeof newRow[col.field] === "number") {
-            grouped[groupKey][col.field] =
-              (grouped[groupKey][col.field] || 0) + (newRow[col.field] || 0);
+        for (const col of OtherKeyData?.rd1 ?? []) {
+          const field = col.field;
+          if (!col.GrupChekBox && typeof newRow[field] === "number") {
+            groupedMap[groupKey][field] =
+              (groupedMap[groupKey][field] || 0) + (newRow[field] || 0);
           }
         }
       }
     });
 
-    return Object.values(grouped).map((item, index) => ({
+    return Object.values(groupedMap).map((item, index) => ({
       ...item,
       id: index,
       srNo: index + 1,
@@ -1009,14 +1063,25 @@ export default function AllEmployeeDataReport({
           onClose={toggleDrawer(false)}
           className="drawerMain"
         >
-          <div style={{ display: "flex" , justifyContent: 'space-between', alignItems: 'center', margin: '20px 20px 0px 0px'}}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              margin: "20px 20px 0px 0px",
+            }}
+          >
             <p style={{ margin: "0px 20px 0px 20px", fontSize: "25px" }}>
               Filter
             </p>
-            <Button onClick={handleClearFilter} className="ClearFilterButton_osr">
+            <Button
+              onClick={handleClearFilter}
+              className="ClearFilterButton_osr"
+            >
               Clear
             </Button>
           </div>
+
           {columns
             .filter((col) => col.filterable)
             .map((col) => (
@@ -1051,7 +1116,11 @@ export default function AllEmployeeDataReport({
             {!isPaneCollapsed && (
               <p
                 onClick={onClosePane}
-                style={{ cursor: "pointer", color: "red", margin: "10px" }}
+                style={{
+                  cursor: "pointer",
+                  color: "rgb(191 183 183)",
+                  margin: "10px",
+                }}
               >
                 <ChevronsLeft />
               </p>
@@ -1090,14 +1159,24 @@ export default function AllEmployeeDataReport({
         >
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-              <Button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
+              <Button
+                onClick={toggleDrawer(true)}
+                className="FiletrBtnOpen"
+                style={{
+                  backgroundColor: "#e0e0e0",
+                }}
+              >
                 Filter
               </Button>
               <p
-                style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}
+                style={{
+                  fontWeight: 600,
+                  color: "rgb(154 153 153)",
+                  fontSize: "11px",
+                }}
               >
                 {" "}
-                Last Updated :- {lastUpdated}
+                Last Updated <br /> <span>{lastUpdated}</span>
               </p>
             </div>
             {columns
@@ -1182,6 +1261,7 @@ export default function AllEmployeeDataReport({
                 </button>
               </div>
             </div>
+
             {/* <div style={{ display: "flex" }}>
               {masterData?.rd3.map((data) => (
                 <abbr title={data?.name}>
@@ -1319,6 +1399,11 @@ export default function AllEmployeeDataReport({
               autoHeight={false}
               localeText={{ noRowsLabel: "No Data" }}
               columnBuffer={17}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+              getRowId={(row) => row.id} // make sure this is correct!
+              sortModel={sortModel}
+              onSortModelChange={(model) => setSortModel(model)}
               initialState={{
                 columns: {
                   columnVisibilityModel: {

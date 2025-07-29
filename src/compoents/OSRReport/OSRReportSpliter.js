@@ -31,7 +31,6 @@ const formatToMMDDYYYY = (date) => {
 
 export default function OSRReportSpliter() {
   const [selectCustomerCode, setSelectCustomerCode] = useState(null);
-  const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [totalCount, setTotalCount] = useState();
   const [paneWidths, setPaneWidths] = useState(["25%", "75%"]);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -40,9 +39,7 @@ export default function OSRReportSpliter() {
   const [searchParams] = useSearchParams();
   const [selectedSalesRepCode, setSelectedSalesRepCode] = useState();
   const [expandedEmployee, setExpandedEmployee] = useState(null);
-  const [allEmployeeDataMain, setAllEmployeeDataMain] = useState([]);
   const [allEmployeeData, setAllEmployeeData] = useState([]);
-  const [locationSummaryData, setLocationSummaryData] = useState([]);
   const [startDate, setStartDate] = useState();
   const [endDate, setEndDate] = useState();
   const [AllFinalData, setFinalData] = useState();
@@ -55,8 +52,13 @@ export default function OSRReportSpliter() {
   const firstTimeLoadedRef = useRef(false);
   const containerRef = useRef();
   const [uniqueMetalTypes, setUniqueMetalTypes] = useState([]);
-  const rawDataRef = useRef([]); // hold raw data from API (merged and mapped)
+  const rawDataRef = useRef([]);
   const [isPaneCollapsed, setIsPaneCollapsed] = useState(false);
+  const [salesRepEmployeeData, setSalesRepEmployeeData] = useState([]);
+  const [salesRepSummaryData, setSalesRepSummaryData] = useState([]);
+  const [regularSummaryData, setRegularSummaryData] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [showAllSalesrepData, setShowAllSalesrepData] = useState(true);
 
   useEffect(() => {
     setTimeout(() => {
@@ -136,7 +138,7 @@ export default function OSRReportSpliter() {
 
   useEffect(() => {
     if (!selectedDateColumn || !filterState?.dateRange?.startDate) return;
-    fetchDataOnce(); // only on first mount
+    fetchDataOnce();
   }, [selectedDateColumn, filterState.dateRange]);
 
   const fetchDataOnce = async () => {
@@ -200,7 +202,6 @@ export default function OSRReportSpliter() {
 
     const parseDate = (value) => {
       if (!value) return null;
-
       if (Object.prototype.toString.call(value) === "[object Date]") {
         return isNaN(value.getTime()) ? null : normalizeDateOnly(value);
       }
@@ -208,7 +209,6 @@ export default function OSRReportSpliter() {
       if (typeof value === "string") {
         const parts = value.trim().split(" ");
         if (parts.length !== 3) return null;
-
         const [day, monthStr, year] = parts;
         const dateStr = `${day} ${monthStr} ${year}`;
         const parsed = new Date(dateStr);
@@ -230,57 +230,81 @@ export default function OSRReportSpliter() {
     );
     setTotalCount(totalCount);
 
-    const filteredData = dateFiltered?.filter((item) =>
-      showSalesRep ? item.isdefaultcustomer === 0 : item.isdefaultcustomer === 1
+    const salesRepData = dateFiltered.filter(
+      (item) => item.isdefaultcustomer === 0
+    );
+    const regularCustomerData = dateFiltered.filter(
+      (item) => item.isdefaultcustomer === 1
     );
 
-    if (!showSalesRep) {
-      setAllEmployeeDataMain(dateFiltered);
-      setAllEmployeeData(filteredData);
-      GetTotlaData(filteredData);
+    setSalesRepEmployeeData(salesRepData);
+
+    GetTotlaData(salesRepData, true);
+    GetTotlaData(regularCustomerData, false);
+
+    let uniqueSalesReps = [
+      ...new Set(salesRepData.map((item) => item.salesrepcode).filter(Boolean)),
+    ];
+    if (uniqueSalesReps.length > 1) {
+      uniqueSalesReps.unshift("All");
+    }
+    setUniqueMetalTypes(uniqueSalesReps);
+    if (uniqueSalesReps?.length <= 1) {
+      setSelectedSalesRepCode(uniqueSalesReps[0]);
     } else {
-      const uniqueSalesReps = [
-        ...new Set(
-          filteredData?.map((item) => item.salesrepcode).filter(Boolean)
-        ),
-      ];
-
-      setUniqueMetalTypes(uniqueSalesReps);
-
-      const defaultRepCode = selectedSalesRepCode || uniqueSalesReps[0];
-      setSelectedSalesRepCode(defaultRepCode);
-
-      const finalFiltered = dateFiltered.filter(
-        (item) =>
-          item.salesrepcode?.toLowerCase() === defaultRepCode?.toLowerCase()
-      );
-
-      setAllEmployeeDataMain(dateFiltered);
-      setAllEmployeeData(finalFiltered);
-      GetTotlaData(finalFiltered);
+      setSelectCustomerCode(null);
+      setSelectedSalesRepCode("All");
     }
   };
+
+  useEffect(() => {
+    if (!salesRepEmployeeData || salesRepEmployeeData?.length === 0) return;
+    const filtered =
+      selectedSalesRepCode === "All"
+        ? salesRepEmployeeData
+        : salesRepEmployeeData?.filter(
+            (item) =>
+              item?.salesrepcode?.toLowerCase() ===
+              selectedSalesRepCode?.toLowerCase()
+          );
+
+    const summaryMap = new Map();
+
+    filtered.forEach((item) => {
+      const { customerfirmname, customercode, totalcnt } = item;
+      const key = `${customerfirmname}_${customercode}`;
+
+      if (!summaryMap.has(key)) {
+        summaryMap.set(key, {
+          customerfirmname,
+          customercode,
+          totalcnt: 0,
+        });
+      }
+
+      summaryMap.get(key).totalcnt += Number(totalcnt || 0);
+    });
+
+    const summaryList = Array.from(summaryMap.values());
+    setSalesRepSummaryData(summaryList);
+  }, [selectedSalesRepCode, salesRepEmployeeData]);
 
   useEffect(() => {
     if (firstTimeLoadedRef.current) {
       filterData();
     }
-  }, [selectedDateColumn, filterState, selectedSalesRepCode, showSalesRep]);
+  }, [selectedDateColumn, filterState, showSalesRep]);
 
-  const GetTotlaData = (allEmployeeData) => {
-    console.log(
-      "allEmployeeDataallEmployeeDataallEmployeeData",
-      allEmployeeData
-    );
-
-    if (!allEmployeeData?.length) {
-      setLocationSummaryData([]);
+  const GetTotlaData = (data, isSalesRep = false) => {
+    if (!data?.length) {
+      if (isSalesRep) setSalesRepSummaryData([]);
+      else setRegularSummaryData([]);
       return;
     }
-    const summaryMap = new Map();
-    allEmployeeData.forEach((item) => {
-      const { customerfirmname, customercode, totalcnt } = item;
 
+    const summaryMap = new Map();
+    data.forEach((item) => {
+      const { customerfirmname, customercode, totalcnt } = item;
       const key = `${customerfirmname}_${customercode}`;
       if (!summaryMap.has(key)) {
         summaryMap.set(key, {
@@ -293,13 +317,18 @@ export default function OSRReportSpliter() {
       existing.totalcnt += Number(totalcnt) || 0;
     });
 
-    const summaryList = Array.from(summaryMap.values()).map((item) => ({
-      customerfirmname: item.customerfirmname,
-      customercode: item.customercode,
-      totalcnt: item.totalcnt,
-    }));
-    setLocationSummaryData(summaryList);
-    setSelectCustomerCode(summaryList[0]?.customercode);
+    const summaryList = Array.from(summaryMap.values());
+
+    if (isSalesRep) {
+      setSalesRepSummaryData(summaryList);
+      if (summaryList?.length == 1) {
+        setSelectCustomerCode(summaryList[0]?.customercode);
+      } else {
+        setShowAllSalesrepData(true);
+      }
+    } else {
+      setRegularSummaryData(summaryList);
+    }
   };
 
   const handleDrag = (index, e) => {
@@ -361,6 +390,10 @@ export default function OSRReportSpliter() {
     setShowSalesRep(!showSalesRep);
   };
 
+  const filteredCustomerData = salesRepSummaryData?.filter((emp) =>
+    emp.customerfirmname.toLowerCase().includes(customerSearch.toLowerCase())
+  );
+
   return (
     <div className="OSRReportSpliter_top">
       {isLoading && (
@@ -380,7 +413,7 @@ export default function OSRReportSpliter() {
                   display: "flex",
                   gap: "15px",
                   justifyContent: "space-between",
-                  height: "10vh",
+                  height: "13.5vh",
                   padding: "8px 8px 0px 8px",
                 }}
               >
@@ -413,47 +446,103 @@ export default function OSRReportSpliter() {
                       setFilterState={setFilterState}
                       validDay={31}
                       validMonth={1}
+                      withountDateFilter={true}
                     />
+
+                    <Button
+                      onClick={() =>
+                        setFilterState({
+                          ...filterState,
+                          dateRange: {
+                            startDate: new Date("2000-01-01T18:30:00.000Z"),
+                            endDate: new Date(), // current date
+                          },
+                        })
+                      }
+                      className="FiletrBtnAll"
+                    >
+                      All
+                    </Button>
                   </div>
-                  <div
-                    style={{ display: "flex", marginTop: "10px", gap: "10px" }}
-                  >
-                    <div className="toggle_wrapper">
-                      {!isLoading && (
-                        <div
-                          className="slider-container"
-                          onClick={handleToggleNew}
+                  {filteredCustomerData?.length !== 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        marginTop: "10px",
+                        gap: "10px",
+                      }}
+                    >
+                      <div className="toggle_wrapper">
+                        {!isLoading && (
+                          <div className="slider-container">
+                            <div className={`panel department-panel`}>
+                              <p
+                                style={{
+                                  margin: "0px",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Select Sales Rep :-
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {uniqueMetalTypes?.length !== 0 && (
+                        <select
+                          value={selectedSalesRepCode}
+                          onChange={(e) =>
+                            setSelectedSalesRepCode(e.target.value)
+                          }
+                          className="dropdownList_metal"
                         >
-                          <div
-                            className={`active-indicator ${
-                              showSalesRep ? "left" : "right"
-                            }`}
-                          ></div>
-                          <div className={`panel department-panel`}>
-                            <p>Sales Rep</p>
-                          </div>
-                          <div className={`panel employee-panel`}>
-                            <p>Company</p>
-                          </div>
-                        </div>
+                          {uniqueMetalTypes.map((metal) => (
+                            <option key={metal} value={metal}>
+                              {metal}
+                            </option>
+                          ))}
+                        </select>
                       )}
                     </div>
-                    {showSalesRep && uniqueMetalTypes?.length !== 0 && (
-                      <select
-                        value={selectedSalesRepCode}
-                        onChange={(e) =>
-                          setSelectedSalesRepCode(e.target.value)
-                        }
-                        className="dropdownList_metal"
-                      >
-                        {uniqueMetalTypes.map((metal) => (
-                          <option key={metal} value={metal}>
-                            {metal}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
+                  )}
+
+                  {filteredCustomerData?.length !== 0 && (
+                    <div
+                      className="customer-search-wrapper"
+                      style={{
+                        marginBottom: "15px",
+                        position: "relative",
+                        width: "90%",
+                        marginTop: "15px",
+                      }}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Search customer..."
+                        value={customerSearch}
+                        onChange={(e) => setCustomerSearch(e.target.value)}
+                        className="customer-search-input"
+                        style={{ paddingRight: "30px", outline: "none" }}
+                      />
+                      {customerSearch && (
+                        <span
+                          onClick={() => setCustomerSearch("")}
+                          style={{
+                            position: "absolute",
+                            right: "-10px",
+                            top: "40%",
+                            fontSize: "25px",
+                            transform: "translateY(-50%)",
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                            color: "#999",
+                          }}
+                        >
+                          ×
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: "flex", height: "100%" }}>
                   <IoRefreshCircle
@@ -469,92 +558,195 @@ export default function OSRReportSpliter() {
               </div>
               <div
                 className="employee-list"
-                style={{ padding: "0px 8px 0px 8px" }}
+                style={{ padding: "0px 8px", marginTop: "20px" }}
               >
-                {locationSummaryData?.length != 0
-                  ? locationSummaryData?.map((emp) => {
-                      const isExpanded = expandedEmployee === emp.customercode;
-                      return (
-                        <div
-                          key={emp.customercode}
-                          className={
-                            selectCustomerCode == emp.customercode
-                              ? "employee_card_selected"
-                              : "employee-card"
-                          }
-                        >
-                          <div
-                            className="employee-header"
-                            onClick={() => {
-                              handleToggle(emp.customercode);
-                              setSelectCustomerCode(emp.customercode);
-                            }}
-                          >
-                            <div className="location_first">
-                              <span
-                                className={
-                                  selectCustomerCode == emp.customercode &&
-                                  "location_top_name"
-                                }
-                              >
-                                {emp?.customerfirmname}({emp.customercode})
-                              </span>
-                            </div>
-
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "15px",
-                                marginTop: "10px",
-                              }}
-                            >
-                              <p
-                                className={
-                                  selectCustomerCode == emp.customercode
-                                    ? "employee_detail_title"
-                                    : "employee_detail"
-                                }
-                                style={{ width: "50%" }}
-                              >
-                                Total : <b>{emp?.totalcnt}</b>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  : !isLoading && (
+                {filteredCustomerData?.length > 1 && (
+                  <div style={{ margin: "0px" }}>
+                    <div
+                      className={
+                        showAllSalesrepData
+                          ? "employee_card_selected"
+                          : "employee-card"
+                      }
+                    >
                       <div
-                        style={{
-                          height: "60vh",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          flexDirection: "column",
+                        className="employee-header"
+                        onClick={() => {
+                          handleToggle("All");
+                          setSelectCustomerCode(null);
+                          setShowAllSalesrepData(true);
                         }}
                       >
-                        <p
+                        <div className="location_first">
+                          <span
+                            className={
+                              showAllSalesrepData && "location_top_name"
+                            }
+                          >
+                            ALL
+                          </span>
+                        </div>
+
+                        <div
                           style={{
-                            fontWeight: 600,
-                            fontSize: "17px",
-                            margin: "0px",
+                            display: "flex",
+                            gap: "5px",
+                            marginTop: "10px",
                           }}
                         >
-                          No Sales Rep Available
-                        </p>
-                        {/* <p
-                          style={{
-                            fontWeight: 600,
-                            color: "#7a7676",
-                            margin: "0px",
-                          }}
-                        >
-                          Select Month & Year
-                        </p> */}
+                          <p
+                            className={
+                              showAllSalesrepData
+                                ? "employee_detail_title"
+                                : "employee_detail"
+                            }
+                          >
+                            Total :
+                          </p>
+                          <p
+                            className={
+                              showAllSalesrepData
+                                ? "employee_detail_title"
+                                : "employee_detail"
+                            }
+                          >
+                            <b> {totalCount}</b>
+                          </p>
+                        </div>
                       </div>
-                    )}
+                    </div>
+                  </div>
+                )}
+
+                {filteredCustomerData?.length ? (
+                  filteredCustomerData.map((emp) => {
+                    const isExpanded = expandedEmployee === emp.customercode;
+                    return (
+                      <div
+                        key={emp.customercode}
+                        className={
+                          selectCustomerCode == emp.customercode
+                            ? "employee_card_selected"
+                            : "employee-card"
+                        }
+                      >
+                        <div
+                          className="employee-header"
+                          onClick={() => {
+                            handleToggle(emp.customercode);
+                            setShowAllSalesrepData(false);
+                            setSelectCustomerCode(emp.customercode);
+                          }}
+                        >
+                          <div className="location_first">
+                            <span
+                              className={
+                                selectCustomerCode == emp.customercode &&
+                                "location_top_name"
+                              }
+                            >
+                              {emp.customerfirmname}({emp.customercode})
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "15px",
+                              marginTop: "10px",
+                            }}
+                          >
+                            <p
+                              className={
+                                selectCustomerCode == emp.customercode
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Total : <b>{emp.totalcnt}</b>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div
+                    style={{
+                      height: "60vh",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontWeight: 600,
+                        fontSize: "17px",
+                        margin: "0px",
+                      }}
+                    >
+                      No Company Available
+                    </p>
+                  </div>
+                )}
+
+                {regularSummaryData?.length !== 0 &&
+                  regularSummaryData?.map((emp) => {
+                    const isExpanded = expandedEmployee === emp.customercode;
+                    return (
+                      <div
+                        key={emp.customercode}
+                        className={
+                          selectCustomerCode == emp.customercode
+                            ? "employee_card_selected"
+                            : "employee-card"
+                        }
+                      >
+                        <div
+                          className="employee-header"
+                          onClick={() => {
+                            handleToggle(emp.customercode);
+                            setShowAllSalesrepData(false);
+                            setSelectCustomerCode(emp.customercode);
+                          }}
+                        >
+                          <div className="location_first">
+                            <span
+                              className={
+                                selectCustomerCode == emp.customercode &&
+                                "location_top_name"
+                              }
+                            >
+                              {emp.customerfirmname}({emp.customercode})
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "15px",
+                              marginTop: "10px",
+                            }}
+                          >
+                            <p
+                              className={
+                                selectCustomerCode == emp.customercode
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                              style={{ width: "50%" }}
+                            >
+                              Total : <b>{emp.totalcnt}</b>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
-              <div
+
+              {/* <div
                 style={{
                   margin: "5px",
                 }}
@@ -573,7 +765,7 @@ export default function OSRReportSpliter() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         )}
@@ -582,11 +774,12 @@ export default function OSRReportSpliter() {
             <div className="splitter" onMouseDown={(e) => handleDrag(0, e)} />
             <div className="pane" style={{ width: paneWidths[1] }}>
               <AllEmployeeDataReport
-                AllFinalData={allEmployeeData}
+                AllFinalData={salesRepEmployeeData}
                 selectCustomerCode={selectCustomerCode}
                 onClosePane={handleClose}
                 onOpenPane={handleOpen}
                 isPaneCollapsed={isPaneCollapsed}
+                showAllSalesrepData={showAllSalesrepData}
               />
             </div>
           </>

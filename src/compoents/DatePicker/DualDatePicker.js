@@ -334,7 +334,13 @@ const DualDatePicker = ({
                     new Date().getMonth(),
                     0
                   ),
-                },
+                }
+                // ,
+                // {
+                //   label: "ALL",
+                //    startDate: new Date("2000-01-01T18:30:00.000Z"),
+                //   endDate: new Date(),
+                // },
               ]}
             />
             <Stack

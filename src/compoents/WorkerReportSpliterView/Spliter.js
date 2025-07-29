@@ -11,6 +11,7 @@ import AllEmployeeDataReport from "./AllEmployeeDataReport/AllEmployeeDataReport
 import DualDatePicker from "../DatePicker/DualDatePicker";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
+import masterData from "../WorkerReportSpliterView/AllEmployeeDataReport/AllEmployeeData.json";
 
 const formatToMMDDYYYY = (date) => {
   const d = new Date(date);
@@ -124,7 +125,6 @@ export default function Spliter() {
   }, [filterState.dateRange]);
 
   const fetchData = async (stat, end) => {
-    console.log("filterStatefilterState", filterState);
     const sp = searchParams.get("sp");
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     setIsLoading(true);
@@ -138,9 +138,6 @@ export default function Spliter() {
     try {
       const fetchedData = await GetWorkerData(body, sp);
       const { rd, rd1 } = fetchedData?.Data || {};
-
-      console.log("callllll  111", rd1);
-
       if (rd1?.length != 0) {
         setFinalData(fetchedData?.Data);
         if (Array.isArray(rd) && Array.isArray(rd1)) {
@@ -180,6 +177,11 @@ export default function Spliter() {
         }
         setIsLoading(false);
       }
+      // if (masterData?.rd?.ignoreFirstSpliter) {
+      //   setShowWithouLocationData(true);
+      // } else {
+      //   setShowWithouLocationData(false);
+      // }
     } catch (error) {
       if (error?.status == 500) {
         setStatus500(true);
@@ -204,9 +206,12 @@ export default function Spliter() {
     const metalFilteredData = allEmployeeData?.filter(
       (item) => item.metaltypename === selectedMetalType
     );
-    showWithouLocationData
-      ? handleSelectLocation("", metalFilteredData, true)
-      : GetTotlaData(metalFilteredData, selectedLocation);
+    if (showWithouLocationData) {
+      handleSelecEmployee("", metalFilteredData, true);
+      handleSelectLocation("", metalFilteredData, true);
+    } else {
+      GetTotlaData(metalFilteredData, selectedLocation);
+    }
 
     setShowDepartment(!showDepartment);
   };
@@ -258,7 +263,7 @@ export default function Spliter() {
 
     const locationSummary = Array.from(summaryMap.values()).map((loc) => ({
       location: loc.location,
-      locationdisplayorder: loc.locationdisplayorder, // ✅ You are keeping it now
+      locationdisplayorder: loc.locationdisplayorder,
       deptid: loc.deptid,
       netissuewt: Number(loc.totalIssue),
       netretunwt: Number(loc.netretunwt),
@@ -274,19 +279,22 @@ export default function Spliter() {
     );
 
     const firstLocation = selectedL ?? sortedLocationSummary[0]?.location;
-
-    console.log(
-      "sortedLocationSummarysortedLocationSummarysortedLocationSummary"
-    );
-
     if (sortedLocationSummary?.length == 0) {
       setLocationSummaryData([]);
       setGroupedDepartments([]);
       setGroupedEmployeeData([]);
     } else {
       setLocationSummaryData(sortedLocationSummary);
-      handleSelectLocation(firstLocation, allEmployeeData, true);
-      handleSelecEmployee(firstLocation, allEmployeeData, true);
+      handleSelecEmployee(
+        firstLocation,
+        allEmployeeData,
+        masterData?.rd?.ignoreFirstSpliter ? showWithouLocationData : false
+      );
+      handleSelectLocation(
+        firstLocation,
+        allEmployeeData,
+        masterData?.rd?.ignoreFirstSpliter ? showWithouLocationData : false
+      );
     }
   };
 
@@ -295,6 +303,7 @@ export default function Spliter() {
     allEmployeeData,
     showData = false
   ) => {
+    console.log("handleSelecEmployee showDatashowDatashowData", showData);
     if (!showData) {
       setSelectedLocation(location);
     }
@@ -303,13 +312,6 @@ export default function Spliter() {
       Array.isArray(allEmployeeDataMain) && allEmployeeDataMain.length > 0
         ? allEmployeeDataMain
         : allEmployeeData;
-
-    console.log(
-      "sortedLocationSummary",
-      allEmployeeDataMain,
-      allEmployeeData,
-      FilterDataTemp
-    );
 
     const filtered = showData
       ? FilterDataTemp?.filter(
@@ -373,8 +375,6 @@ export default function Spliter() {
       (a, b) => a.deptdisplayorder - b.deptdisplayorder
     );
     const firstDepartment = sortedDepartmentSummary[0]?.deptname ?? "";
-    console.log("sortedDepartmentSummary", sortedDepartmentSummary);
-
     setGroupedDepartments(sortedDepartmentSummary);
     setSelectedDepartment(firstDepartment);
     if (!showData) {
@@ -384,8 +384,6 @@ export default function Spliter() {
   };
 
   const handleSelecEmployee = (location, allEmployeeData, showData) => {
-    console.log("locationlocation", location, showData, allEmployeeData);
-
     if (!showData) {
       setSelectedLocation(location);
     }
@@ -395,7 +393,7 @@ export default function Spliter() {
         ? allEmployeeDataMain
         : allEmployeeData;
 
-    const filtered = showWithouLocationData
+    const filtered = showData
       ? FilterDataTemp?.filter(
           (emp) =>
             emp.metaltypename?.toLowerCase() == selectedMetalType?.toLowerCase()
@@ -501,8 +499,6 @@ export default function Spliter() {
     ? groupedDepartments.reduce((sum, item) => sum + item.netissuewt, 0)
     : groupedEmployeeData.reduce((sum, item) => sum + item.netissuewt, 0);
 
-  console.log("AllFinalDataAllFinalData", AllFinalData);
-
   return (
     <div className="sliperViewMain_top">
       {isLoading && (
@@ -566,106 +562,112 @@ export default function Spliter() {
                   />
                 </div>
               </div>
-              {locationSummaryData?.length > 1 && (
-                <div style={{ margin: "0px 10px" }}>
-                  <div
-                    className={
-                      showWithouLocationData
-                        ? "employee_card_selected"
-                        : "employee-card"
-                    }
-                  >
+              {locationSummaryData?.length > 1 &&
+                masterData?.rd?.ignoreFirstSpliter && (
+                  <div style={{ margin: "0px 10px" }}>
                     <div
-                      className="employee-header"
-                      onClick={() => {
-                        handleToggle("All");
-                        showWithoutLocationData();
-                        setShowWithouLocationData(true);
-                        setSelectedLocation(null);
-                      }}
+                      className={
+                        showWithouLocationData
+                          ? "employee_card_selected"
+                          : "employee-card"
+                      }
                     >
-                      <div className="location_first">
-                        <span
-                          className={
-                            showWithouLocationData && "location_top_name"
-                          }
+                      <div
+                        className="employee-header"
+                        onClick={() => {
+                          handleToggle("All");
+                          showWithoutLocationData();
+                          setShowWithouLocationData(true);
+                          handleSelecEmployee(
+                            null,
+                            allEmployeeData,
+                            true
+                          );
+                          setSelectedLocation(null);
+                        }}
+                      >
+                        <div className="location_first">
+                          <span
+                            className={
+                              showWithouLocationData && "location_top_name"
+                            }
+                          >
+                            ALL
+                          </span>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "15px",
+                            marginTop: "10px",
+                          }}
                         >
-                          ALL
-                        </span>
+                          <p
+                            className={
+                              showWithouLocationData
+                                ? "employee_detail_title"
+                                : "employee_detail"
+                            }
+                            style={{ width: "50%" }}
+                          >
+                            Loss : <b> {Location_TotalLoss?.toFixed(3)} gm</b>
+                          </p>
+                          <p
+                            className={
+                              showWithouLocationData
+                                ? "employee_detail_title"
+                                : "employee_detail"
+                            }
+                            style={{ width: "50%" }}
+                          >
+                            Loss% :<b> {Location_TotalPer?.toFixed(2)} %</b>
+                          </p>
+                        </div>
                       </div>
 
                       <div
-                        style={{
-                          display: "flex",
-                          gap: "15px",
-                          marginTop: "10px",
-                        }}
+                        className={`employee-details ${
+                          showWithouLocationData ? "expanded" : ""
+                        }`}
                       >
-                        <p
-                          className={
-                            showWithouLocationData
-                              ? "employee_detail_title"
-                              : "employee_detail"
-                          }
-                          style={{ width: "50%" }}
-                        >
-                          Loss : <b> {Location_TotalLoss?.toFixed(3)} gm</b>
-                        </p>
-                        <p
-                          className={
-                            showWithouLocationData
-                              ? "employee_detail_title"
-                              : "employee_detail"
-                          }
-                          style={{ width: "50%" }}
-                        >
-                          Loss% :<b> {Location_TotalPer?.toFixed(2)} %</b>
-                        </p>
+                        {showWithouLocationData && (
+                          <>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "15px",
+                              }}
+                            >
+                              <p
+                                className={
+                                  showWithouLocationData
+                                    ? "employee_detail_title"
+                                    : "employee_detail"
+                                }
+                                style={{ width: "50%" }}
+                              >
+                                Issue Wt :{" "}
+                                <b>{Location_TotalIssueWt?.toFixed(3)}</b>
+                              </p>
+                              <p
+                                className={
+                                  showWithouLocationData
+                                    ? "employee_detail_title"
+                                    : "employee_detail"
+                                }
+                                style={{ width: "50%" }}
+                              >
+                                Return Wt :{" "}
+                                <b>{Location_TotalReturnWt?.toFixed(3)} </b>
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
-
-                    <div
-                      className={`employee-details ${
-                        showWithouLocationData ? "expanded" : ""
-                      }`}
-                    >
-                      {showWithouLocationData && (
-                        <>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "15px",
-                            }}
-                          >
-                            <p
-                              className={
-                                showWithouLocationData
-                                  ? "employee_detail_title"
-                                  : "employee_detail"
-                              }
-                              style={{ width: "50%" }}
-                            >
-                              Issue Wt :{" "}
-                              <b>{Location_TotalIssueWt?.toFixed(3)}</b>
-                            </p>
-                            <p
-                              className={
-                                showWithouLocationData
-                                  ? "employee_detail_title"
-                                  : "employee_detail"
-                              }
-                              style={{ width: "50%" }}
-                            >
-                              Return Wt :{" "}
-                              <b>{Location_TotalReturnWt?.toFixed(3)} </b>
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </div>
                   </div>
-                </div>
-              )}
+                )}
               <div
                 className="employee-list"
                 style={{ padding: "0px 8px 0px 8px" }}

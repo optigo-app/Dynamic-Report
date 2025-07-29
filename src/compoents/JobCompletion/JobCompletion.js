@@ -425,14 +425,20 @@ export default function JobCompletion() {
         };
       });
 
-    const srColumn = {
+     const srColumn = {
       field: "sr",
       headerName: "Sr#",
       width: 70,
       sortable: false,
       filterable: false,
-      renderCell: (params) =>
-        params.api.getRowIndexRelativeToVisibleRows(params.id) + 1,
+      renderCell: (params) => {
+        const indexOnPage = params.api.getRowIndexRelativeToVisibleRows(
+          params.id
+        );
+        return (
+          paginationModel.page * paginationModel.pageSize + indexOnPage + 1
+        );
+      },
     };
 
     setColumns([srColumn, ...columnData]);
@@ -851,7 +857,7 @@ export default function JobCompletion() {
             }}
           >
             {uniqueValues
-              .filter((value) => value.trim() !== "") // Exclude empty or whitespace-only strings
+              .filter((value) => value.trim() !== "") 
               .map((value) => (
                 <label key={value}>
                   <input
@@ -1042,7 +1048,9 @@ export default function JobCompletion() {
       return ordered;
     });
   }
+  
   const converted = mapRowsToHeaders(columns, filteredRows);
+
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
@@ -1556,7 +1564,7 @@ export default function JobCompletion() {
                 onSortModelChange={(model) => setSortModel(model)}
                 // pageSize={pageSize}
                 autoHeight={false}
-                columnBuffer={17}
+                columnBuffer={17} 
                 localeText={{ noRowsLabel: "No Data" }}
                 initialState={{
                   columns: {

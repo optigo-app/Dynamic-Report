@@ -35,7 +35,7 @@ import CustomTextField from "../../text-field/index";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiFillSetting } from "react-icons/ai";
-import OtherKeyDataIcate from "./IcateApp.json";
+import OtherKeyDataIcate from "./SignageTv.json";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { GetWorkerData } from "../../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
@@ -54,6 +54,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   CircleX,
+  ShieldOff,
   TriangleAlert,
 } from "lucide-react";
 
@@ -481,6 +482,20 @@ export default function SignageTvReport({
                 >
                   {params.value?.toFixed(col.ToFixedValue)}
                 </p>
+              );
+            } else if (col.field == "Unpublish") {
+              return (
+                <div
+                  style={{
+                    fontSize: col.FontSize || "inherit",
+                  }}
+                >
+                  <Button className="row_delete_button">
+                    <ShieldOff
+                      style={{ color: "rgb(238, 37, 37)", fontSize: "25px" }}
+                    />
+                  </Button>
+                </div>
               );
             } else if (col.field == "ActionDelete") {
               return (
@@ -1999,23 +2014,6 @@ export default function SignageTvReport({
                   />
                 )}
               </div>
-            )}
-
-            {selectedFilterCategory != "ExpressApp" && (
-              <Button
-                className="SetDefault_pin"
-                onClick={handleClickOpenPopupDeafiltPin}
-              >
-                Set Default Pin
-              </Button>
-            )}
-            {selectedFilterCategory != "ExpressApp" && (
-              <Button
-                className="Re_CalculateButton"
-                onClick={handleRecalculate}
-              >
-                Recalculate
-              </Button>
             )}
 
             <CustomTextField

@@ -1,4 +1,4 @@
-// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=1002
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18288
 
 import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
@@ -42,7 +42,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import DualDatePicker from "../DatePicker/DualDatePicker";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CircleX } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
 import { showToast } from "../../Utils/Tostify/ToastManager";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
@@ -121,7 +121,7 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-export default function RefiningReport() {
+export default function LossRefiningReport() {
   const [isLoading, setIsLoading] = useState(false);
   const [toDate, setToDate] = useState(null);
   const [fromDate, setFromDate] = useState(null);
@@ -155,11 +155,19 @@ export default function RefiningReport() {
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
-  const [selectedMonth, setSelectedMonth] = React.useState(dayjs());
+
+  const [isAllSelected, setIsAllSelected] = React.useState(false);
   const [grupEnChekBox, setGrupEnChekBox] = useState({
     empbarcode: true,
     dept: true,
   });
+  const [openMonthData, setOpenMonthData] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(dayjs());
+  const [selectedMonth, setSelectedMonth] = useState(dayjs());
+  const [showMonthPanel, setShowMonthPanel] = useState(false);
+
+  const inputRef = useRef(null);
+  const popupRef = useRef(null);
 
   const firstTimeLoadedRef = useRef(false);
 
@@ -316,6 +324,46 @@ export default function RefiningReport() {
                   {params.value?.toFixed(col.ToFixedValue)}
                 </span>
               );
+            } else if (col.field == "netloss_per_sta") {
+              let finalDate = 0;
+              const NetLoss = params.row.netloss;
+              const fgData = params.row.fg;
+              const diffInMs = (NetLoss / fgData) * 100;
+              finalDate = diffInMs?.toFixed(2);
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px",
+                    borderRadius: col.BorderRadius,
+                  }}
+                >
+                  {finalDate}%
+                </span>
+              );
+            } else if (col.field == "recovery_per") {
+              let finalDate = 0;
+              const NetLoss = params.row.recovery;
+              const fgData = params.row.grossloss;
+              const diffInMs = (NetLoss / fgData) * 100;
+              finalDate = diffInMs?.toFixed(2);
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "5px",
+                    borderRadius: col.BorderRadius,
+                  }}
+                >
+                  {finalDate}%
+                </span>
+              );
             } else if (col.hrefLink) {
               return (
                 <a
@@ -336,64 +384,6 @@ export default function RefiningReport() {
                 >
                   {params.value}
                 </a>
-              );
-            } else if (col.field == "Venderfgage") {
-              let finalDate = 0;
-              console.log("params.row.fgdate", params.row.fgdate);
-              console.log("params.row.outsourcedate", params.row.outsourcedate);
-
-              const fgDateStr = params.row.fgdate;
-              const outsourceDateStr = params.row.outsourcedate;
-
-              if (fgDateStr && outsourceDateStr) {
-                const fgDate = new Date(fgDateStr);
-                const outsourceDate = new Date(outsourceDateStr);
-                const diffInMs = fgDate - outsourceDate;
-                const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-                finalDate = diffInDays;
-              }
-              return (
-                <span
-                  style={{
-                    color: col.Color || "inherit",
-                    backgroundColor: col.BackgroundColor || "inherit",
-                    fontSize: col.FontSize || "inherit",
-                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
-                    borderRadius: col.BorderRadius,
-                  }}
-                >
-                  {finalDate}
-                </span>
-              );
-            } else if (col.field == "Fgage") {
-              let finalDate = 0;
-              console.log("params.row.fgdate", params.row.fgdate);
-              console.log("params.row.outsourcedate", params.row.outsourcedate);
-
-              const fgDateStr = params.row.fgdate;
-              const outsourceDateStr = params.row.orderdate;
-
-              if (fgDateStr && outsourceDateStr) {
-                const fgDate = new Date(fgDateStr);
-                const outsourceDate = new Date(outsourceDateStr);
-                const diffInMs = fgDate - outsourceDate;
-                const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-                finalDate = diffInDays;
-              }
-              return (
-                <span
-                  style={{
-                    color: col.Color || "inherit",
-                    backgroundColor: col.BackgroundColor || "inherit",
-                    fontSize: col.FontSize || "inherit",
-                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "5px",
-                    borderRadius: col.BorderRadius,
-                  }}
-                >
-                  {finalDate}
-                </span>
               );
             } else if (col.dateColumn == true) {
               const formattedDate =
@@ -458,10 +448,27 @@ export default function RefiningReport() {
     setCheckedColumns(defaultChecked);
   }, [allColumData]);
 
+  const handleDateChangeYear = (newValue) => {
+    setSelectedYear(newValue);
+    setIsAllSelected(false);
+  };
+
+  const handleDateChange = (newValue) => {
+    setSelectedMonth(newValue);
+    setIsAllSelected(false);
+  };
+
   const handleCellClick = (params) => {
     setSelectedDepartmentId(params?.row?.deptid);
     setSelectedEmployeeCode(params?.row?.employeecode);
     setOpen(true);
+  };
+
+  const handleAllClick = () => {
+    setSelectedMonth(null); 
+    setSelectedYear(null); 
+    setIsAllSelected(true);
+    setFilteredRows(originalRows); 
   };
 
   const originalRows =
@@ -474,9 +481,36 @@ export default function RefiningReport() {
       return { id: index, ...formattedRow };
     });
 
+  const monthRecoveryMap = new Map();
+  originalRows?.forEach((row) => {
+    const year = row.yearname;
+    const month = row.monthname;
+    const key = `${year}-${month}`;
+    const recovery = row.recovery ?? 0;
+    const grossloss = row.grossloss ?? 0;
+    const recovery_per = grossloss !== 0 ? (recovery / grossloss) * 100 : 0;
+    monthRecoveryMap.set(key, { recovery_per, row });
+  });
+
+  originalRows?.forEach((row) => {
+    const year = row.yearname;
+    const month = row.monthname;
+    const currentKey = `${year}-${month}`;
+    let prevMonth = month - 1;
+    let prevYear = year;
+    if (prevMonth === 0) {
+      prevMonth = 12;
+      prevYear = year - 1;
+    }
+    const prevKey = `${prevYear}-${prevMonth}`;
+    const currentRecoveryPer =
+      monthRecoveryMap.get(currentKey)?.recovery_per ?? 0;
+    const prevRecoveryPer = monthRecoveryMap.get(prevKey)?.recovery_per ?? 0;
+    row.comparison = `${(currentRecoveryPer - prevRecoveryPer).toFixed(2)}%`;
+  });
+
   const [dateColumnOptions, setDateColumnOptions] = useState([]);
   const [selectedDateColumn, setSelectedDateColumn] = useState("");
-
   useEffect(() => {
     if (allColumData) {
       const dateCols = allColumData.filter((col) => col.dateColumn === true);
@@ -493,10 +527,9 @@ export default function RefiningReport() {
     }
   }, [allColumData]);
 
-  const [pageSize, setPageSize] = useState(10);
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    pageSize: 10,
+    pageSize: 12,
   });
 
   const [filteredRows, setFilteredRows] = useState(originalRows);
@@ -519,9 +552,7 @@ export default function RefiningReport() {
       for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
         if (!filterValue || filterValue.length === 0) continue;
-
         const rawRowValue = row[filterField];
-
         if (filterField.includes("_min") || filterField.includes("_max")) {
           const baseField = filterField.replace("_min", "").replace("_max", "");
           const rowValue = parseFloat(row[baseField]);
@@ -579,9 +610,18 @@ export default function RefiningReport() {
         }
       }
 
-      if (isMatch && selectedMonth) {
-        const formattedSelectedMonthYear = selectedMonth.format("MMMM YYYY");
-        if (row.monthyear !== formattedSelectedMonthYear) {
+      console.log("selectedMonth , selectedYear", selectedYear, selectedMonth);
+
+      if (isMatch && selectedYear !== null) {
+        const selectedYearNumber = selectedYear.year(); // extract numeric year
+        if (row.yearname !== selectedYearNumber) {
+          isMatch = false;
+        }
+      }
+
+      if (isMatch && selectedMonth !== null) {
+        const selectedMonthNumber = selectedMonth.month() + 1; // extract numeric month (0-indexed, so +1)
+        if (row.monthname !== selectedMonthNumber) {
           isMatch = false;
         }
       }
@@ -602,7 +642,6 @@ export default function RefiningReport() {
       ...row,
       srNo: index + 1,
     }));
-    console.log("rowsWithSrNo", rowsWithSrNo);
     setFilteredRows(rowsWithSrNo);
   }, [
     filters,
@@ -612,7 +651,9 @@ export default function RefiningReport() {
     selectedColors,
     selectedDateColumn,
     selectedMonth,
+    selectedYear,
   ]);
+  console.log("filteredRowsfilteredRows", filteredRows);
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
@@ -932,7 +973,7 @@ export default function RefiningReport() {
               ) || 0;
 
             calculatedValue = totalgrossloss - totalrecovery;
-          } else if (col.field === "netloss_per") {
+          } else if (col.field === "netloss_per_sta") {
             const totalgrossloss =
               filteredRows?.reduce(
                 (sum, row) => sum + (parseFloat(row.grossloss) || 0),
@@ -1200,7 +1241,66 @@ export default function RefiningReport() {
     }));
   };
 
-  console.log("selectedMonth", selectedMonth);
+  const handleInputClick = () => setOpenMonthData(true);
+
+  const handleYearClick = (year) => {
+    setSelectedYear(year);
+    setShowMonthPanel(true);
+    setSelectedMonth(null);
+  };
+
+  const handleMonthClick = (monthIndex) => {
+    if (selectedYear !== null) {
+      setSelectedMonth(monthIndex);
+      setOpenMonthData(false);
+    }
+  };
+
+  const displayValue = (() => {
+    if (selectedYear && selectedMonth !== null) {
+      return dayjs()
+        .year(selectedYear)
+        .month(selectedMonth)
+        .format("MMMM YYYY");
+    } else if (selectedYear && !showMonthPanel) {
+      return `${selectedYear}`;
+    } else if (selectedYear && showMonthPanel) {
+      return `${selectedYear}`; // Show year until month selected
+    } else {
+      return "";
+    }
+  })();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(event.target) &&
+        !inputRef.current.contains(event.target)
+      ) {
+        setOpenMonthData(false);
+        setShowMonthPanel(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const yearList = Array.from({ length: 40 }, (_, i) => 1990 + i);
+  const monthList = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -1325,7 +1425,7 @@ export default function RefiningReport() {
             style={{
               display: "flex",
               justifyContent: "space-between",
-              padding: "20px",
+              padding: "10px 20px",
             }}
           >
             <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
@@ -1340,13 +1440,14 @@ export default function RefiningReport() {
                     Filter
                   </button>
                 )}
+
                 <DatePicker
-                  label="Select Month"
-                  views={["year", "month"]}
+                  label="Select Year"
+                  views={["year"]}
                   minDate={dayjs("1990-01-01")}
                   maxDate={dayjs("2030-12-31")}
-                  value={selectedMonth}
-                  onChange={(newValue) => setSelectedMonth(newValue)}
+                  value={isAllSelected ? null : selectedYear}
+                  onChange={handleDateChangeYear}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -1358,12 +1459,109 @@ export default function RefiningReport() {
                     "& .MuiPickersInputBase-sectionsContainer": {
                       padding: "10px 0px",
                     },
+                    "& .MuiInputLabel-root": {
+                      position: "absolute",
+                      top: "-5px",
+                    },
                   }}
                 />
-                <Button
-                  onClick={() => setFilteredRows(originalRows)}
-                  className="FiletrBtnAll"
+
+                <DatePicker
+                  label="Select Month"
+                  views={["month"]}
+                  minDate={dayjs("1990-01-01")}
+                  maxDate={dayjs("2030-12-31")}
+                  value={isAllSelected ? null : selectedMonth}
+                  onChange={handleDateChange}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      helperText={null}
+                      sx={{ padding: "5px" }}
+                    />
+                  )}
+                  sx={{
+                    "& .MuiPickersInputBase-sectionsContainer": {
+                      padding: "10px 0px",
+                    },
+                    "& .MuiInputLabel-root": {
+                      position: "absolute",
+                      top: "-5px",
+                    },
+                  }}
+                />
+
+                {/* <div
+                  className="month-input-wrapper"
+                  onClick={handleInputClick}
+                  ref={inputRef}
                 >
+                  <input
+                    type="text"
+                    placeholder="Select Year & Month"
+                    value={displayValue}
+                    readOnly
+                    className="month-input"
+                  />
+                  {selectedYear !== null && (
+                    <div
+                      className="clear-icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedYear(null);
+                        setSelectedMonth(null);
+                        setShowMonthPanel(false);
+                        setOpenMonthData(false);
+                      }}
+                    >
+                      <CircleX />
+                    </div>
+                  )}
+                </div>
+
+                {openMonthData && (
+                  <div className="popup" ref={popupRef}>
+                    {!showMonthPanel && (
+                      <div className="year-selector">
+                        <strong>Select Year</strong>
+                        <div className="year-grid">
+                          {yearList.map((year) => (
+                            <div
+                              key={year}
+                              className={`year-item ${
+                                selectedYear === year ? "selected" : ""
+                              }`}
+                              onClick={() => handleYearClick(year)}
+                            >
+                              {year}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {showMonthPanel && (
+                      <div className="month-selector">
+                        <strong>Select Month</strong>
+                        <div className="month-grid">
+                          {monthList.map((month, index) => (
+                            <div
+                              key={month}
+                              className={`month-item ${
+                                selectedMonth === index ? "selected" : ""
+                              }`}
+                              onClick={() => handleMonthClick(index)}
+                            >
+                              {month}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )} */}
+
+                <Button onClick={handleAllClick} className="FiletrBtnAll">
                   All
                 </Button>
               </div>
@@ -1542,7 +1740,7 @@ export default function RefiningReport() {
           </div>
           <div
             ref={gridRef}
-            style={{ height: "calc(100vh - 180px)", margin: "5px" }}
+            style={{ height: "calc(100vh - 200px)", margin: "5px" }}
           >
             {showImageView ? (
               <div>
@@ -1598,7 +1796,7 @@ export default function RefiningReport() {
                   // rowsPerPageOptions={[5, 10, 15, 25, 50]}
                   paginationModel={paginationModel}
                   onPaginationModelChange={setPaginationModel}
-                  pageSizeOptions={[10, 20, 50, 100]}
+                  pageSizeOptions={[12, 20, 50, 100]}
                   className="simpleGridView bottomNavigate"
                   pagination
                   sx={{
