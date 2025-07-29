@@ -24,6 +24,8 @@ import RefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
 import LossRefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
 import MaterialWiseWIP from "./compoents/MaterialWiseWIP/MaterialWiseWIP";
 import CustomerReceiveReport from "./compoents/CustomerReceiveReport/CustomerReceiveReport";
+import FactoryLossReport from "./compoents/Rajan/components/FactoryLossReport/index";
+import OrderCompletionReport from "./compoents/Rajan/components/OrderCompletionReport/index";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -164,7 +166,12 @@ const GridMain = () => {
       return <MaterialWiseWIP />; // 1256 Doc.
     } else if (pid == 18297) {
       return <CustomerReceiveReport />; // 1729 Doc.       // new tab open code
-    } else {
+    }else if(pid == 18301){
+      return <FactoryLossReport />;
+    }else if(pid == 18300){
+      return <OrderCompletionReport />;
+    }
+     else {
       return (
         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>
       );
