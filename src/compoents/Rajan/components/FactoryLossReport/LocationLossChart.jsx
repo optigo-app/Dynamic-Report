@@ -4,9 +4,9 @@ import { Typography } from "@mui/material";
 const Dashboard = ({ locationAnalysis }) => {
   const chartData = Array?.isArray(locationAnalysis)
     ? locationAnalysis.map((item) => ({
-        name: item.location || "Unknown",
-        value: Number(item.factoryLoss?.toFixed(2)) || 0,
-      }))
+      name: item.location || "Unknown",
+      value: Number(item.factoryLoss?.toFixed(2)) || 0,
+    }))
     : [];
 
   // 🌿 Light green tone palette
@@ -18,9 +18,9 @@ const Dashboard = ({ locationAnalysis }) => {
   // const areaStroke = "#3B82F6";    // Strong, crisp stroke
   // const gradientStart = "#93C5FD"; // Calm gradient
 
-  const barFill = "#EDE9FE"; // Lavender 100
-  const areaStroke = "#8B5CF6"; // Violet 500
-  const gradientStart = "#C4B5FD"; // Violet 300
+  // const barFill = "#EDE9FE"; // Lavender 100
+  // const areaStroke = "#8B5CF6"; // Violet 500
+  // const gradientStart = "#C4B5FD"; // Violet 300
 
   // const barFill = "#F3F4F6";       // Gray 100 (background-style bar)
   // const areaStroke = "#6B7280";    // Gray 500
@@ -30,9 +30,10 @@ const Dashboard = ({ locationAnalysis }) => {
   // const areaStroke = "#FB7185";    // Rose 500
   // const gradientStart = "#FDA4AF"; // Rose 300
 
-  // const barFill = "#CCFBF1";       // Teal 100
-  // const areaStroke = "#14B8A6";    // Teal 500
-  // const gradientStart = "#5EEAD4"; // Teal 300
+  const barFill = "#93c5fd";       // Light Blue (start)
+  const areaStroke = "#3b82f6";    // Strong Blue (end)
+  const gradientStart = "#93c5fd"; // Match barFill for visual continuity
+
 
   // Chart color palette (modern SaaS - cool green tone)
   //   const barFill = "#B7F0D9"; // Bar color (mint green)
