@@ -74,8 +74,7 @@ const GridMain = () => {
       setTokenMissing(true);
       setIsLoading(false);
     }
-
-    return () => clearInterval(interval); // clean up on unmount
+    return () => clearInterval(interval);
   }, []);
 
   // useEffect(() => {
@@ -158,20 +157,19 @@ const GridMain = () => {
       return <JobCompletion />; // 1256 Doc.
     } else if (pid == 18288) {
       return <LossRefiningReport />; // 1647 Doc.
+    } else if (pid == 18296) {
+      return <MaterialWiseWIP />; // 1728 Doc.
+    } else if (pid == 18297) {
+      return <CustomerReceiveReport />; // 1729 Doc.       // new tab open code
+    } else if (pid == 18301) {
+      return <FactoryLossReport />; //Rajan
+    } else if (pid == 18300) {
+      return <OrderCompletionReport />; // Rajan
     } else if (pid == 1000) {
       return <ItaskReport />; // 1256 Doc.
     } else if (pid == 1001) {
       return <SignageDisplayList />; // 1256 Doc.
-    } else if (pid == 18296) {
-      return <MaterialWiseWIP />; // 1256 Doc.
-    } else if (pid == 18297) {
-      return <CustomerReceiveReport />; // 1729 Doc.       // new tab open code
-    }else if(pid == 18301){
-      return <FactoryLossReport />;
-    }else if(pid == 18300){
-      return <OrderCompletionReport />;
-    }
-     else {
+    } else {
       return (
         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>
       );

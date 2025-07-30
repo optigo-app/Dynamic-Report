@@ -240,6 +240,9 @@ export default function AllEmployeeDataReport({
     return summary;
   };
 
+
+  console.log('selectedFileter', selectedFilterCategory);
+  
   const records = AllFinalData?.rd1 || [];
   const employeeSummary = {
     connectedDevices: records.filter((r) => r["4"]).length,
@@ -1314,9 +1317,11 @@ export default function AllEmployeeDataReport({
     try {
       setLodingRecakulate(true);
       const sp = searchParams.get("sp");
+
+      const modeSetting =  selectedFilterCategory == 'Icatalog' ? "IcatStockCalCulate" : "EvoStockCalCulate";
       let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
       const body = {
-        con: `{"id":"","mode":"EvoStockCalCulate","appuserid":"${AllData?.uid}"}`,
+        con: `{"id":"","mode":"${modeSetting}","appuserid":"${AllData?.uid}"}`,
         p: "",
         f: "Task Management (taskmaster)",
       };
