@@ -230,7 +230,7 @@ export default function AllEmployeeDataReport({
             col.DateRangeFilter && "DateRangeFilter",
             col.MultiSelection && "MultiSelection",
             col.RangeFilter && "RangeFilter",
-            col.SuggestionFilter && "suggestionFilter",
+            col.suggestionFilter && "suggestionFilter",
             col.selectDropdownFilter && "selectDropdownFilter",
           ].filter(Boolean),
 
@@ -250,6 +250,235 @@ export default function AllEmployeeDataReport({
                   {params.value?.toFixed(col.ToFixedValue)}
                 </span>
               );
+            } else if (params?.field == "age") {
+              const currentDate = new Date(); // current datetime
+              const orderDate = new Date(params.row.entrydate); // convert string to Date object
+              const diffInMs = currentDate - orderDate; // gives milliseconds
+              const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24)); // convert ms to days
+
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                  }}
+                >
+                  {diffInDays}
+                </span>
+              );
+            } else if (params?.field == "totalcnt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "blue",
+                      cursor: "pointer",
+                    }}
+                    className="hyperLinkShow"
+                    onClick={() => handleCellClick(params)}
+                  >
+                    {params.value}{" "}
+                  </span>
+                  / {params?.row?.totalwt}
+                </span>
+              );
+            } else if (params?.field == "wipcnt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "blue",
+                      cursor: "pointer",
+                    }}
+                    className="hyperLinkShow"
+                    onClick={() => handleCellClick(params)}
+                  >
+                    {params.value}{" "}
+                  </span>
+                  / {params?.row?.wipwt}
+                </span>
+              );
+            } else if (params?.field == "pipcnt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "blue",
+                      cursor: "pointer",
+                    }}
+                    className="hyperLinkShow"
+                    onClick={() => handleCellClick(params)}
+                  >
+                    {params.value}{" "}
+                  </span>
+                  / {params?.row?.pipwt}
+                </span>
+              );
+            } else if (params?.field == "inqamcnt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "blue",
+                      cursor: "pointer",
+                    }}
+                    className="hyperLinkShow"
+                    onClick={() => handleCellClick(params)}
+                  >
+                    {params.value}{" "}
+                  </span>
+                  / {params?.row?.inqabookwt}
+                </span>
+              );
+            } else if (params?.field == "inqccnt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  {params.value} / {params?.row?.instockwt}
+                </span>
+              );
+            } else if (params?.field == "pendingcnt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  {params.value} / {params?.row?.etapendingwt}
+                </span>
+              );
+            } else if (params?.field == "dispatchedcnt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  {params.value} / {params?.row?.insalewt}
+                </span>
+              );
+            } else if (params?.field == "inmemo") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  {params.value} / {params?.row?.inmemowt}
+                </span>
+              );
+            } else if (params?.field == "inmelt") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  {params.value} / {params?.row?.inmeltwt}
+                </span>
+              );
+            } else if (params?.field == "incompany") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "5px",
+                  }}
+                >
+                  {params.value} / {params?.row?.incompanywt}
+                </span>
+              );
             } else if (col.hrefLink) {
               return (
                 <a
@@ -258,7 +487,6 @@ export default function AllEmployeeDataReport({
                   style={{
                     color: "blue",
                     fontSize: col.FontSize || "inherit",
-                    padding: "5px",
                     cursor: "pointer",
                     width: "120px",
                     fontSize: col.FontSize || "inherit",
@@ -330,7 +558,7 @@ export default function AllEmployeeDataReport({
         //  +
         // _tkn
       );
-    } 
+    }
     // else if (params?.field == "inqamcnt") {
     //   window?.parent.parent.addTab(
     //     "QA Book",
@@ -496,55 +724,164 @@ export default function AllEmployeeDataReport({
               <CustomTextField
                 key={`filter-${col.field}-NormalFilter`}
                 type="text"
-                placeholder={`Filter by ${col.headerName}`}
+                placeholder={`Filter by ${col.field}`}
                 value={filters[col.field] || ""}
                 onChange={(e) => handleFilterChange(col.field, e.target.value)}
                 className="filter_column_box"
               />
             </div>
           );
-        case "suggestionFilter": {
-          const uniqueValues = [
-            ...new Set(originalRows.map((row) => row[col.field])),
-          ];
-
-          return (
-            <div
-              key={`filter-${col.field}-suggestionFilter`}
-              style={{ width: "100%", margin: "10px 20px" }}
-            >
-              <CustomTextField
-                fullWidth
-                placeholder={`Search ${col.headerName}`}
-                value={filters[col.field] || ""}
-                onChange={(e) => handleFilterChange(col.field, e.target.value)}
-                InputProps={{
-                  inputProps: {
-                    list: `suggestions-${col.field}`,
-                  },
-                }}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                borderoutlinedColor="#00CFE8"
-                customTextColor="#2F2B3DC7"
-                customFontSize="0.8125rem"
-                size="small"
-                variant="filled"
-              />
-              <datalist id={`suggestions-${col.field}`}>
-                {uniqueValues.map((value) => (
-                  <option
-                    key={`suggestion-${col.field}-${value}`}
-                    value={value}
-                  />
-                ))}
-              </datalist>
-            </div>
-          );
-        }
-
         default:
           return null;
       }
+    });
+  };
+
+  const [highlightedIndex, setHighlightedIndex] = React.useState({});
+  const [suggestionVisibility, setSuggestionVisibility] = React.useState({});
+  const suggestionRefs = React.useRef({});
+  React.useEffect(() => {
+    function handleClickOutside(event) {
+      for (const field in suggestionRefs.current) {
+        if (
+          suggestionRefs.current[field] &&
+          !suggestionRefs.current[field].contains(event.target)
+        ) {
+          setSuggestionVisibility((prev) => ({
+            ...prev,
+            [field]: false,
+          }));
+        }
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const renderFiltersuggestionFilter = (col) => {
+    if (!col.filterTypes || col.filterTypes.length === 0) return null;
+    const filtersToRender = col.filterTypes;
+
+    return filtersToRender.map((filterType) => {
+      if (filterType !== "suggestionFilter") return null;
+      const field = col.field;
+      const inputValue = filters[field]?.toLowerCase() || "";
+      const suggestions =
+        inputValue.length > 0
+          ? [
+              ...new Set(
+                originalRows
+                  .map((row) => row[field])
+                  .filter(
+                    (val) =>
+                      val && val.toString().toLowerCase().includes(inputValue)
+                  )
+              ),
+            ]
+          : [];
+
+      const handleInputChange = (value) => {
+        handleFilterChange(field, value.trimStart());
+        setSuggestionVisibility((prev) => ({ ...prev, [field]: true }));
+        setHighlightedIndex((prev) => ({ ...prev, [field]: 0 }));
+      };
+
+      const handleSelectSuggestion = (value) => {
+        handleFilterChange(field, value);
+        setSuggestionVisibility((prev) => ({ ...prev, [field]: false }));
+        setHighlightedIndex((prev) => ({ ...prev, [field]: 0 }));
+      };
+
+      const handleKeyDown = (e) => {
+        if (!suggestionVisibility[field] || suggestions.length === 0) return;
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setHighlightedIndex((prev) => ({
+            ...prev,
+            [field]: Math.min((prev[field] ?? 0) + 1, suggestions.length - 1),
+          }));
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setHighlightedIndex((prev) => ({
+            ...prev,
+            [field]: Math.max((prev[field] ?? 0) - 1, 0),
+          }));
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          const current = suggestions[highlightedIndex[field] ?? 0];
+          if (current) handleSelectSuggestion(current);
+        }
+      };
+
+      const refCallback = (node) => {
+        if (node) {
+          suggestionRefs.current[field] = node;
+        }
+      };
+
+      return (
+        <div
+          key={`filter-${field}-suggestionFilter`}
+          ref={refCallback}
+          style={{ margin: "10px 20px", position: "relative" }}
+        >
+          <CustomTextField
+            fullWidth
+            placeholder={field}
+            value={filters[field] || ""}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={() => {
+              if ((filters[field] || "").trim().length > 0) {
+                setSuggestionVisibility((prev) => ({ ...prev, [field]: true }));
+              }
+            }}
+            onKeyDown={handleKeyDown}
+            size="small"
+            variant="filled"
+            autoComplete="off"
+          />
+
+          {suggestionVisibility[field] && suggestions.length > 0 && (
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                width: "100%",
+                maxHeight: "300px",
+                overflowY: "auto",
+                background: "#fff",
+                border: "1px solid rgba(0,0,0,0.1)",
+                zIndex: 10,
+                borderRadius: "4px",
+              }}
+            >
+              {suggestions.map((value, index) => (
+                <div
+                  key={`suggestion-${field}-${value}`}
+                  onClick={() => handleSelectSuggestion(value)}
+                  style={{
+                    padding: "8px 12px",
+                    cursor: "pointer",
+                    borderBottom: "1px solid #eee",
+                    fontSize: "0.8125rem",
+                    background:
+                      index === highlightedIndex[field]
+                        ? "#eee"
+                        : "transparent",
+                  }}
+                >
+                  {value}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
     });
   };
 
@@ -602,24 +939,20 @@ export default function AllEmployeeDataReport({
           return (
             <div
               key={`filter-${col.field}-selectDropdownFilter`}
-              style={{ width: "100%", margin: "20px" }}
+              style={{ width: "100%", margin: "10px 20px" }}
             >
               <CustomTextField
                 select
                 fullWidth
-                label={`Select ${col.headerName}`}
+                label={`Select ${col.field}`}
                 value={filters[col.field] || ""}
                 onChange={(e) => handleFilterChange(col.field, e.target.value)}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                borderoutlinedColor="#00CFE8"
-                customTextColor="#2F2B3DC7"
-                customFontSize="0.8125rem"
                 size="small"
                 className="selectDropDownMain"
                 variant="filled"
               >
                 <MenuItem value="">
-                  <em>{`Select Employee`}</em>
+                  <em>{`Select ${col.field}`}</em>
                 </MenuItem>
                 {uniqueValues.map((value) => (
                   <MenuItem key={`select-${col.field}-${value}`} value={value}>
@@ -889,8 +1222,71 @@ export default function AllEmployeeDataReport({
     }
   };
 
+  function mapRowsToHeaders(columns, rows) {
+    const isIsoDateTime = (str) =>
+      typeof str === "string" && /^\d{4}-\d{2}-\d{2}T/.test(str);
+    const fieldToHeader = {};
+    columns?.forEach((col) => {
+      let header = "";
+      if (typeof col.headerName === "string") {
+        header = col.headerName;
+      } else if (col.headerNamesingle) {
+        header = col.headerNamesingle;
+      } else if (
+        col.headerName?.props?.children &&
+        Array.isArray(col.headerName.props.children)
+      ) {
+        header = col.headerName.props.children[1];
+      }
+      fieldToHeader[col.field] = header;
+    });
+    return rows?.map((row, idx) => {
+      const ordered = {};
+      columns?.forEach((col) => {
+        const header = fieldToHeader[col.field];
+        let value = row[col.field] ?? "";
+        if (header === "Sr#") {
+          value = idx + 1;
+        }
+        if (col.field === "Venderfgage") {
+          let finalDate = 0;
+          const fgDateStr = row.fgdate;
+          const outsourceDateStr = row.outsourcedate;
+          if (fgDateStr && outsourceDateStr) {
+            const diff =
+              new Date(fgDateStr).getTime() -
+              new Date(outsourceDateStr).getTime();
+            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
+          }
+          value = finalDate;
+        } else if (col.field === "Fgage") {
+          let finalDate = 0;
+          const fgDateStr = row.fgdate;
+          const orderDateStr = row.orderdate;
+          if (fgDateStr && orderDateStr) {
+            const diff =
+              new Date(fgDateStr).getTime() - new Date(orderDateStr).getTime();
+            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
+          }
+          value = finalDate;
+        }
+        if (isIsoDateTime(value)) {
+          const dateObj = new Date(value);
+          const day = String(dateObj.getDate()).padStart(2, "0");
+          const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+          const year = dateObj.getFullYear();
+          value = `${day}-${month}-${year}`;
+        }
+        ordered[header] = value;
+      });
+      return ordered;
+    });
+  }
+
+  const converted = mapRowsToHeaders(columns, filteredRows);
+
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredRows);
+    const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
 
@@ -899,7 +1295,21 @@ export default function AllEmployeeDataReport({
       type: "array",
     });
     const data = new Blob([excelBuffer], { type: EXCEL_TYPE });
-    saveAs(data, "data.xlsx");
+    const now = new Date();
+    const dateString = now
+      .toLocaleString("en-GB", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      })
+      .replace(/[/:]/g, "-")
+      .replace(/, /g, "_");
+    const fileName = `OSR Report_${dateString}.xlsx`;
+    saveAs(data, fileName);
   };
 
   const handleClearFilter = () => {
@@ -1085,6 +1495,14 @@ export default function AllEmployeeDataReport({
           {columns
             .filter((col) => col.filterable)
             .map((col) => (
+              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                {renderFilter(col)}
+              </div>
+            ))}
+
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
               <div key={col.field}>{renderFilterMulti(col)}</div>
             ))}
 
@@ -1105,8 +1523,8 @@ export default function AllEmployeeDataReport({
           {columns
             .filter((col) => col.filterable)
             .map((col) => (
-              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                {renderFilter(col)}
+              <div key={col.field} style={{ gap: "10px" }}>
+                {renderFiltersuggestionFilter(col)}
               </div>
             ))}
         </Drawer>

@@ -32,6 +32,7 @@ const formatToMMDDYYYY = (date) => {
 export default function OSRReportSpliter() {
   const [selectCustomerCode, setSelectCustomerCode] = useState(null);
   const [totalCount, setTotalCount] = useState();
+  const [totalCountWt, setTotalCountWt] = useState();
   const [paneWidths, setPaneWidths] = useState(["25%", "75%"]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [status500, setStatus500] = useState(false);
@@ -224,11 +225,27 @@ export default function OSRReportSpliter() {
       return itemDate && itemDate >= from && itemDate <= to;
     });
 
+    const totalWeight = dateFiltered.reduce((acc, row) => {
+      return (
+        acc +
+        (row.pipwt || 0) +
+        (row.wipwt || 0) +
+        (row.inqabookwt || 0) +
+        (row.instockwt || 0) +
+        (row.inmemowt || 0) +
+        (row.insalewt || 0) +
+        (row.etapendingwt || 0) +
+        (row.inmeltwt || 0) +
+        (row.incompanywt || 0)
+      );
+    }, 0);
+
     const totalCount = dateFiltered.reduce(
       (sum, item) => sum + item.totalcnt,
       0
     );
     setTotalCount(totalCount);
+    setTotalCountWt(totalWeight);
 
     const salesRepData = dateFiltered.filter(
       (item) => item.isdefaultcustomer === 0
@@ -269,19 +286,34 @@ export default function OSRReportSpliter() {
           );
 
     const summaryMap = new Map();
-
     filtered.forEach((item) => {
       const { customerfirmname, customercode, totalcnt } = item;
       const key = `${customerfirmname}_${customercode}`;
+
+      const weightFields = [
+        item.pipwt,
+        item.wipwt,
+        item.inqabookwt,
+        item.instockwt,
+        item.inmemowt,
+        item.insalewt,
+        item.inmeltwt,
+        item.incompanywt,
+        item.etapendingwt,
+      ];
+
+      const totalWt = weightFields.reduce((sum, val) => sum + (val || 0), 0);
 
       if (!summaryMap.has(key)) {
         summaryMap.set(key, {
           customerfirmname,
           customercode,
           totalcnt: 0,
+          totalWt: 0,
         });
       }
-
+      const entry = summaryMap.get(key);
+      entry.totalWt += totalWt;
       summaryMap.get(key).totalcnt += Number(totalcnt || 0);
     });
 
@@ -393,6 +425,9 @@ export default function OSRReportSpliter() {
   const filteredCustomerData = salesRepSummaryData?.filter((emp) =>
     emp.customerfirmname.toLowerCase().includes(customerSearch.toLowerCase())
   );
+
+  console.log('filteredCustomerData', filteredCustomerData);
+  
 
   return (
     <div className="OSRReportSpliter_top">
@@ -610,7 +645,10 @@ export default function OSRReportSpliter() {
                                 : "employee_detail"
                             }
                           >
-                            <b> {totalCount}</b>
+                            <b>
+                              {" "}
+                              {totalCount} / {totalCountWt} Wt
+                            </b>
                           </p>
                         </div>
                       </div>
@@ -663,7 +701,7 @@ export default function OSRReportSpliter() {
                               }
                               style={{ width: "50%" }}
                             >
-                              Total : <b>{emp.totalcnt}</b>
+                              Total : <b>{emp.totalcnt} / {emp?.totalWt} Wt</b>
                             </p>
                           </div>
                         </div>
