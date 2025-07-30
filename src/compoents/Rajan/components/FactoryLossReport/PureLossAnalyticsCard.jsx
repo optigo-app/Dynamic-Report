@@ -26,7 +26,7 @@ export default function PureLossAnalyticsCard({ PureGrossLoss }) {
           fontWeight={500}
           noWrap
         >
-          Pure Loss
+          Gross Loss
         </Typography>
       </Box>
       <Typography

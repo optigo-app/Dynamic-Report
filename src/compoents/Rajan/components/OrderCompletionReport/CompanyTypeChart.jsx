@@ -77,7 +77,7 @@ const CompanyTypeList = ({ companyTypeSummary }) => {
       <Typography variant="h6" mb={2}>
         Company Type Wise Details
       </Typography>
-      <Box sx={{ height: 380, width: "100%" ,overflowY:"auto" }}>
+      <Box sx={{ height: 380, width: "100%", overflowY: "auto" }}>
         {formattedData?.map((row, index) => (
           <React.Fragment key={index}>
             <CompanyRow>
@@ -250,12 +250,12 @@ function PremiumTable({ selectedItems, selectedType }) {
                   <Chip
                     label={delayAge}
                     size="small"
+                    color={delayAge < 0 ? "error" : "success"}
                     sx={{
                       fontWeight: 500,
                       fontSize: "0.75rem",
                       height: 22,
                       borderRadius: 4,
-                      ...getChipColorStyles(delayAge),
                     }}
                   />
                 </TableCell>

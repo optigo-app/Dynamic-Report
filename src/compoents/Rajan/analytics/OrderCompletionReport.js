@@ -1,4 +1,4 @@
-import { isValid, startOfDay, endOfDay, startOfMonth, endOfMonth, eachDayOfInterval,parse , format, isSameMonth } from "date-fns";
+import { isValid, startOfDay, endOfDay, startOfMonth, endOfMonth, eachDayOfInterval, parse, format, isSameMonth } from "date-fns";
 import { ShoppingCart, AccessTime, Percent, CheckCircle, HourglassBottom, Warning } from "@mui/icons-material";
 
 class OrderCompletionReport {
@@ -70,28 +70,22 @@ class OrderCompletionReport {
   // }
   getDelayDayGrouping() {
     const parseDate = (str) => parse(str, "dd-MM-yyyy", new Date());
-  
-    const start = isValid(this.dateRange.startDate)
-      ? startOfDay(this.dateRange.startDate)
-      : startOfDay(new Date());
-  
-    const end = isValid(this.dateRange.endDate)
-      ? endOfDay(this.dateRange.endDate)
-      : start;
-  
-    const allDates = eachDayOfInterval({ start, end }).map((d) =>
-      format(d, "yyyy-MM-dd")
-    );
-  
+
+    const start = isValid(this.dateRange.startDate) ? startOfDay(this.dateRange.startDate) : startOfDay(new Date());
+
+    const end = isValid(this.dateRange.endDate) ? endOfDay(this.dateRange.endDate) : start;
+
+    const allDates = eachDayOfInterval({ start, end }).map((d) => format(d, "yyyy-MM-dd"));
+
     const groups = {};
-  
+
     this.data.forEach((item) => {
       const rawDate = parseDate(this.tab === 1 ? item["Sale Date"] : item["Order Date"]);
       if (!isValid(rawDate)) return;
-  
+
       const dateKey = format(rawDate, "yyyy-MM-dd");
       const deliveryAge = parseFloat(item["Delivery Age"]) || 0;
-  
+
       if (!groups[dateKey]) {
         groups[dateKey] = {
           date: dateKey,
@@ -101,12 +95,12 @@ class OrderCompletionReport {
           delayPercent: 0,
         };
       }
-  
+
       groups[dateKey].items.push(item);
       groups[dateKey].totalJobs += 1;
       if (deliveryAge < 0) groups[dateKey].delayedJobs += 1;
     });
-  
+
     return allDates.map((date) => {
       const group = groups[date] || {
         date,
@@ -115,11 +109,9 @@ class OrderCompletionReport {
         delayedJobs: 0,
         delayPercent: 0,
       };
-  
-      group.delayPercent = group.totalJobs > 0
-        ? ((group.delayedJobs / group.totalJobs) * 100)
-        : 0;
-  
+
+      group.delayPercent = group.totalJobs > 0 ? (group.delayedJobs / group.totalJobs) * 100 : 0;
+
       return group;
     });
   }
@@ -176,7 +168,7 @@ class OrderCompletionReport {
       groups[companyType].totalDelayDays += Math.abs(leadAge);
     });
     return Object.values(groups).map((group) => {
-      group.averageDelayDays = group.totalJobs > 0 ? Math.round((group.totalDelayDays / group.totalJobs)) : 0;
+      group.averageDelayDays = group.totalJobs > 0 ? Math.round(group.totalDelayDays / group.totalJobs) : 0;
       return group;
     });
   }
@@ -281,14 +273,14 @@ class OrderCompletionReport {
       },
       {
         label: "Lead Age",
-        value: `${+leadAge.toFixed(2)}%`,
+        value: `${Math.round(leadAge)}`,
         icon: <HourglassBottom fontSize="small" />,
         color: "#06b6d4",
         bgColor: "#ecfeff",
       },
       {
         label: "Delay Age",
-        value: `${+delayAge.toFixed(2)}%`,
+        value: `${Math.round(delayAge)}`,
         icon: <Warning fontSize="small" />,
         color: "#8b5cf6",
         bgColor: "#f5f3ff",

@@ -13,21 +13,24 @@ const ProcessLossChart = ({ dayAnalysis }) => {
     day: i + 1,
     loss: val?.factoryLoss,
   }));
-  
+
   return (
     <>
       <Typography variant="h6" gutterBottom>
         {chartTitle}
       </Typography>
 
-      <ResponsiveContainer width="100%" height={280} style={{ padding: "1px" }}>
+      <ResponsiveContainer width="100%" height={320} style={{ padding: "1px" }}>
         <AreaChart data={FormattedDate}>
           <defs>
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#EF4444" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="#FECACA" stopOpacity={0.05} />
+              <stop offset="0%" stopColor="#dc2626" stopOpacity={0.4} />   {/* Deep Red */}
+              <stop offset="50%" stopColor="#ef4444" stopOpacity={0.1} /> {/* Vivid Red */}
+              <stop offset="100%" stopColor="#f87171" stopOpacity={0.1} /> {/* Soft Red Bottom */}
             </linearGradient>
+
           </defs>
+
           {/* Hide grid and axes */}
           <XAxis
             dataKey="day"
@@ -59,8 +62,7 @@ const ProcessLossChart = ({ dayAnalysis }) => {
           />
 
           <YAxis hide />
-          <CartesianGrid vertical={false} horizontal={false} />
-
+          <CartesianGrid strokeDasharray="3 3" />
           <Tooltip
             formatter={(val) => `${Number(val)?.toFixed(0)}%`}
             contentStyle={{

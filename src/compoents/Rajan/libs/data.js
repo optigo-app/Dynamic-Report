@@ -12,7 +12,7 @@ export const Datetheme = createTheme({
     },
     background: {
       default: "#F9FAFB", // Clean SaaS-like background
-      paper: "#ffffff",   // For cards/panels
+      paper: "#ffffff", // For cards/panels
     },
     text: {
       primary: "#1E1E1E",
@@ -29,6 +29,11 @@ export const Datetheme = createTheme({
     h3: { fontWeight: 600, fontSize: "1.5rem" },
     h4: { fontWeight: 600 },
     button: { textTransform: "none", fontWeight: 500 },
+    caption: {
+      fontSize: "0.75rem",
+      fontWeight: 500,
+      letterSpacing: "0.03em",
+    },
   },
 
   shape: {
@@ -135,6 +140,61 @@ export const Datetheme = createTheme({
         root: {
           borderRadius: 14,
           boxShadow: "0 6px 24px rgba(0, 0, 0, 0.04)",
+        },
+      },
+    },
+
+    // Enhanced Typography for weekday labels
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          "&.MuiTypography-caption": {
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            color: "#6B7280",
+            textAlign: "center",
+            padding: "4px 6px",
+            minWidth: "32px",
+            display: "inline-block",
+            letterSpacing: "0.5px",
+            textTransform: "uppercase",
+          },
+        },
+      },
+    },
+
+    MuiPickersCalendarHeader: {
+      styleOverrides: {
+        root: {
+          paddingLeft: "16px",
+          paddingRight: "16px",
+          marginTop: "8px",
+          marginBottom: "8px",
+        },
+        labelContainer: {
+          fontSize: "1.1rem",
+          fontWeight: 600,
+          color: "#1E1E1E",
+        },
+      },
+    },
+
+    // Month/Year navigation buttons
+    MuiIconButton: {
+      styleOverrides: {
+        root: {
+          "&.MuiPickersArrowSwitcher-button": {
+            backgroundColor: "transparent",
+            border: "1px solid #E5E7EB",
+            borderRadius: "8px",
+            width: "32px",
+            height: "32px",
+
+            "&:hover": {
+              backgroundColor: "rgba(123, 97, 255, 0.08)",
+              borderColor: "#7B61FF",
+            },
+          },
         },
       },
     },
