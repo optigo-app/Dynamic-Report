@@ -1,4 +1,4 @@
-// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18297
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18303
 
 import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
@@ -173,6 +173,7 @@ export default function CustomerReturnReport() {
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
+  const [showAllData, setShowAllData] = useState(false);
 
   const firstTimeLoadedRef = useRef(false);
 
@@ -182,6 +183,7 @@ export default function CustomerReturnReport() {
     setStartDate(formattedDate);
     setEndDate(formattedDate);
     fetchData(formattedDate, formattedDate);
+    getMasterData();
     setFilterState({
       dateRange: {
         startDate: now,
@@ -204,8 +206,28 @@ export default function CustomerReturnReport() {
       setEndDate(formattedEnd);
 
       fetchData(formattedStart, formattedEnd);
+      getMasterData();
     }
   }, [filterState.dateRange]);
+
+  const getMasterData = async () => {
+    const sp = searchParams.get("sp");
+    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+    const body = {
+      con: `{"id":"","mode":"customerreturn_master","appuserid":"${AllData?.uid}"}`,
+      p: "",
+      f: "Task Management (taskmaster)",
+    };
+    try {
+      const fetchedData = await GetWorkerData(body, sp);
+      setAllUserNameList(fetchedData?.Data?.rd1);
+    } catch (error) {
+      if (error?.status == 500) {
+        setStatus500(true);
+      }
+      setIsLoading(false);
+    }
+  };
 
   const fetchData = async (stat, end) => {
     const sp = searchParams.get("sp");
@@ -220,12 +242,22 @@ export default function CustomerReturnReport() {
 
     try {
       const fetchedData = await GetWorkerData(body, sp);
+      if (showAllData) {
+        setFilterState({
+          ...filterState,
+          dateRange: {
+            startDate: null,
+            endDate: null,
+          },
+        });
+        setShowAllData(false);
+      }
       setAllRowData(fetchedData?.Data?.rd1);
-      setAllUserNameList(fetchedData?.Data?.rd3);
       setAllColumIdWiseName(fetchedData?.Data?.rd);
       setMasterKeyData(OtherKeyData?.rd);
       setAllColumData(OtherKeyData?.rd1);
       setFinalData(fetchedData?.Data);
+
       setIsLoading(false);
     } catch (error) {
       if (error?.status == 500) {
@@ -279,6 +311,7 @@ export default function CustomerReturnReport() {
               {col.headerName}
             </div>
           ),
+          headerNameSub: col?.headerName,
           width: col.Width,
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
@@ -313,6 +346,28 @@ export default function CustomerReturnReport() {
                   }}
                 >
                   {params.value?.toFixed(col.ToFixedValue)}
+                </span>
+              );
+            } else if (params?.field === "usermanagement_customercode1") {
+              return (
+                <span
+                  style={{
+                    color: col.Color || "inherit",
+                    backgroundColor: col.BackgroundColor || "inherit",
+                    fontSize: col.FontSize || "inherit",
+                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
+                    padding: "0px",
+                    borderRadius: col.BorderRadius,
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <p className="osr_mainName">
+                    <b>{params.value}</b>
+                  </p>
+                  <p className="osr_subname">
+                    {params?.row?.usermanagement_customercode}
+                  </p>
                 </span>
               );
             } else if (col.dateColumn == true) {
@@ -425,7 +480,7 @@ export default function CustomerReturnReport() {
   const [filters, setFilters] = useState({});
   const uniqueCustomers = [
     "All",
-    ...Array.from(new Set(originalRows?.map((row) => row?.item))),
+    ...Array.from(new Set(originalRows?.map((row) => row?.itemname))),
   ];
 
   useEffect(() => {
@@ -441,13 +496,13 @@ export default function CustomerReturnReport() {
 
       if (
         selectedDateColumn !== "ALL Users" &&
-        parseInt(selectedDateColumn) !== row.salesrep_id
+        parseInt(selectedDateColumn) !== row.usermanagement_customer_salesrep_id
       ) {
         return false;
       }
 
       if (isMatch && selectedCustomer !== "All") {
-        if (row.item !== selectedCustomer) {
+        if (row.itemname !== selectedCustomer) {
           isMatch = false;
         }
       }
@@ -575,7 +630,7 @@ export default function CustomerReturnReport() {
               <CustomTextField
                 key={`filter-${col.field}-NormalFilter`}
                 type="text"
-                placeholder={`${col.field}`}
+                placeholder={`${col.headerNameSub}`}
                 value={filters[col.field] || ""}
                 onChange={(e) => handleFilterChange(col.field, e.target.value)}
                 className="filter_column_box"
@@ -619,6 +674,8 @@ export default function CustomerReturnReport() {
 
     return filtersToRender.map((filterType) => {
       if (filterType !== "suggestionFilter") return null;
+
+      console.log("colcolcolcolcolcol", col);
 
       const field = col.field;
       const inputValue = filters[field]?.toLowerCase() || "";
@@ -684,7 +741,7 @@ export default function CustomerReturnReport() {
         >
           <CustomTextField
             fullWidth
-            placeholder={field}
+            placeholder={col?.headerNameSub}
             value={filters[field] || ""}
             onChange={(e) => handleInputChange(e.target.value)}
             onFocus={() => {
@@ -956,7 +1013,7 @@ export default function CustomerReturnReport() {
   const summaryColumns = Object.entries(itemSummaryMap).map(
     ([itemKey, summaryTitle]) => {
       const totalWeight = filteredRows
-        ?.filter((row) => row.item?.toUpperCase() === itemKey)
+        ?.filter((row) => row.itemname?.toUpperCase() === itemKey)
         .reduce((sum, row) => sum + (parseFloat(row.weight) || 0), 0);
 
       return {
@@ -1089,10 +1146,9 @@ export default function CustomerReturnReport() {
         hour12: false,
       })
       .replace(/[/:]/g, "-")
-      .replace(/, /g, "_"); // Format: dd-MM-yyyy_HH-mm-ss
+      .replace(/, /g, "_");
 
-    const fileName = `Job Completion Lead Report_${dateString}.xlsx`;
-
+    const fileName = `Report_Customer_Return_Report_${dateString}.xlsx`;
     saveAs(data, fileName);
   };
 
@@ -1232,13 +1288,12 @@ export default function CustomerReturnReport() {
   const handleClick = (params) => {
     let url_optigo = sessionStorage.getItem("url_optigo");
     window.parent.addTab(
-      "Customer Receive",
-      "icon-InventoryManagement_invoiceSummary",
+      "Customer Return",
+      "icon-MaterialManagement_MaterialSale",
       url_optigo +
-        "mfg/app/InventoryManagement_invoiceList?invoiceof=customer&invoiceno=" +
+        "salescrm/app/MaterialManagement_MaterialSale?invoiceno=" +
         btoa(params?.formattedValue) +
-        "&IsOldMetal=" +
-        0
+        "&isFromCustomerReturn=1"
     );
   };
 
@@ -1250,9 +1305,6 @@ export default function CustomerReturnReport() {
       url_optigo +
         "login/app/LoginManagement_LogHistory?mode=logsearch&sf=" +
         params?.formattedValue
-      // +
-      // "&-=" +
-      // ""
     );
   };
 
@@ -1397,15 +1449,16 @@ export default function CustomerReturnReport() {
                   validMonth={6}
                 />
                 <Button
-                  onClick={() =>
+                  onClick={() => {
                     setFilterState({
                       ...filterState,
                       dateRange: {
                         startDate: new Date("2000-01-01T18:30:00.000Z"),
                         endDate: new Date(),
                       },
-                    })
-                  }
+                    });
+                    setShowAllData(true);
+                  }}
                   className="FiletrBtnAll"
                 >
                   All
@@ -1622,7 +1675,7 @@ export default function CustomerReturnReport() {
               </button>
             )}
 
-            <FormControl size="small" sx={{ minWidth: 100, margin: "0px" }}>
+            {/* <FormControl size="small" sx={{ minWidth: 100, margin: "0px" }}>
               <Select
                 value={selectedDateColumnHyBrid}
                 onChange={(e) => setSelectedDateColumnHyBrid(e.target.value)}
@@ -1630,9 +1683,9 @@ export default function CustomerReturnReport() {
                 <MenuItem value="ALL">ALL</MenuItem>
                 <MenuItem value="Hybrid">Hybrid</MenuItem>
               </Select>
-            </FormControl>
+            </FormControl> */}
 
-            <FormControl size="small" sx={{ minWidth: 100, margin: "0px" }}>
+            <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
               <Select
                 value={selectedDateColumn}
                 onChange={(e) => setSelectedDateColumn(e.target.value)}

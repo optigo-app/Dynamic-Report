@@ -69,7 +69,7 @@
       "summary": false,
       "columAscendion": false,
       "columDescending": false,
-      "proiorityFilter": true,
+      "proiorityFilter": false,
       "copyButton": false,
       "EditData": false,
       "flex": 1
@@ -208,7 +208,7 @@
       "hrefLink": "",
       "ColumShow": true,
       "ColumFilter": true,
-      "NormalFilter": false,
+      "NormalFilter": true,
       "DateRangeFilter": false,
       "multiSelection": false,
       "RangeFilter": false,
@@ -420,7 +420,7 @@
     {
       "colid": 7,
       "headerName": "salesRepId",
-      "field": "salesrep_id",
+      "field": "usermanagement_customer_salesrep_id",
       "Width": 130,
       "Align": "left",
       "ColumAlign": "left",

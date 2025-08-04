@@ -1,15 +1,30 @@
-.worker_AllEmoployee_mainGridView {
+.MaterialPurhcaseReturnReportMain_mainGridView {
   background-color: #f8f7fa;
   height: 100vh;
+
+  .osr_mainName {
+    height: 18px;
+    display: flex;
+    margin: 0px;
+    align-items: center;
+  }
+
+  .osr_subname {
+    height: 18px;
+    display: flex;
+    margin: 0px;
+    align-items: center;
+    color: gray;
+  }
 
   .summaryBox {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    padding: 10px;
+    padding: 5px 5px 0px 5px;
   }
 
-  .OSR_AllEmploe_boxViewTotal {
+  .AllEmploe_boxViewTotal {
     display: flex;
     align-items: center;
     padding: 5px;
@@ -17,11 +32,28 @@
     border: 1px solid rgb(115, 103, 240);
     background-color: white;
     margin: 0px;
-    min-width:  180px;
-    max-width: 180px;
+    min-width: 150px;
+    max-width: 150px;
   }
 
-  .boxViewTotalTitle_OSR {
+  .FiletrBtnAll {
+    height: 35px;
+    width: 40px;
+    min-width: 50px;
+    margin: 0px;
+    padding: 0px;
+    border-radius: 3px;
+    background: linear-gradient(270deg, #7367f0b3, #7367f0) !important;
+    box-shadow: 0 2px 6px 0 #7367f04d !important;
+    color: white !important;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .boxViewTotalTitle {
     margin: 0px;
     font-size: 12px;
     color: rgb(117, 117, 117);
@@ -29,11 +61,11 @@
     font-weight: 600;
   }
 
-  .AllEmplo_boxViewTotalValue_osr {
+  .AllEmplo_boxViewTotalValue {
     font-weight: bold;
-    font-size: 15px;
-    color: rgb(115, 103, 240);
-    margin: 3px 0px;
+    font-size: 16px;
+    color: #7367f0;
+    margin: 0px;
     min-width: 70px;
     line-height: 20px;
   }
@@ -49,6 +81,7 @@
   .simpleGridView {
     box-shadow: 0 0.1875rem 0.75rem 0 rgba(47, 43, 61, 0.14);
     background-color: white;
+    margin: 0px;
   }
 
   .minTexBox {
@@ -56,15 +89,17 @@
   }
 
   .FiletrBtnOpen {
-    height: 40px;
-    width: 130px;
+    height: 35px;
+    width: 50px;
     border-radius: 3px;
-    background-color: rgb(222 212 212);
+    background: linear-gradient(270deg, #7367f0b3, #7367f0) !important;
+    box-shadow: 0 2px 6px 0 #7367f04d !important;
     border: none;
+    color: white;
     outline: none;
     cursor: pointer;
-    font-size: 14px;
-    color: #000000d4;
+    font-weight: 600;
+    font-size: 15px;
   }
 
   .accordianMain {
@@ -199,8 +234,8 @@
   }
 
   .All_exportButton {
-    background-color: rgb(21, 163, 75);
-    color: white;
+    background-color: transparent;
+    color: rgb(21, 163, 75);
     font-size: 16px;
     width: 40px;
     height: 40px;
@@ -215,7 +250,7 @@
     align-items: center;
   }
   .All_exportButton:hover {
-    background-color: rgb(34, 194, 95);
+    background-color: rgb(152 237 184);
     transition: transform 0.3s ease, background-color 0.3s ease;
   }
 
@@ -284,18 +319,36 @@
   .MuiDataGrid-columnHeadersInner{
     transform: translate3d(-4px, 0px, 0px) !important;
   } */
+
   .MuiList-root {
     max-height: 500px !important;
   }
 
-  .hyperLinkShow:hover{
-    text-decoration: underline;
+  .filter_column_box {
+    width: 100% !important;
+
+    .MuiFormControl-root {
+      width: 100% !important;
+    }
+    .MuiInputBase-root {
+      width: 100% !important;
+    }
+  }
+
+  .MuiDataGrid-menuIcon {
+    display: none !important;
+  }
+  .MuiDataGrid-iconButtonContainer {
+    min-width: 30px !important;
+  }
+  .MuiDataGrid-columnHeaderTitleContainer {
+    padding: 0px !important;
   }
 }
 
-.ClearFilterButton_osr {
-  background-color: rgb(250 77 77) !important;
-  color: white !important;
+.ClearFilterButton {
+  background-color: rgb(255 32 32);
+  color: white;
   font-size: 14px;
   width: 100px;
   height: 35px;
@@ -309,7 +362,7 @@
   justify-content: center;
   align-items: center;
 }
-.ClearFilterButton_osr:hover {
+.ClearFilterButton:hover {
   background-color: rgb(238, 37, 37);
   transition: transform 0.3s ease, background-color 0.3s ease;
 }

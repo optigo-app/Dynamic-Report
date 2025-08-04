@@ -1,6 +1,7 @@
 import * as React from "react";
+import Box from "@mui/material/Box";
 import { DataGrid } from "@mui/x-data-grid";
-import "./SignageTvReport.scss";
+import "./AllEmployeeDataReport.scss";
 import DatePicker from "react-datepicker";
 import mainButton from "../../images/Mail_32.png";
 import printButton from "../../images/print.png";
@@ -35,28 +36,23 @@ import CustomTextField from "../../text-field/index";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiFillSetting } from "react-icons/ai";
-import OtherKeyDataIcate from "./SignageTv.json";
+import OtherKeyData from "./SignageDisplayList.json";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { GetWorkerData } from "../../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
-import { useSetRecoilState } from "recoil";
-import CustomerBind from "./CustomerBind.json";
-import { deviceOnorOff } from "../../../Recoil/atom";
 import { useDeviceStatus } from "../../../DeviceStatusContext";
 import { IoMdLogOut } from "react-icons/io";
-import { MdFormatClear } from "react-icons/md";
 import { MdOutlineFilterAlt } from "react-icons/md";
 import { MdOutlineFilterAltOff } from "react-icons/md";
 import LoadingBackdrop from "../../../Utils/LoadingBackdrop";
 import { showToast } from "../../../Utils/Tostify/ToastManager";
-import { FaExclamationTriangle } from "react-icons/fa";
 import {
   ChevronsLeft,
   ChevronsRight,
   CircleX,
-  ShieldOff,
   TriangleAlert,
 } from "lucide-react";
+import { IoRefreshCircle } from "react-icons/io5";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -120,7 +116,7 @@ const DraggableColumn = ({ col, index, checkedColumns, setCheckedColumns }) => {
   );
 };
 
-export default function SignageTvReport({
+export default function AllEmployeeDataReport({
   selectedFilterCategory,
   selectedFileter,
   AllFinalData,
@@ -128,6 +124,8 @@ export default function SignageTvReport({
   onClosePane,
   onOpenPane,
   isPaneCollapsed,
+  setCustomerBindeChnaged,
+  handleRefresh,
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -163,19 +161,18 @@ export default function SignageTvReport({
   const [isDeleteModel, setIsDeleteMode] = React.useState(false);
   const { setDeviceStatus } = useDeviceStatus();
   const [selectedRowId, setSelectedRowId] = React.useState();
+  const [selectedRowIdApi, setSelectedRowIdApi] = React.useState();
 
   const [selectedEmployeeBarCode, setSelectedEmployeeBarCode] =
     React.useState();
   const [customerBindAllData, setCustomerBindAllData] = React.useState();
   const [customerBindIsloading, setCustomerBindIsLoading] = React.useState();
-  const [lastUpdated, setLastUpdated] = React.useState("");
+  const [lastUpdated, setLastUpdated] = React.useState(false);
   const gridRef = React.useRef(null);
-  const [sortModel, setSortModel] = React.useState([]);
-  const [paginationModel, setPaginationModel] = React.useState({
-    page: 0,
-    pageSize: 10,
-  });
-  const [hoveredField, setHoveredField] = React.useState(null);
+
+  //selecino.... main
+
+  console.log("AllFinalDataAllFinalData", AllFinalData);
 
   const useDeviceSummary = (AllFinalData) => {
     const [summary, setSummary] = React.useState({
@@ -256,17 +253,6 @@ export default function SignageTvReport({
     ].join(", "),
   };
 
-  /*
-{
-  totalDevices: 3,
-  activeDevices: 1,
-  deactiveDevices: 2,
-  upcomingExpiryDevices: 3,
-  enableCount: 3,
-  disableCount: 0
-}
-*/
-
   const APICall = () => {
     setIsLoading(true);
     const { rd, rd1 } = AllFinalData || {};
@@ -274,58 +260,16 @@ export default function SignageTvReport({
       console.warn("Invalid data format");
       return;
     }
-
-    let filteredData = [];
-    let filteredDataColumKey = [];
-
-    switch (selectedFileter) {
-      case "App":
-        filteredData = rd1.filter(
-          (entry) => entry["1"] === selectedFilterCategory
-        );
-        filteredDataColumKey = OtherKeyDataIcate?.rd1;
-        break;
-      case "Employee":
-        filteredData = rd1.filter(
-          (entry) => entry["10"] === selectedFilterCategory
-        );
-        filteredDataColumKey = OtherKeyDataIcate?.rd1;
-        break;
-
-      case "Device":
-        filteredData = rd1.filter(
-          (entry) => entry["3"] === selectedFilterCategory
-        );
-        filteredDataColumKey = OtherKeyDataIcate?.rd1;
-        break;
-
-      default:
-        console.warn("Unknown filter type");
-    }
-
-    setMasterKeyData(OtherKeyDataIcate?.rd);
-    setAllColumData(filteredDataColumKey);
+    setMasterKeyData(OtherKeyData?.rd);
+    setAllColumData(OtherKeyData?.rd1);
     setAllColumIdWiseName(AllFinalData?.rd);
-    setAllRowData(filteredData);
+    setAllRowData(rd1);
     setIsLoading(false);
   };
 
   React.useEffect(() => {
     APICall();
-  }, [selectedFileter, selectedFilterCategory, AllFinalData]);
-
-  React.useEffect(() => {
-    const now = new Date();
-    const formatNumber = (n) => n.toString().padStart(2, "0");
-
-    const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
-      now.getMonth() + 1
-    )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
-      now.getMinutes()
-    )}:${formatNumber(now.getSeconds())}`;
-
-    setLastUpdated(formattedDate);
-  }, []);
+  }, [AllFinalData]);
 
   React.useEffect(() => {
     if (allColumData) {
@@ -483,20 +427,6 @@ export default function SignageTvReport({
                   {params.value?.toFixed(col.ToFixedValue)}
                 </p>
               );
-            } else if (col.field == "Unpublish") {
-              return (
-                <div
-                  style={{
-                    fontSize: col.FontSize || "inherit",
-                  }}
-                >
-                  <Button className="row_delete_button">
-                    <ShieldOff
-                      style={{ color: "rgb(238, 37, 37)", fontSize: "25px" }}
-                    />
-                  </Button>
-                </div>
-              );
             } else if (col.field == "ActionDelete") {
               return (
                 <div
@@ -617,50 +547,64 @@ export default function SignageTvReport({
             ...col,
             renderCell: (params) => (
               <div>
-                {selectedFilterCategory === "ExpressApp" ? (
-                  <p
-                    style={{
-                      color: "blue",
-                      backgroundColor: col.BackgroundColor || "inherit",
-                      fontSize: col.FontSize || "inherit",
-                      textTransform: col.ColumTitleCapital
-                        ? "uppercase"
-                        : "none",
-                      padding: "5px 0px",
-                      borderRadius: col.BorderRadius,
-                      margin: "0px",
-                      textDecoration: "underline",
-                      cursor: "pointer",
-                    }}
-                    onClick={() => {
-                      setOpenCustomerBideModel(true);
-                      handleGetCustomerBindData(params.row?.Id);
-                    }}
-                    // onClick={() => alert(JSON?.stringify(params.row?.Id))}
-                  >
-                    Customer Bind
-                  </p>
-                ) : (
-                  <Select
-                    value={params.row.customerBind ?? ""}
-                    onChange={(e) =>
-                      handleCustomerBindChange(e.target.value, params.row)
-                    }
-                    size="small"
-                    fullWidth
-                    className="MenuSelectItem"
-                  >
-                    {CustomerBind.map((item) => (
-                      <MenuItem
-                        key={item.id}
-                        value={item.id}
-                        className="MenuSelectItem_select"
-                      >
-                        {item.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                )}
+                <Select
+                  value={params.row.customerBind ?? ""}
+                  onChange={(e) =>
+                    handleCustomerBindChange(e.target.value, params.row)
+                  }
+                  size="small"
+                  fullWidth
+                  className="MenuSelectItem"
+                >
+                  <MenuItem value="data" className="MenuSelectItem_select">
+                    Content 1
+                  </MenuItem>
+                  <MenuItem value="data" className="MenuSelectItem_select">
+                    Content 2
+                  </MenuItem>
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Content 3
+                  </MenuItem>
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Content 4
+                  </MenuItem>
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Content 5
+                  </MenuItem>
+                </Select>
+              </div>
+            ),
+          };
+        } else if (col.field === "selectLocation") {
+          return {
+            ...col,
+            renderCell: (params) => (
+              <div>
+                <Select
+                  value={params.row.customerBind ?? ""}
+                  onChange={(e) =>
+                    handleCustomerBindChange(e.target.value, params.row)
+                  }
+                  size="small"
+                  fullWidth
+                  className="MenuSelectItem"
+                >
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Location 1
+                  </MenuItem>
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Location 2
+                  </MenuItem>
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Location 3
+                  </MenuItem>
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Location 4
+                  </MenuItem>
+                  <MenuItem value={"data"} className="MenuSelectItem_select">
+                    Location 5
+                  </MenuItem>
+                </Select>
               </div>
             ),
           };
@@ -669,8 +613,6 @@ export default function SignageTvReport({
       })
     );
   }, [allColumData, allRowData]);
-
-  console.log("AllFinalData ", AllFinalData);
 
   const handleCellClick = (params) => {
     setSelectedEmployeeName(params?.row?.employeename);
@@ -688,6 +630,7 @@ export default function SignageTvReport({
   //     setFilteredRows(originalRows);
   //   }
   // }, [originalRows, filters]);
+  console.log("originalRowsoriginalRows", originalRows);
 
   React.useEffect(() => {
     const newFilteredRows = originalRows?.filter((row) => {
@@ -836,9 +779,7 @@ export default function SignageTvReport({
   };
 
   const handleAccessChange = async (event, row) => {
-    console.log("rowrowrowrow", row?.UniqueID);
     const isChecked = event.target.checked;
-
     const body = {
       con: '{"id":"","mode":"DeviceEnbDcb","appuserid":"amrut@eg.com"}',
       p: `{"AppDevRowId":${row?.Id},"IsEnable":${isChecked ? 1 : 0}}`,
@@ -868,8 +809,6 @@ export default function SignageTvReport({
           timestamp: Date.now(),
           uniqueId: row?.UniqueID,
         });
-
-        setAllColumData((prev) => [...prev]); // If needed to refresh columns
       }
     } catch (error) {
       console.error("Failed to update Access:", error);
@@ -1155,8 +1094,6 @@ export default function SignageTvReport({
     setToDate(end);
   };
 
-  const handleClose = () => setOpen(false);
-
   const [sideFilterOpen, setSideFilterOpen] = React.useState(false);
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
@@ -1180,43 +1117,6 @@ export default function SignageTvReport({
       </div>
     );
   };
-
-  // const renderSummary = () => {
-  //   const summaryColumns = columns.filter((col) => {
-  //     const columnData = Object.values(allColumData).find(
-  //       (data) => data.field === col.field
-  //     );
-  //     return columnData?.summary;
-  //   });
-
-  //   return (
-  //     <div className="summaryBox">
-  //       {summaryColumns.map((col) => (
-  //         <div className="summaryItem">
-  //           <div key={col.field} className="AllEmploe_boxViewTotal">
-  //             <div>
-  //               <p className="AllEmplo_boxViewTotalValue">
-  //                 {filteredRows
-  //                   ?.reduce(
-  //                     (sum, row) => sum + (parseFloat(row[col.field]) || 0),
-  //                     0
-  //                   )
-  //                   .toFixed(col?.summuryValueKey)}
-  //                 {/* {col.field === "jobCount"
-  //                   ? filteredRows?.reduce(
-  //                       (sum, row) => sum + (parseInt(row[col.field], 10) || 0),
-  //                       0
-  //                     )
-  //                   : filteredRows?.length} */}
-  //               </p>
-  //               <p className="boxViewTotalTitle">{col.summaryTitle}</p>
-  //             </div>
-  //           </div>
-  //         </div>
-  //       ))}
-  //     </div>
-  //   );
-  // };
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -1305,6 +1205,7 @@ export default function SignageTvReport({
   const handleClickOpenPoup = () => {
     setOpenPopup(true);
   };
+
   const handleClickOpenPopupDeafiltPin = () => {
     setOpenDefaultpin(true);
   };
@@ -1312,6 +1213,7 @@ export default function SignageTvReport({
   const handleClosePopup = () => {
     setOpenPopup(false);
   };
+
   const handleClosePopupPin = () => {
     setOpenDefaultpin(false);
   };
@@ -1327,15 +1229,19 @@ export default function SignageTvReport({
   };
 
   const onDragEnd = () => {};
-  console.log("filteredRows", filteredRows);
 
   const handleRecalculate = async () => {
     try {
       setLodingRecakulate(true);
       const sp = searchParams.get("sp");
+
+      const modeSetting =
+        selectedFilterCategory == "Icatalog"
+          ? "IcatStockCalCulate"
+          : "EvoStockCalCulate";
       let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
       const body = {
-        con: `{"id":"","mode":"EvoStockCalCulate","appuserid":"${AllData?.uid}"}`,
+        con: `{"id":"","mode":"${modeSetting}","appuserid":"${AllData?.uid}"}`,
         p: "",
         f: "Task Management (taskmaster)",
       };
@@ -1355,136 +1261,13 @@ export default function SignageTvReport({
     }
   };
 
-  const handleGetCustomerBindData = async (id) => {
-    setSelectedRowId(id);
-    setIsLoading(true);
-    setCustomerBindIsLoading(true);
-    const sp = searchParams.get("sp");
-    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
-    const body = {
-      con: `{"id":"","mode":"CustomerBindGrid","appuserid":"${AllData?.uid}"}`,
-      p: "",
-      p: `{\"AppDevRowId\":${id}}`,
-      f: "Task Management (taskmaster)",
-    };
-
-    const fetchedData = await GetWorkerData(body, sp);
-    if (fetchedData?.Data?.rd) {
-      setCustomerBindAllData(fetchedData?.Data?.rd);
-      setIsLoading(false);
-    }
-  };
-
-  const [filterType, setFilterType] = React.useState("all"); // all | bound | unbound
-  const [searchTerm, setSearchTerm] = React.useState(""); // text‑box filter
-  const [rowSelection, setRowSelection] = React.useState([]); // ids of selected rows
-  const columnsCustomerBind = [
-    {
-      field: "srNo",
-      headerName: "Sr#",
-      width: 70,
-      sortable: false,
-      filterable: false,
-    },
-    { field: "customercode", headerName: "Customer Code", width: 150 },
-    { field: "firstname", headerName: "First Name", width: 150 },
-    { field: "lastname", headerName: "Last Name", width: 150 },
-  ];
-
-  const rows = React.useMemo(() => {
-    let data = customerBindAllData ?? [];
-
-    if (filterType === "bound") {
-      data = data.filter((r) => r.IsBindCustomer == 1);
-    }
-    if (filterType === "unbound") {
-      data = data.filter((r) => r.IsBindCustomer == 0);
-    }
-
-    if (searchTerm.trim() !== "") {
-      const s = searchTerm.toLowerCase();
-      data = data.filter(
-        (r) =>
-          r.customercode.toLowerCase().includes(s) ||
-          r.firstname.toLowerCase().includes(s) ||
-          r.lastname.toLowerCase().includes(s)
-      );
-    }
-
-    // Add srNo
-    return data.map((row, index) => ({
-      ...row,
-      srNo: index + 1,
-    }));
-  }, [customerBindAllData, filterType, searchTerm]);
-
-  const handleBindToggle = async (shouldBind) => {
-    if (!rowSelection.length) return;
-
-    const sp = searchParams.get("sp");
-    const AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
-
-    const selectedIds = rowSelection.join(","); // Convert to comma-separated string
-
-    const mode = shouldBind
-      ? "CustomerBindWithDevice"
-      : "CustomerUnBindWithDevice";
-
-    const body = {
-      con: JSON.stringify({
-        id: "",
-        mode: mode,
-        appuserid: AllData?.uid || "",
-      }),
-      p: JSON.stringify({
-        AppDevRowId: selectedRowId,
-        CustomerIdList: selectedIds,
-      }),
-      f: "Task Management (taskmaster)",
-    };
-
-    try {
-      const fetchedData = await GetWorkerData(body, sp);
-      if (fetchedData?.Data?.rd[0]?.msg == "Success") {
-        setDeviceStatus({
-          type: "CustomerBindChanged",
-          timestamp: Date.now(),
-          uniqueId: selectedRowId,
-        });
-        showToast({
-          message: shouldBind
-            ? "Customer Bind Successfully"
-            : "Customer Unbind Successfully",
-          bgColor: "#3bab3b",
-          fontColor: "#fff",
-          duration: 4000,
-        });
-        const updatedData = customerBindAllData.map((item) =>
-          rowSelection.includes(item.id)
-            ? { ...item, IsBindCustomer: shouldBind ? 1 : 0 }
-            : item
-        );
-        setCustomerBindAllData(updatedData);
-      } else {
-        showToast({
-          message: "Can Not bind Or Unbind customer greater than 50",
-          bgColor: "red",
-          fontColor: "#fff",
-          duration: 4000,
-        });
-      }
-
-      setRowSelection([]);
-    } catch (error) {
-      console.error("❌ API error:", error);
-    }
-  };
+  console.log("filteredRowsfilteredRows", filteredRows);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <LoadingBackdrop isLoading={lodingRecakulate} />
       <div
-        className="SignageTvReport_mainGridView"
+        className="DeviceAllData_mainGridView"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
         ref={gridContainerRef}
       >
@@ -1500,143 +1283,6 @@ export default function SignageTvReport({
           </div>
         )}
 
-        <Modal
-          open={openCustomerBideModel}
-          onClose={() => setOpenCustomerBideModel(false)}
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "#fff",
-              padding: "10px 20px",
-              width: "45%",
-              height: "60%",
-              borderRadius: 10,
-              position: "relative",
-              boxShadow: "0 0 20px rgba(0,0,0,0.1)",
-            }}
-          >
-            <CircleX
-              onClick={() => setOpenCustomerBideModel(false)}
-              style={{
-                position: "absolute",
-                right: 20,
-                top: 15,
-                cursor: "pointer",
-              }}
-            />
-
-            <p
-              style={{
-                margin: 0,
-                fontWeight: 600,
-                fontSize: 20,
-                color: "gray",
-              }}
-            >
-              Bind Customer
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 10,
-                gap: 12,
-              }}
-            >
-              <TextField
-                select
-                size="small"
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                sx={{ minWidth: 160 }}
-              >
-                <MenuItem value="all">All Customers</MenuItem>
-                <MenuItem value="bound">Bind Customers</MenuItem>
-                <MenuItem value="unbound">Unbind Customers</MenuItem>
-              </TextField>
-
-              <TextField
-                placeholder="Search…"
-                size="small"
-                fullWidth
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  endAdornment: searchTerm ? (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setSearchTerm("")} edge="end">
-                        <CircleX size={20} />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : null,
-                }}
-              />
-
-              <Button
-                variant="contained"
-                color="success"
-                disabled={rowSelection.length === 0}
-                onClick={() => handleBindToggle(true)}
-              >
-                Bind
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                disabled={rowSelection.length === 0}
-                onClick={() => handleBindToggle(false)}
-              >
-                Unbind
-              </Button>
-            </div>
-            <DataGrid
-              rows={rows}
-              columns={columnsCustomerBind}
-              sortModel={sortModel}
-              paginationModel={paginationModel}
-              onPaginationModelChange={setPaginationModel}
-              pageSizeOptions={[10, 20, 50, 100]}
-              onSortModelChange={(model) => setSortModel(model)}
-              initialState={{
-                pagination: {
-                  paginationModel: {
-                    pageSize: 5,
-                  },
-                },
-              }}
-              checkboxSelection
-              disableRowSelectionOnClick
-              rowSelectionModel={rowSelection}
-              onRowSelectionModelChange={setRowSelection}
-              onCellMouseEnter={(params) => setHoveredField(params.field)}
-              onColumnHeaderMouseEnter={(params) =>
-                setHoveredField(params.field)
-              }
-              onMouseLeave={() => setHoveredField(null)} // clear on full grid mouse‑out
-              getRowClassName={(params) =>
-                params.row.IsBindCustomer == 1
-                  ? "bound-customer-row"
-                  : "unbound-customer-row"
-              }
-              sx={{
-                "& .MuiDataGrid-row:hover": {
-                  // backgroundColor: "transparent",
-                },
-                "& .bound-customer-row": {
-                  backgroundColor: "#e0ffe0",
-                },
-              }}
-              style={{ height: "80%", marginTop: "20px" }}
-            />
-          </div>
-        </Modal>
         <Modal
           open={showLogoutModal}
           style={{
@@ -1808,6 +1454,7 @@ export default function SignageTvReport({
             </Button>
           </div>
         </Dialog>
+
         <Drawer
           open={sideFilterOpen}
           onClose={toggleDrawer(false)}
@@ -1875,20 +1522,43 @@ export default function SignageTvReport({
             )}
           </div>
 
-          {renderSummary()}
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            {renderSummary()}
 
-          {masterKeyData?.ColumnSettingPopup && (
-            <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
-              <AiFillSetting style={{ height: "25px", width: "25px" }} />
-            </div>
-          )}
-          {masterKeyData?.fullScreenGridButton && (
-            <button className="fullScreenButton" onClick={toggleFullScreen}>
-              <RiFullscreenLine
-                style={{ marginInline: "5px", fontSize: "30px" }}
+            {masterKeyData?.ColumnSettingPopup && (
+              <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
+                <AiFillSetting style={{ height: "25px", width: "25px" }} />
+              </div>
+            )}
+
+            {masterKeyData?.fullScreenGridButton && (
+              <button className="fullScreenButton" onClick={toggleFullScreen}>
+                <RiFullscreenLine
+                  style={{ marginInline: "5px", fontSize: "30px" }}
+                />
+              </button>
+            )}
+
+            <Button
+              style={{
+                display: "flex",
+                height: "100%",
+                margin: "-20px 30px 0px 0px",
+                backgroundColor: "#7468f0",
+                minWidth: "40px",
+              }}
+            >
+              <IoRefreshCircle
+                onClick={handleRefresh}
+                style={{
+                  color: "white",
+                  fontSize: "29px",
+                  cursor: "pointer",
+                  opacity: 1,
+                }}
               />
-            </button>
-          )}
+            </Button>
+          </div>
         </div>
         <div
           style={{
@@ -2016,6 +1686,23 @@ export default function SignageTvReport({
               </div>
             )}
 
+            {selectedFilterCategory != "ExpressApp" && (
+              <Button
+                className="SetDefault_pin"
+                onClick={handleClickOpenPopupDeafiltPin}
+              >
+                Set Default Pin
+              </Button>
+            )}
+            {selectedFilterCategory != "ExpressApp" && (
+              <Button
+                className="Re_CalculateButton"
+                onClick={handleRecalculate}
+              >
+                Recalculate
+              </Button>
+            )}
+
             <CustomTextField
               type="text"
               placeholder="Common Search..."
@@ -2085,7 +1772,6 @@ export default function SignageTvReport({
               autoHeight={false}
               checkboxSelection
               columnBuffer={17}
-              disableColumnResize={false}
               localeText={{ noRowsLabel: "No Data" }}
               initialState={{
                 columns: {

@@ -18,7 +18,6 @@ import { AlertTriangle } from "lucide-react";
 import EmployeeDepartmentReportSpliter from "./compoents/EmployeeDepartmentReport/EmployeeDepartmentReportSpliter";
 import OSRReportSpliter from "./compoents/OSRReport/OSRReportSpliter";
 import ItaskReport from "./compoents/ItaskReport/ItaskReport";
-import SignageDisplayList from "./compoents/SignageDisplayList/SignageDisplayList";
 import FgSpliter from "./compoents/FgWiseWorkerReportSpliterView/FgSpliter";
 import RefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
 import LossRefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
@@ -26,6 +25,12 @@ import MaterialWiseWIP from "./compoents/MaterialWiseWIP/MaterialWiseWIP";
 import CustomerReceiveReport from "./compoents/CustomerReceiveReport/CustomerReceiveReport";
 import FactoryLossReport from "./compoents/Rajan/components/FactoryLossReport/index";
 import OrderCompletionReport from "./compoents/Rajan/components/OrderCompletionReport/index";
+import CustomerReturnReport from "./compoents/CustomerReturnReport/CustomerReturnReport";
+import SignageDisplayList from "./compoents/SignageDisplayList/SignageDisplayList";
+import MaterialPurhcaseReturnReport from "./compoents/MaterialPurhcaseReturnReport/MaterialPurhcaseReturnReport";
+import Materialmemoreport from "./compoents/MaterialMemoReport/MaterialMemoReport";
+import MaterialSaleReport from "./compoents/MaterialSaleReport/MaterialSaleReport";
+import MaterialPurhcaseReport from "./compoents/MaterialPurhcaseReport/MaterialPurhcaseReport";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -60,6 +65,7 @@ const GridMain = () => {
     //    "skey",
     //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
     //  );
+
     const interval = setInterval(() => {
       const token = Cookies.get("skey");
       if (!token) {
@@ -161,6 +167,16 @@ const GridMain = () => {
       return <MaterialWiseWIP />; // 1728 Doc.
     } else if (pid == 18297) {
       return <CustomerReceiveReport />; // 1729 Doc.       // new tab open code
+    } else if (pid == 18303) {
+      return <CustomerReturnReport />; // 1748 Doc.        // new tab open code
+    } else if (pid == 1747) {
+      return <Materialmemoreport />; // 1747 Doc.          // new tab open code
+    } else if (pid == 18304) {
+      return <MaterialPurhcaseReturnReport />; // 1751 Doc.       // new tab open code
+    } else if (pid == 18305) {
+      return <MaterialSaleReport />; // 1752 Doc.          // new tab open code
+    } else if (pid == 18307) {
+      return <MaterialPurhcaseReport />; // 1750 Doc.          // new tab open code
     } else if (pid == 18301) {
       return <FactoryLossReport />; //Rajan
     } else if (pid == 18300) {

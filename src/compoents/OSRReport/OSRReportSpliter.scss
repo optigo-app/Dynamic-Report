@@ -196,10 +196,29 @@
   }
 
   .customer-search-input {
-    width: 95%;
-    padding: 8px 10px;
+    width: 98%;
+    padding: 0px 0px 0px 5px;
     border-radius: 4px;
     border: 1px solid #ccc;
+    height: 35px;
+  }
+
+    .osr_salesRepTitle {
+    margin: 0px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    width: 30%;
+    font-size: 15px;
+  }
+
+  .dropdownList_metal {
+    height: 35px;
+    border-radius: 5px;
+    width: 70%;
+    border: 1px solid lightgray;
+    background-color: transparent;
+    outline: none;
   }
 
   .slider-container {
@@ -261,7 +280,7 @@
 
   .FiletrBtnAll {
     height: 35px;
-    width: 70px;
+    width: '15%';
     border-radius: 3px;
     background-color: rgb(224, 224, 224) !important;
     border: none;
@@ -271,14 +290,7 @@
     color: black !important;
   }
 
-  .dropdownList_metal {
-    height: 35px;
-    border-radius: 5px;
-    width: 50%;
-    border: 1px solid lightgray;
-    background-color: transparent;
-    outline: none;
-  }
+
 
   .loader-overlay {
     position: fixed;

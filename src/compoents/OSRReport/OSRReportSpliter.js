@@ -289,7 +289,6 @@ export default function OSRReportSpliter() {
     filtered.forEach((item) => {
       const { customerfirmname, customercode, totalcnt } = item;
       const key = `${customerfirmname}_${customercode}`;
-
       const weightFields = [
         item.pipwt,
         item.wipwt,
@@ -301,7 +300,6 @@ export default function OSRReportSpliter() {
         item.incompanywt,
         item.etapendingwt,
       ];
-
       const totalWt = weightFields.reduce((sum, val) => sum + (val || 0), 0);
 
       if (!summaryMap.has(key)) {
@@ -426,8 +424,7 @@ export default function OSRReportSpliter() {
     emp.customerfirmname.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
-  console.log('filteredCustomerData', filteredCustomerData);
-  
+  console.log("filteredCustomerData", filteredCustomerData);
 
   return (
     <div className="OSRReportSpliter_top">
@@ -448,20 +445,24 @@ export default function OSRReportSpliter() {
                   display: "flex",
                   gap: "15px",
                   justifyContent: "space-between",
-                  height: "13.5vh",
                   padding: "8px 8px 0px 8px",
                 }}
               >
-                <div>
+                <div
+                  style={{
+                    width: "93%",
+                  }}
+                >
                   <div
                     style={{
                       display: "flex",
                       gap: "10px",
+                      flexWrap: "wrap",
                     }}
                   >
                     <FormControl
                       size="small"
-                      sx={{ minWidth: 100, margin: "0px" }}
+                      sx={{ width: "25%", margin: "0px" }}
                     >
                       <InputLabel>Date Type</InputLabel>
                       <Select
@@ -476,14 +477,15 @@ export default function OSRReportSpliter() {
                         ))}
                       </Select>
                     </FormControl>
-                    <DualDatePicker
-                      filterState={filterState}
-                      setFilterState={setFilterState}
-                      validDay={31}
-                      validMonth={1}
-                      withountDateFilter={true}
-                    />
-
+                    <div style={{ width: "50%" }}>
+                      <DualDatePicker
+                        filterState={filterState}
+                        setFilterState={setFilterState}
+                        validDay={31}
+                        validMonth={1}
+                        withountDateFilter={true}
+                      />
+                    </div>
                     <Button
                       onClick={() =>
                         setFilterState({
@@ -499,87 +501,8 @@ export default function OSRReportSpliter() {
                       All
                     </Button>
                   </div>
-                  {filteredCustomerData?.length !== 0 && (
-                    <div
-                      style={{
-                        display: "flex",
-                        marginTop: "10px",
-                        gap: "10px",
-                      }}
-                    >
-                      <div className="toggle_wrapper">
-                        {!isLoading && (
-                          <div className="slider-container">
-                            <div className={`panel department-panel`}>
-                              <p
-                                style={{
-                                  margin: "0px",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                Select Sales Rep :-
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      {uniqueMetalTypes?.length !== 0 && (
-                        <select
-                          value={selectedSalesRepCode}
-                          onChange={(e) =>
-                            setSelectedSalesRepCode(e.target.value)
-                          }
-                          className="dropdownList_metal"
-                        >
-                          {uniqueMetalTypes.map((metal) => (
-                            <option key={metal} value={metal}>
-                              {metal}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                  )}
-
-                  {filteredCustomerData?.length !== 0 && (
-                    <div
-                      className="customer-search-wrapper"
-                      style={{
-                        marginBottom: "15px",
-                        position: "relative",
-                        width: "90%",
-                        marginTop: "15px",
-                      }}
-                    >
-                      <input
-                        type="text"
-                        placeholder="Search customer..."
-                        value={customerSearch}
-                        onChange={(e) => setCustomerSearch(e.target.value)}
-                        className="customer-search-input"
-                        style={{ paddingRight: "30px", outline: "none" }}
-                      />
-                      {customerSearch && (
-                        <span
-                          onClick={() => setCustomerSearch("")}
-                          style={{
-                            position: "absolute",
-                            right: "-10px",
-                            top: "40%",
-                            fontSize: "25px",
-                            transform: "translateY(-50%)",
-                            cursor: "pointer",
-                            fontWeight: "bold",
-                            color: "#999",
-                          }}
-                        >
-                          ×
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
-                <div style={{ display: "flex", height: "100%" }}>
+                <div style={{ display: "flex", height: "100%", width: "7%" }}>
                   <IoRefreshCircle
                     onClick={handleRefresh}
                     style={{
@@ -590,6 +513,77 @@ export default function OSRReportSpliter() {
                     }}
                   />
                 </div>
+              </div>
+              <div
+                style={{
+                  margin: "0px 10px",
+                }}
+              >
+                {filteredCustomerData?.length !== 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      marginTop: "10px",
+                      gap: "10px",
+                    }}
+                  >
+                    {!isLoading && (
+                      <p className="osr_salesRepTitle">Select Sales Rep :-</p>
+                    )}
+                    {uniqueMetalTypes?.length !== 0 && (
+                      <select
+                        value={selectedSalesRepCode}
+                        onChange={(e) =>
+                          setSelectedSalesRepCode(e.target.value)
+                        }
+                        className="dropdownList_metal"
+                      >
+                        {uniqueMetalTypes.map((metal) => (
+                          <option key={metal} value={metal}>
+                            {metal}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+
+                {filteredCustomerData?.length !== 0 && (
+                  <div
+                    className="customer-search-wrapper"
+                    style={{
+                      marginBottom: "15px",
+                      position: "relative",
+                      marginTop: "15px",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Search customer..."
+                      value={customerSearch}
+                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      className="customer-search-input"
+                      style={{ outline: "none" }}
+                    />
+                    {customerSearch && (
+                      <span
+                        onClick={() => setCustomerSearch("")}
+                        style={{
+                          position: "absolute",
+                          right: "-10px",
+                          top: "40%",
+                          fontSize: "25px",
+                          transform: "translateY(-50%)",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          color: "#999",
+                        }}
+                      >
+                        ×
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div
                 className="employee-list"
@@ -647,7 +641,7 @@ export default function OSRReportSpliter() {
                           >
                             <b>
                               {" "}
-                              {totalCount} / {totalCountWt} Wt
+                              {totalCount} / {totalCountWt?.toFixed(3)} Wt
                             </b>
                           </p>
                         </div>
@@ -701,7 +695,10 @@ export default function OSRReportSpliter() {
                               }
                               style={{ width: "50%" }}
                             >
-                              Total : <b>{emp.totalcnt} / {emp?.totalWt} Wt</b>
+                              Total :{" "}
+                              <b>
+                                {emp.totalcnt} / {emp?.totalWt?.toFixed(3)} Wt
+                              </b>
                             </p>
                           </div>
                         </div>

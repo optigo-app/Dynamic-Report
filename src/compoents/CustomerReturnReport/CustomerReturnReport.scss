@@ -2,6 +2,21 @@
   background-color: #f8f7fa;
   height: 100vh;
 
+  .osr_mainName {
+    height: 18px;
+    display: flex;
+    margin: 0px;
+    align-items: center;
+  }
+
+  .osr_subname {
+    height: 18px;
+    display: flex;
+    margin: 0px;
+    align-items: center;
+    color: gray;
+  }
+
   .summaryBox {
     display: flex;
     flex-wrap: wrap;

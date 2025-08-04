@@ -1,24 +1,17 @@
-// http://localhost:3000/testreport/?sp=15&ifid=ToolsReport&pid=1001
+// http://localhost:3000/testreport/?sp=15&ifid=ToolsReport&pid=18233
 
 import React, { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
-import "./SignageDisplayList.scss";
-import {
-  Button,
-  CircularProgress,
-  IconButton,
-  InputAdornment,
-  Modal,
-  Paper,
-  TextField,
-  Typography,
-} from "@mui/material";
+import "./DeviceSpliter.scss";
+import { Button, CircularProgress, Paper, Typography } from "@mui/material";
 import "react-datepicker/dist/react-datepicker.css";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
 import { IoRefreshCircle } from "react-icons/io5";
-import AllEmployeeDataReport from "./SignageTvReport/SignageTvReport";
+import AllEmployeeDataReport from "./AllEmployeeDataReport/AllEmployeeDataReport";
+import DualDatePicker from "../DatePicker/DualDatePicker";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, CircleX } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import APICALLRES from "./APICALLRES.json";
 
 const formatToMMDDYYYY = (date) => {
   const d = new Date(date);
@@ -36,8 +29,6 @@ export default function SignageDisplayList({ isLoadingNew }) {
   const [status500, setStatus500] = useState(false);
   const [selectedFileter, setSelectedFilter] = useState("App");
   const containerRef = useRef();
-  const [openSignageTvModel, setOpenSignageTvModel] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState("");
 
   const handleDrag = (index, e) => {
     const startX = e.clientX;
@@ -75,12 +66,20 @@ export default function SignageDisplayList({ isLoadingNew }) {
     },
   ]);
   const [groupedDepartments, setGroupedDepartments] = useState([]);
+  const [groupedEmployeeData, setGroupedEmployeeData] = useState([]);
   const [AllFinalData, setFinalData] = useState();
   const [searchParams] = useSearchParams();
+  const [customerBindeChnaged, setCustomerBindeChnaged] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, [selectedFileter]);
+
+  useEffect(() => {
+    if (customerBindeChnaged) {
+      fetchData();
+    }
+  }, [customerBindeChnaged]);
 
   const fetchData = async (stat, end) => {
     try {
@@ -94,7 +93,7 @@ export default function SignageDisplayList({ isLoadingNew }) {
         f: "Task Management (taskmaster)",
       };
       const fetchedData = await GetWorkerData(body, sp);
-      const { rd, rd1, rd2 } = fetchedData?.Data || {};
+      const { rd, rd1, rd2 } = APICALLRES || {};
       setFinalData(fetchedData?.Data);
       sessionStorage.setItem("soketVariable", JSON.stringify(rd2));
       if (!Array.isArray(rd) || !Array.isArray(rd1) || rd1.length === 0) {
@@ -117,7 +116,6 @@ export default function SignageDisplayList({ isLoadingNew }) {
         return mapped;
       });
 
-      // Filter based on selectedFilter
       let filtered = [];
       if (selectedFileter === "App") {
         filtered = [
@@ -155,7 +153,23 @@ export default function SignageDisplayList({ isLoadingNew }) {
 
       setSideFilterData(filtered);
       setGroupedDepartments(nonEmptyAppData);
-      setSelectedDepartment(filteredData[0]?.app || "");
+
+      if (customerBindeChnaged) {
+        const expressAppEntry = filteredData?.find(
+          (item) => item.app === "ExpressApp"
+        );
+        if (expressAppEntry) {
+          setSelectedDepartment(expressAppEntry?.app);
+          setCustomerBindeChnaged(false);
+        } else {
+          setSelectedDepartment(filteredData[0]?.app || "");
+          setCustomerBindeChnaged(false);
+        }
+      } else {
+        setSelectedDepartment(filteredData[0]?.app || "");
+        console.log("calllllllllll else main");
+        setCustomerBindeChnaged(false);
+      }
     } catch (error) {
       console.error("Fetch failed:", error);
     } finally {
@@ -187,7 +201,6 @@ export default function SignageDisplayList({ isLoadingNew }) {
     if (subRef.current) {
       subRef.current.handleClearFilter();
     }
-
     // window.location.reload();
     // startEnableTimer();
   };
@@ -206,77 +219,12 @@ export default function SignageDisplayList({ isLoadingNew }) {
   };
 
   return (
-    <div className="SignageDisplayList_top">
+    <div className="DeviceSpliter_top">
       {isLoading && (
         <div className="loader-overlay">
           <CircularProgress className="loadingBarManage" />
         </div>
       )}
-
-      <Modal
-        open={openSignageTvModel}
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          border: "0px",
-          outline: "0px",
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: "white",
-            padding: "25px 20px",
-            width: "22%",
-            borderRadius: "10px",
-            position: "relative",
-            boxShadow: "0 0 20px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <div style={{ position: "absolute", right: "20px", top: "15px" }}>
-            <CircleX
-              onClick={() => setOpenSignageTvModel(false)}
-              style={{ color: "gray", cursor: "pointer", fontSize: "20px" }}
-            />
-          </div>
-
-          <div>
-            <p style={{fontWeight: 600, margin: '2px'}}>Connect Tv</p>
-            <p style={{margin: '2px 2px 10px 2px', fontSize: '12px'}}>
-              Enter code , this code can show on your tv screen after entred
-              this code then connect your tv..
-            </p>
-            <TextField
-              placeholder="Enter Code"
-              size="small"
-              fullWidth
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                endAdornment: searchTerm ? (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setSearchTerm("")} edge="end">
-                      <CircleX size={20} />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
-            />
-
-            <Button
-              style={{
-                height: "30px",
-                backgroundColor: "rgb(112, 98, 238)",
-                color: "white",
-                width: "120px",
-                marginTop: '10px'
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </Modal>
       <Box
         sx={{ height: "100vh", display: "flex", flexDirection: "row" }}
         ref={containerRef}
@@ -296,19 +244,6 @@ export default function SignageDisplayList({ isLoadingNew }) {
                   <p style={{ margin: "0px", lineHeight: "0px" }}>Location</p>
                 </div>
 
-                <div style={{ display: "flex", height: "100%" }}>
-                  <IoRefreshCircle
-                    onClick={handleRefresh}
-                    style={{
-                      color: "rebeccapurple",
-                      fontSize: "29px",
-                      cursor: "pointer",
-                      // cursor: isRefreshEnabled ? "pointer" : "not-allowed",
-                      // opacity: isRefreshEnabled ? 1 : 0.5,
-                      opacity: 1,
-                    }}
-                  />
-                </div>
               </div>
               <div
                 className="employee-list"
@@ -413,7 +348,7 @@ export default function SignageDisplayList({ isLoadingNew }) {
                                     "location_top_name"
                                   }
                                 >
-                                  {emp.app}
+                                  TV APP
                                 </span>
                               </div>
                             </div>
@@ -443,24 +378,7 @@ export default function SignageDisplayList({ isLoadingNew }) {
         {AllFinalData && subRef && paneWidths[2] !== "0%" && (
           <>
             <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
-            <div
-              className="pane"
-              style={{ width: paneWidths[2], backgroundColor: "#f8f7fa" }}
-            >
-              <Button
-                style={{
-                  height: "30px",
-                  backgroundColor: "rgb(112, 98, 238)",
-                  color: "white",
-                  position: "absolute",
-                  left: isPaneCollapsed ? '3%' : "33%",
-                  width: "120px",
-                  top: "5px",
-                }}
-                onClick={() => setOpenSignageTvModel(true)}
-              >
-                Connect Tv
-              </Button>
+            <div className="pane" style={{ width: paneWidths[2] }}>
               <AllEmployeeDataReport
                 selectedFilterCategory={selectedDepartment ?? ""}
                 selectedFileter={selectedFileter ?? ""}
@@ -469,6 +387,8 @@ export default function SignageDisplayList({ isLoadingNew }) {
                 onClosePane={handleClose}
                 onOpenPane={handleOpen}
                 isPaneCollapsed={isPaneCollapsed}
+                setCustomerBindeChnaged={setCustomerBindeChnaged}
+                handleRefresh={handleRefresh}
               />
             </div>
           </>

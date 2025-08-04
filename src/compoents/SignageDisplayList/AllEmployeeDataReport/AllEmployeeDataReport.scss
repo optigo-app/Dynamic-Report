@@ -1,4 +1,4 @@
-.worker_AllEmoployee_mainGridView {
+.DeviceAllData_mainGridView {
   background-color: #f8f7fa;
   height: 100vh;
 
@@ -9,29 +9,29 @@
     padding: 10px;
   }
 
-  .OSR_AllEmploe_boxViewTotal {
+  .AllEmploe_boxViewTotal {
     display: flex;
     align-items: center;
-    padding: 5px;
+    padding: 8px;
     border-radius: 8px;
     border: 1px solid rgb(115, 103, 240);
     background-color: white;
     margin: 0px;
-    min-width:  180px;
-    max-width: 180px;
+    min-width: 130px;
+    max-width: 130px;
   }
 
-  .boxViewTotalTitle_OSR {
+  .boxViewTotalTitle {
     margin: 0px;
-    font-size: 12px;
+    font-size: 14px;
     color: rgb(117, 117, 117);
     cursor: pointer;
     font-weight: 600;
   }
 
-  .AllEmplo_boxViewTotalValue_osr {
+  .AllEmplo_boxViewTotalValue {
     font-weight: bold;
-    font-size: 15px;
+    font-size: 1.25rem;
     color: rgb(115, 103, 240);
     margin: 3px 0px;
     min-width: 70px;
@@ -46,6 +46,16 @@
     width: 100% !important;
   }
 
+  .MenuSelectItem {
+    padding: 10px !important;
+    .MuiSelect-select {
+      padding: 0px !important;
+      display: flex;
+      font-size: 13px !important;
+      width: 90px !important;
+    }
+  }
+
   .simpleGridView {
     box-shadow: 0 0.1875rem 0.75rem 0 rgba(47, 43, 61, 0.14);
     background-color: white;
@@ -57,27 +67,74 @@
 
   .FiletrBtnOpen {
     height: 40px;
-    width: 130px;
+    width: 100px;
     border-radius: 3px;
     background-color: rgb(222 212 212);
     border: none;
     outline: none;
     cursor: pointer;
+    font-weight: 600;
     font-size: 14px;
-    color: #000000d4;
+    letter-spacing: 0px;
+    color: rgb(35 32 32) !important;
+  }
+  .Re_CalculateButton {
+    height: 40px;
+    width: 130px;
+    border-radius: 3px;
+    background-color: rgb(112 98 238);
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0px;
+    color: white !important;
+  }
+  .SetDefault_pin {
+    height: 40px;
+    width: 130px;
+    border-radius: 3px;
+    background-color: rgb(112 98 238);
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0px;
+    color: white !important;
+  }
+
+  .row_delete_button {
+    height: 35px;
+    width: 60px;
+    border-radius: 3px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0px;
+    color: white !important;
+  }
+
+  .row_logout_button {
+    height: 35px;
+    width: 60px;
+    border-radius: 3px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0px;
+    color: white !important;
   }
 
   .accordianMain {
     margin: 20px !important;
   }
 
-  .gridMetalComboMain {
-    display: flex !important;
-    flex-direction: column !important;
-    max-height: 340px;
-    overflow: auto;
-    scrollbar-width: thin;
-  }
 
   .mainName {
     height: 20px;
@@ -198,6 +255,27 @@
     opacity: 0;
   }
 
+  .ClearFilterButton {
+    background-color: rgb(250 77 77);
+    color: white;
+    font-size: 16px;
+    width: 100px;
+    height: 40px;
+    font-weight: 500;
+    border: none;
+    outline: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-inline: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .ClearFilterButton:hover {
+    background-color: rgb(238, 37, 37);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+  }
+
   .All_exportButton {
     background-color: rgb(21, 163, 75);
     color: white;
@@ -284,32 +362,75 @@
   .MuiDataGrid-columnHeadersInner{
     transform: translate3d(-4px, 0px, 0px) !important;
   } */
+
   .MuiList-root {
     max-height: 500px !important;
   }
 
-  .hyperLinkShow:hover{
-    text-decoration: underline;
+  .success-message {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    background-color: #4caf50;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 4px;
+    z-index: 9999;
+    font-weight: bold;
+    animation: slideInOut 3s ease-in-out forwards;
+  }
+
+ 
+
+  @keyframes slideInOut {
+    0% {
+      transform: translate(-50%, -100%);
+      opacity: 0;
+    }
+    10% {
+      transform: translate(-50%, 20px);
+      opacity: 1;
+    }
+    90% {
+      transform: translate(-50%, 20px);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(-50%, -100%);
+      opacity: 0;
+    }
   }
 }
 
-.ClearFilterButton_osr {
-  background-color: rgb(250 77 77) !important;
-  color: white !important;
-  font-size: 14px;
-  width: 100px;
-  height: 35px;
-  font-weight: 500;
-  border: none;
-  outline: none;
-  border-radius: 3px;
-  cursor: pointer;
-  margin-inline: 5px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.MenuSelectItem_select {
+  font-size: 12px !important;
+  .MuiInputBase-inputSizeSmall {
+    padding: 0px !important;
+  }
 }
-.ClearFilterButton_osr:hover {
-  background-color: rgb(238, 37, 37);
-  transition: transform 0.3s ease, background-color 0.3s ease;
+
+.Deafult_Pin_main {
+  display: flex;
+  flex-direction: column;
+  margin: 0px 20px 10px;
+  align-items: center;
+  .Save_btn {
+    width: 100% !important;
+    height: 35px;
+    width: 300px;
+    margin: 20px;
+    background-color: rgb(112, 98, 238) !important;
+    color: white;
+  }
+}
+
+
+
+.gridMetalComboMain {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 340px;
+  overflow: auto;
+  scrollbar-width: thin;
 }

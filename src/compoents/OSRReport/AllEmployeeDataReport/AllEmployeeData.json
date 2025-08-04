@@ -394,7 +394,7 @@
       "proiorityFilter": false,
       "copyButton": false,
       "EditData": false,
-      "summaryTitle": "PIP"
+      "summaryTitle": "ETA Pending"
     },
     {
       "colid": 11,
@@ -642,7 +642,7 @@
       "proiorityFilter": false,
       "copyButton": false,
       "EditData": false,
-      "summaryTitle": "In QA Book"
+      "summaryTitle": "In Stock"
     },
     {
       "colid": 17,
@@ -704,7 +704,7 @@
       "proiorityFilter": false,
       "copyButton": false,
       "EditData": false,
-      "summaryTitle": "In QA Book"
+      "summaryTitle": "In Memo"
     },
     {
       "colid": 18,
@@ -828,7 +828,7 @@
       "proiorityFilter": false,
       "copyButton": false,
       "EditData": false,
-      "summaryTitle": "In QA Book"
+      "summaryTitle": "Melt"
     },
     {
       "colid": 18,
@@ -890,7 +890,7 @@
       "proiorityFilter": false,
       "copyButton": false,
       "EditData": false,
-      "summaryTitle": "In QA Book"
+      "summaryTitle": "In Company"
     }
   ]
 }

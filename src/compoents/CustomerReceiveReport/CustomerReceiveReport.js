@@ -1091,7 +1091,7 @@ export default function CustomerReceiveReport() {
       .replace(/[/:]/g, "-")
       .replace(/, /g, "_"); // Format: dd-MM-yyyy_HH-mm-ss
 
-    const fileName = `Job Completion Lead Report_${dateString}.xlsx`;
+    const fileName = `Report_Customer_Receive_${dateString}.xlsx`;
 
     saveAs(data, fileName);
   };
