@@ -1028,7 +1028,6 @@ export default function MFGReturnJob() {
   };
 
   const onDragEnd = () => {};
-
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
@@ -1418,6 +1417,14 @@ export default function MFGReturnJob() {
               autoHeight={false}
               columnBuffer={17}
               initialState={{
+                sorting: {
+                  sortModel: [
+                    {
+                      field: "date",
+                      sort: "desc",
+                    },
+                  ],
+                },
                 columns: {
                   columnVisibilityModel: {
                     status: false,

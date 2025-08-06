@@ -31,6 +31,7 @@ import MaterialPurhcaseReturnReport from "./compoents/MaterialPurhcaseReturnRepo
 import Materialmemoreport from "./compoents/MaterialMemoReport/MaterialMemoReport";
 import MaterialSaleReport from "./compoents/MaterialSaleReport/MaterialSaleReport";
 import MaterialPurhcaseReport from "./compoents/MaterialPurhcaseReport/MaterialPurhcaseReport";
+import STOCKVALUATION from "./compoents/STOCKVALUATION/STOCKVALUATION";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -169,7 +170,7 @@ const GridMain = () => {
       return <CustomerReceiveReport />; // 1729 Doc.       // new tab open code
     } else if (pid == 18303) {
       return <CustomerReturnReport />; // 1748 Doc.        // new tab open code
-    } else if (pid == 1747) {
+    } else if (pid == 18309) {
       return <Materialmemoreport />; // 1747 Doc.          // new tab open code
     } else if (pid == 18304) {
       return <MaterialPurhcaseReturnReport />; // 1751 Doc.       // new tab open code
@@ -177,14 +178,16 @@ const GridMain = () => {
       return <MaterialSaleReport />; // 1752 Doc.          // new tab open code
     } else if (pid == 18307) {
       return <MaterialPurhcaseReport />; // 1750 Doc.          // new tab open code
+    } else if (pid == 18310) {
+      return <SignageDisplayList />; // 1256 Doc.
+    } else if (pid == 18312) {
+      return <STOCKVALUATION />; // 1438 Doc.
     } else if (pid == 18301) {
       return <FactoryLossReport />; //Rajan
     } else if (pid == 18300) {
       return <OrderCompletionReport />; // Rajan
     } else if (pid == 1000) {
       return <ItaskReport />; // 1256 Doc.
-    } else if (pid == 1001) {
-      return <SignageDisplayList />; // 1256 Doc.
     } else {
       return (
         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>

@@ -1,0 +1,28 @@
+.stock-valuation {
+  padding: 20px;
+  font-family: "Poppins", sans-serif;
+
+  .date-picker-container {
+    margin-bottom: 15px;
+  }
+
+  table.valuation-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+
+    th, td {
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+    }
+
+    thead {
+      background-color: #f4f4f4;
+      font-weight: bold;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+  }
+}

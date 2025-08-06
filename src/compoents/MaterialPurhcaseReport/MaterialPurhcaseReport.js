@@ -1112,19 +1112,19 @@ export default function MaterialPurhcaseReport() {
           let calculatedValue = 0;
 
           if (col.field === "rate") {
-            const totalLossWt =
+            const totalprice =
               filteredRows?.reduce(
                 (sum, row) => sum + (parseFloat(row.totalprice) || 0),
                 0
               ) || 0;
 
-            const totalNetReturnWt =
+            const totalwt =
               filteredRows?.reduce(
                 (sum, row) => sum + (parseFloat(row.totalwt) || 0),
                 0
               ) || 1;
 
-            calculatedValue = totalLossWt / totalNetReturnWt;
+            calculatedValue = totalprice / totalwt;
           } else {
             calculatedValue =
               filteredRows?.reduce(
@@ -1256,7 +1256,7 @@ export default function MaterialPurhcaseReport() {
       .replace(/[/:]/g, "-")
       .replace(/, /g, "_");
 
-    const fileName = `Report_MaterialPurhcase_Return_Report_${dateString}.xlsx`;
+    const fileName = `MaterialPurhcase_Return_Report_${dateString}.xlsx`;
     saveAs(data, fileName);
   };
 

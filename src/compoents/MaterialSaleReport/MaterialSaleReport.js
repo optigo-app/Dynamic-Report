@@ -51,7 +51,6 @@ import DualDatePicker from "../DatePicker/DualDatePicker";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, CircleX } from "lucide-react";
-import { IoMdClose } from "react-icons/io";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
 
 let popperPlacement = "bottom-start";
@@ -1007,45 +1006,90 @@ export default function MaterialSaleReport() {
     setSideFilterOpen(newOpen);
   };
 
-  const itemSummaryMap = {
-    METAL: "Total Metal Weight",
-    DIAMOND: "Total Diamond",
-    "COLOR STONE": "Total Color Stone",
-    MISC: "Total Misc",
-    FINDING: "Total Finding",
-    "LAB GROWRN": "Total Lab Grown",
-    MOUNT: "Total Mount",
-    ALLOY: "Total Alloy",
-  };
-
-  const summaryColumns = Object.entries(itemSummaryMap).map(
-    ([itemKey, summaryTitle]) => {
-      const totalWeight = filteredRows
-        ?.filter((row) => row.itemname?.toUpperCase() === itemKey)
-        .reduce((sum, row) => sum + (parseFloat(row.weight) || 0), 0);
-
-      return {
-        summaryTitle,
-        totalWeight,
-      };
-    }
-  );
-
   const renderSummary = () => {
+    const summaryColumnsAdd = columns.filter((col) => {
+      const columnData = Object.values(allColumData).find(
+        (data) => data.field === col.field
+      );
+      return columnData?.summary;
+    });
+    const itemSummaryMap = {
+      METAL: "Total Metal Weight",
+      DIAMOND: "Total Diamond",
+      "COLOR STONE": "Total Color Stone",
+      MISC: "Total Misc",
+      FINDING: "Total Finding",
+      "LAB GROWRN": "Total Lab Grown",
+      MOUNT: "Total Mount",
+      ALLOY: "Total Alloy",
+    };
+
+    const summaryByItem = Object.entries(itemSummaryMap).map(
+      ([itemKey, summaryTitle]) => {
+        const totalWeight = filteredRows
+          ?.filter((row) => row.itemname?.toUpperCase() === itemKey)
+          .reduce((sum, row) => sum + (parseFloat(row.weight) || 0), 0);
+
+        return {
+          key: itemKey,
+          summaryTitle,
+          totalValue: totalWeight?.toFixed(3),
+        };
+      }
+    );
+
     return (
       <div className="summaryBox">
-        {summaryColumns?.map((col) => (
-          <div className="summaryItem" key={col.summaryTitle}>
+        {summaryByItem.map((item) => (
+          <div className="summaryItem" key={item.key}>
             <div className="AllEmploe_boxViewTotal">
               <div>
-                <p className="AllEmplo_boxViewTotalValue">
-                  {col.totalWeight?.toFixed(3)}
-                </p>
-                <p className="boxViewTotalTitle">{col.summaryTitle}</p>
+                <p className="AllEmplo_boxViewTotalValue">{item.totalValue}</p>
+                <p className="boxViewTotalTitle">{item.summaryTitle}</p>
               </div>
             </div>
           </div>
         ))}
+
+        {/* Render column-based summaries */}
+        {summaryColumnsAdd.map((col) => {
+          let calculatedValue = 0;
+
+          if (col.field === "averagerate") {
+            const totalAmount =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.amount) || 0),
+                0
+              ) || 0;
+
+            const totalWt =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row.weight) || 0),
+                0
+              ) || 1;
+
+            calculatedValue = totalAmount / totalWt;
+          } else {
+            calculatedValue =
+              filteredRows?.reduce(
+                (sum, row) => sum + (parseFloat(row[col.field]) || 0),
+                0
+              ) || 0;
+          }
+
+          return (
+            <div className="summaryItem" key={col.field}>
+              <div className="AllEmploe_boxViewTotal">
+                <div>
+                  <p className="AllEmplo_boxViewTotalValue">
+                    {calculatedValue.toFixed(col?.summuryValueKey ?? 2)}
+                  </p>
+                  <p className="boxViewTotalTitle">{col.summaryTitle}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -1156,7 +1200,7 @@ export default function MaterialSaleReport() {
       .replace(/[/:]/g, "-")
       .replace(/, /g, "_");
 
-    const fileName = `Report_Material_Sale_Report_${dateString}.xlsx`;
+    const fileName = `Material_Sale_Report_${dateString}.xlsx`;
     saveAs(data, fileName);
   };
 

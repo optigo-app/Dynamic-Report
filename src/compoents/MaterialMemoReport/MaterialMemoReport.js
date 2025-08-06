@@ -1,4 +1,4 @@
-// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=1747
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18309
 
 import React, { useState, useEffect, useRef } from "react";
 import Box from "@mui/material/Box";
@@ -292,8 +292,16 @@ export default function Materialmemoreport() {
 
   useEffect(() => {
     if (!allColumData) return;
+
+    const hiddenFieldsByMode = {
+      pendingmemo: ["voucherdate", "invoiceno", "size", "memoissuedctw"],
+      pendingmemovoucher: ["memoreturnedctw"],
+    };
+
+    const hiddenFields = hiddenFieldsByMode[selectedDateColumn] || [];
+
     const columnData = Object?.values(allColumData)
-      ?.filter((col) => col.ColumShow)
+      ?.filter((col) => col.ColumShow && !hiddenFields.includes(col.field))
       ?.map((col, index) => {
         const isPriorityFilter = col.proiorityFilter === true;
         return {
@@ -302,8 +310,8 @@ export default function Materialmemoreport() {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               {col.GrupChekBox && (
                 <Checkbox
-                  checked={grupEnChekBox[col.field] ?? true} // 👉 Correct binding to grupEnChekBox
-                  onChange={() => handleGrupEnChekBoxChange(col.field)} // 👉 Correct handler
+                  checked={grupEnChekBox[col.field] ?? true}
+                  onChange={() => handleGrupEnChekBoxChange(col.field)}
                   size="small"
                   sx={{ p: 0 }}
                 />
@@ -414,7 +422,6 @@ export default function Materialmemoreport() {
                   >
                     {params.value}
                   </a>
-
                   <img
                     src={customerR}
                     style={{ cursor: "pointer", width: "20px", height: "20px" }}
@@ -457,8 +464,15 @@ export default function Materialmemoreport() {
         );
       },
     };
+
     setColumns([srColumn, ...columnData]);
-  }, [allColumData, grupEnChekBox, sortModel, paginationModel]);
+  }, [
+    allColumData,
+    grupEnChekBox,
+    sortModel,
+    paginationModel,
+    selectedDateColumn,
+  ]);
 
   const handleCellClick = (params) => {
     setSelectedDepartmentId(params?.row?.deptid);
@@ -486,31 +500,37 @@ export default function Materialmemoreport() {
   useEffect(() => {
     const newFilteredRows = originalRows?.filter((row) => {
       let isMatch = true;
+
+      // 1. Hybrid Filter
       if (
         selectedDateColumnHyBrid === "Hybrid" &&
         parseInt(row.ishybridbill) !== 1
       ) {
-        return false;
+        isMatch = false;
       }
 
+      // 2. Pending Memo Logic
       if (selectedDateColumn === "pendingmemo") {
-        return (
-          row.memoissuedctw === 0 &&
-          typeof row.remainigctw === "number" &&
-          row.remainigctw > 0
-        );
+        if (!(row.memoreturnedctw === 0 && row.remainigctw > 0)) {
+          isMatch = false;
+        }
       }
 
+      // 3. Pending Memo Voucher Logic
       if (selectedDateColumn === "pendingmemovoucher") {
-        return row.memoreturnedctw === 0;
+        if (row.memoreturnedctw !== 0) {
+          isMatch = false;
+        }
       }
 
+      // 4. Customer Material Filter
       if (isMatch && selectedCustomer !== "All") {
         if (row.material !== selectedCustomer) {
           isMatch = false;
         }
       }
 
+      // 5. Dynamic Filters (min, max, includes, search)
       for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
         if (!filterValue || filterValue.length === 0) continue;
@@ -518,10 +538,12 @@ export default function Materialmemoreport() {
         if (filterField.includes("_min") || filterField.includes("_max")) {
           const baseField = filterField.replace("_min", "").replace("_max", "");
           const rowValue = parseFloat(row[baseField]);
+
           if (isNaN(rowValue)) {
             isMatch = false;
             break;
           }
+
           if (
             filterField.includes("_min") &&
             parseFloat(filterValue) > rowValue
@@ -529,6 +551,7 @@ export default function Materialmemoreport() {
             isMatch = false;
             break;
           }
+
           if (
             filterField.includes("_max") &&
             parseFloat(filterValue) < rowValue
@@ -549,11 +572,15 @@ export default function Materialmemoreport() {
           }
         }
       }
+
+      // 6. PriorityId filter
       if (isMatch && selectedColors.length > 0 && row.PriorityId) {
         if (!selectedColors.includes(row.PriorityId)) {
           isMatch = false;
         }
       }
+
+      // 7. Date Range filter
       if (isMatch && fromDate && toDate) {
         const dateColumn = columns.find(
           (col) =>
@@ -570,6 +597,8 @@ export default function Materialmemoreport() {
           }
         }
       }
+
+      // 8. Global Search
       if (isMatch && commonSearch) {
         const searchText = commonSearch.toLowerCase();
         const hasMatch = Object.values(row).some((value) =>
@@ -579,12 +608,15 @@ export default function Materialmemoreport() {
           isMatch = false;
         }
       }
+
       return isMatch;
     });
+
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
+
     setFilteredRows(rowsWithSrNo);
   }, [
     filters,
@@ -998,45 +1030,37 @@ export default function Materialmemoreport() {
     setSideFilterOpen(newOpen);
   };
 
-  const itemSummaryMap = {
-    METAL: "Total Metal Weight",
-    DIAMOND: "Total Diamond",
-    "COLOR STONE": "Total Color Stone",
-    MISC: "Total Misc",
-    FINDING: "Total Finding",
-    "LAB GROWRN": "Total Lab Grown",
-    MOUNT: "Total Mount",
-    ALLOY: "Total Alloy",
-  };
-
-  const summaryColumns = Object.entries(itemSummaryMap).map(
-    ([itemKey, summaryTitle]) => {
-      const totalWeight = filteredRows
-        ?.filter((row) => row.itemname?.toUpperCase() === itemKey)
-        .reduce((sum, row) => sum + (parseFloat(row.weight) || 0), 0);
-
-      return {
-        summaryTitle,
-        totalWeight,
-      };
-    }
-  );
-
   const renderSummary = () => {
+    const summaryColumns = columns.filter((col) => {
+      const columnData = Object.values(allColumData).find(
+        (data) => data.field === col.field
+      );
+      return columnData?.summary;
+    });
+
+
     return (
       <div className="summaryBox">
-        {summaryColumns?.map((col) => (
-          <div className="summaryItem" key={col.summaryTitle}>
-            <div className="AllEmploe_boxViewTotal">
-              <div>
-                <p className="AllEmplo_boxViewTotalValue">
-                  {col.totalWeight?.toFixed(3)}
-                </p>
-                <p className="boxViewTotalTitle">{col.summaryTitle}</p>
+        {summaryColumns.map((col) => {
+          let calculatedValue = 0;
+          calculatedValue =
+            filteredRows?.reduce(
+              (sum, row) => sum + (parseFloat(row[col.field]) || 0),
+              0
+            ) || 0;
+          return (
+            <div className="summaryItem" key={col.field}>
+              <div className="AllEmploe_boxViewTotal">
+                <div>
+                  <p className="AllEmplo_boxViewTotalValue">
+                    {calculatedValue.toFixed(col?.summuryValueKey)}
+                  </p>
+                  <p className="boxViewTotalTitle">{col.summaryTitle}</p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -1147,7 +1171,7 @@ export default function Materialmemoreport() {
       .replace(/[/:]/g, "-")
       .replace(/, /g, "_");
 
-    const fileName = `Report_Material_Memo_Report_${dateString}.xlsx`;
+    const fileName = `Material_Memo_Report_${dateString}.xlsx`;
     saveAs(data, fileName);
   };
 

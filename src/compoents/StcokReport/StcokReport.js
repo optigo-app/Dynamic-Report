@@ -1662,7 +1662,12 @@ export default function StcokReport() {
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
-
+                  '& .MuiDataGrid-selectedRowCount': {
+                    display: "none !important",
+                  },
+                  '& .MuiDataGrid-cell:focus':{
+                      borderColor: 'navajowhite !important'
+                  },
                   marginLeft: 2,
                   marginRight: 2,
                   marginBottom: 2,

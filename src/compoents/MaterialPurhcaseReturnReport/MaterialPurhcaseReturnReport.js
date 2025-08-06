@@ -1206,7 +1206,7 @@ export default function MaterialPurhcaseReturnReport() {
       .replace(/[/:]/g, "-")
       .replace(/, /g, "_");
 
-    const fileName = `Report_MaterialPurhcase_Return_Report_${dateString}.xlsx`;
+    const fileName = `MaterialPurhcase_Return_Report_${dateString}.xlsx`;
     saveAs(data, fileName);
   };
 

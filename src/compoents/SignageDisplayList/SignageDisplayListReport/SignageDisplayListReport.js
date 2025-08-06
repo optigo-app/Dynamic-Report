@@ -116,7 +116,7 @@ const DraggableColumn = ({ col, index, checkedColumns, setCheckedColumns }) => {
   );
 };
 
-export default function AllEmployeeDataReport({
+export default function SignageDisplayListReport({
   selectedFilterCategory,
   selectedFileter,
   AllFinalData,
@@ -126,6 +126,8 @@ export default function AllEmployeeDataReport({
   isPaneCollapsed,
   setCustomerBindeChnaged,
   handleRefresh,
+  signageDisplayData,
+  signageLocationData,
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -169,11 +171,6 @@ export default function AllEmployeeDataReport({
   const [customerBindIsloading, setCustomerBindIsLoading] = React.useState();
   const [lastUpdated, setLastUpdated] = React.useState(false);
   const gridRef = React.useRef(null);
-
-  //selecino.... main
-
-  console.log("AllFinalDataAllFinalData", AllFinalData);
-
   const useDeviceSummary = (AllFinalData) => {
     const [summary, setSummary] = React.useState({
       totalDevices: 0,
@@ -203,7 +200,7 @@ export default function AllEmployeeDataReport({
       for (const record of records) {
         const status = record["Status"];
         const access = record["Access"]; // fixed here
-        const expiryDateStr = record["Expirydate"]; // fixed here
+        // const expiryDateStr = record["Expirydate"]; // fixed here
 
         if (status === "Active") activeCount++;
         if (status === "DeActive") deactiveCount++;
@@ -211,12 +208,12 @@ export default function AllEmployeeDataReport({
         if (access === 1) enable++;
         if (access === 0) disable++;
 
-        if (expiryDateStr) {
-          const expiryDate = new Date(expiryDateStr);
-          if (expiryDate >= now && expiryDate <= fifteenDaysLater) {
-            upcomingExpiryCount++;
-          }
-        }
+        // if (expiryDateStr) {
+        //   const expiryDate = new Date(expiryDateStr);
+        //   if (expiryDate >= now && expiryDate <= fifteenDaysLater) {
+        //     upcomingExpiryCount++;
+        //   }
+        // }
       }
 
       setSummary({
@@ -542,68 +539,56 @@ export default function AllEmployeeDataReport({
               />
             ),
           };
-        } else if (col.field === "customerBind") {
+        } else if (col.field === "TvSet") {
           return {
             ...col,
             renderCell: (params) => (
               <div>
                 <Select
-                  value={params.row.customerBind ?? ""}
+                  value={params.row?.TvSet ?? ""}
                   onChange={(e) =>
-                    handleCustomerBindChange(e.target.value, params.row)
+                    handleTvContentChange(e.target.value, params.row)
                   }
                   size="small"
                   fullWidth
                   className="MenuSelectItem"
                 >
-                  <MenuItem value="data" className="MenuSelectItem_select">
-                    Content 1
-                  </MenuItem>
-                  <MenuItem value="data" className="MenuSelectItem_select">
-                    Content 2
-                  </MenuItem>
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Content 3
-                  </MenuItem>
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Content 4
-                  </MenuItem>
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Content 5
-                  </MenuItem>
+                  {signageDisplayData?.map((item) => (
+                    <MenuItem
+                      key={item.Id}
+                      value={item.Id}
+                      className="MenuSelectItem_select"
+                    >
+                      {item.SetName}
+                    </MenuItem>
+                  ))}
                 </Select>
               </div>
             ),
           };
-        } else if (col.field === "selectLocation") {
+        } else if (col.field === "Location") {
           return {
             ...col,
             renderCell: (params) => (
               <div>
                 <Select
-                  value={params.row.customerBind ?? ""}
+                  value={params.row?.Location ?? ""}
                   onChange={(e) =>
-                    handleCustomerBindChange(e.target.value, params.row)
+                    handleChangeTheLocation(e.target.value, params.row)
                   }
                   size="small"
                   fullWidth
                   className="MenuSelectItem"
                 >
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Location 1
-                  </MenuItem>
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Location 2
-                  </MenuItem>
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Location 3
-                  </MenuItem>
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Location 4
-                  </MenuItem>
-                  <MenuItem value={"data"} className="MenuSelectItem_select">
-                    Location 5
-                  </MenuItem>
+                  {signageLocationData?.map((item) => (
+                    <MenuItem
+                      key={item.Id}
+                      value={item.Id}
+                      className="MenuSelectItem_select"
+                    >
+                      {item.Title}
+                    </MenuItem>
+                  ))}
                 </Select>
               </div>
             ),
@@ -630,7 +615,6 @@ export default function AllEmployeeDataReport({
   //     setFilteredRows(originalRows);
   //   }
   // }, [originalRows, filters]);
-  console.log("originalRowsoriginalRows", originalRows);
 
   React.useEffect(() => {
     const newFilteredRows = originalRows?.filter((row) => {
@@ -730,11 +714,11 @@ export default function AllEmployeeDataReport({
         setTimeout(() => {
           setShowSuccess(false);
         }, 5000);
-        setDeviceStatus({
-          type: soketMode,
-          timestamp: Date.now(),
-          uniqueId: Row?.UniqueID,
-        });
+        // setDeviceStatus({
+        //   type: soketMode,
+        //   timestamp: Date.now(),
+        //   uniqueId: Row?.UniqueID,
+        // });
         if (isDeleteModel) {
           setFilteredRows((prevRows) =>
             prevRows.filter((r) => r.Id !== Row.Id)
@@ -746,35 +730,71 @@ export default function AllEmployeeDataReport({
     }
   };
 
-  const handleCustomerBindChange = async (newBindId, row) => {
+  const handleChangeTheLocation = async (newBindId, row) => {
+    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     const body = {
-      con: '{"id":"","mode":"DeviceCustomerBind","appuserid":"amrut@eg.com"}',
-      p: `{\"AppDevRowId\":${row.Id},\"CustomerBindTypeId\":${newBindId}}`,
+      con: `{"id":"","mode":"DeviceLocationBind","appuserid":"${AllData?.uid}"}`,
+      p: `{\"AppDevRowId\":${row?.Id},\"TvLocationId\":${newBindId}}`,
       f: "Task Management (taskmaster)",
     };
     const sp = searchParams.get("sp");
     try {
       const response = await GetWorkerData(body, sp);
       if (response?.Data?.rd[0]?.msg === "Success") {
-        setAllRowData((prevData) => {
-          return prevData.map((r) => {
-            if (r["19"] === row.Id) {
+        setAllRowData((prevData) =>
+          prevData.map((r) => {
+            if (r["19"] === row?.Id) {
+              return {
+                ...r,
+                12: newBindId,
+              };
+            }
+            return r;
+          })
+        );
+        // setDeviceStatus({
+        //   type: "CustomerBindChanged",
+        //   timestamp: Date.now(),
+        //   uniqueId: row?.UniqueID,
+        // });
+      }
+    } catch (err) {
+      console.error("Error updating customer bind:", err);
+    }
+  };
+
+  const handleTvContentChange = async (newBindId, row) => {
+    console.log("newBindIdnewBindId", newBindId, row);
+    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
+    const body = {
+      con: `{"id":"","mode":"DeviceDisplayBind","appuserid":"${AllData?.uid}"}`,
+      p: `{\"AppDevRowId\":${row.Id},\"TvSetId\":${newBindId}}`,
+      f: "Task Management (taskmaster)",
+    };
+    const sp = searchParams.get("sp");
+
+    try {
+      const response = await GetWorkerData(body, sp);
+      if (response?.Data?.rd[0]?.msg === "Success") {
+        setAllRowData((prevData) =>
+          prevData.map((r) => {
+            if (r["19"] === row?.Id) {
               return {
                 ...r,
                 11: newBindId,
               };
             }
             return r;
-          });
-        });
-        setDeviceStatus({
-          type: "CustomerBindChanged",
-          timestamp: Date.now(),
-          uniqueId: row?.UniqueID,
-        });
+          })
+        );
+        // setDeviceStatus({
+        //   type: "TvContentChanged",
+        //   timestamp: Date.now(),
+        //   uniqueId: row?.UniqueID,
+        // });
       }
     } catch (err) {
-      console.error("Error updating customer bind:", err);
+      console.error("Error updating tv content bind:", err);
     }
   };
 
@@ -789,7 +809,6 @@ export default function AllEmployeeDataReport({
     const sp = searchParams.get("sp");
     try {
       const fetchedData = await GetWorkerData(body, sp);
-
       if (fetchedData?.Data.rd[0]?.msg === "Success") {
         setAllRowData((prevData) => {
           return prevData.map((r) => {
@@ -802,13 +821,12 @@ export default function AllEmployeeDataReport({
             return r;
           });
         });
-
         let isCheckedVal = isChecked ? "deviceEnabled" : "deviceDisabled";
-        setDeviceStatus({
-          type: isCheckedVal,
-          timestamp: Date.now(),
-          uniqueId: row?.UniqueID,
-        });
+        // setDeviceStatus({
+        //   type: isCheckedVal,
+        //   timestamp: Date.now(),
+        //   uniqueId: row?.UniqueID,
+        // });
       }
     } catch (error) {
       console.error("Failed to update Access:", error);
@@ -1261,7 +1279,7 @@ export default function AllEmployeeDataReport({
     }
   };
 
-  console.log("filteredRowsfilteredRows", filteredRows);
+  console.log("filteredRowsfilteredRows", filteredRows, columns);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>

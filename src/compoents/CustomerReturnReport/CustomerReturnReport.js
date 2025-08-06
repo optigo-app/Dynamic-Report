@@ -1148,7 +1148,7 @@ export default function CustomerReturnReport() {
       .replace(/[/:]/g, "-")
       .replace(/, /g, "_");
 
-    const fileName = `Report_Customer_Return_Report_${dateString}.xlsx`;
+    const fileName = `Customer_Return_Report_${dateString}.xlsx`;
     saveAs(data, fileName);
   };
 

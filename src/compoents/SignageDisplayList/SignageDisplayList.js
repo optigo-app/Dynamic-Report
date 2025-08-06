@@ -1,4 +1,4 @@
-// http://localhost:3000/testreport/?sp=15&ifid=ToolsReport&pid=18233
+// http://localhost:3000/testreport/?sp=29&ifid=ToolsReport&pid=18310
 
 import React, { useEffect, useState, useRef } from "react";
 import Box from "@mui/material/Box";
@@ -6,12 +6,10 @@ import "./DeviceSpliter.scss";
 import { Button, CircularProgress, Paper, Typography } from "@mui/material";
 import "react-datepicker/dist/react-datepicker.css";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
-import { IoRefreshCircle } from "react-icons/io5";
-import AllEmployeeDataReport from "./AllEmployeeDataReport/AllEmployeeDataReport";
-import DualDatePicker from "../DatePicker/DualDatePicker";
+import AllEmployeeDataReport from "./SignageDisplayListReport/SignageDisplayListReport";
 import { useSearchParams } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
-import APICALLRES from "./APICALLRES.json";
+import SignageDisplayListReport from "./SignageDisplayListReport/SignageDisplayListReport";
 
 const formatToMMDDYYYY = (date) => {
   const d = new Date(date);
@@ -70,6 +68,8 @@ export default function SignageDisplayList({ isLoadingNew }) {
   const [AllFinalData, setFinalData] = useState();
   const [searchParams] = useSearchParams();
   const [customerBindeChnaged, setCustomerBindeChnaged] = useState(false);
+  const [signageDisplayData, setSignageDisplayData] = useState([]);
+  const [signageLocationData, setSignageLocationData] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -92,10 +92,34 @@ export default function SignageDisplayList({ isLoadingNew }) {
         p: "",
         f: "Task Management (taskmaster)",
       };
+
+      const GetMasterbody = {
+        con: `{"id":"","mode":"TvDeviceMaster","appuserid":"${AllData?.uid}"}`,
+        p: "",
+        f: "Task Management (taskmaster)",
+      };
+
+      const fetchedMasterData = await GetWorkerData(GetMasterbody, sp);
+      if (
+        Array.isArray(fetchedMasterData?.Data?.rd) &&
+        Array.isArray(fetchedMasterData?.Data?.rd1)
+      ) {
+        const signageLocationList = fetchedMasterData.Data.rd.filter(
+          (item) => item.MasterName === "SignageLocation"
+        );
+        const signageDisplayList = fetchedMasterData.Data.rd1.filter(
+          (item) => item.MasterName === "SignageDisplay"
+        );
+
+        setSignageLocationData(signageLocationList);
+        setSignageDisplayData(signageDisplayList);
+      }
+
       const fetchedData = await GetWorkerData(body, sp);
-      const { rd, rd1, rd2 } = APICALLRES || {};
+      const { rd, rd1, rd2 } = fetchedData?.Data || {};
       setFinalData(fetchedData?.Data);
       sessionStorage.setItem("soketVariable", JSON.stringify(rd2));
+
       if (!Array.isArray(rd) || !Array.isArray(rd1) || rd1.length === 0) {
         setIsLoading(false);
         return;
@@ -243,7 +267,6 @@ export default function SignageDisplayList({ isLoadingNew }) {
                 <div className="Location_department_title_div">
                   <p style={{ margin: "0px", lineHeight: "0px" }}>Location</p>
                 </div>
-
               </div>
               <div
                 className="employee-list"
@@ -379,7 +402,7 @@ export default function SignageDisplayList({ isLoadingNew }) {
           <>
             <div className="splitter" onMouseDown={(e) => handleDrag(1, e)} />
             <div className="pane" style={{ width: paneWidths[2] }}>
-              <AllEmployeeDataReport
+              <SignageDisplayListReport
                 selectedFilterCategory={selectedDepartment ?? ""}
                 selectedFileter={selectedFileter ?? ""}
                 AllFinalData={AllFinalData ?? ""}
@@ -389,6 +412,8 @@ export default function SignageDisplayList({ isLoadingNew }) {
                 isPaneCollapsed={isPaneCollapsed}
                 setCustomerBindeChnaged={setCustomerBindeChnaged}
                 handleRefresh={handleRefresh}
+                signageDisplayData={signageDisplayData}
+                signageLocationData={signageLocationData}
               />
             </div>
           </>
