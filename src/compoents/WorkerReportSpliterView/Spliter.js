@@ -31,7 +31,7 @@ export default function Spliter() {
   const [status500, setStatus500] = useState(false);
   const [showDepartment, setShowDepartment] = useState(true);
   const [searchParams] = useSearchParams();
-  const [selectedMetalType, setSelectedMetalType] = useState("GOLD");
+  const [selectedMetalType, setSelectedMetalType] = useState();
   const containerRef = useRef();
 
   const handleDrag = (index, e) => {
@@ -156,11 +156,17 @@ export default function Spliter() {
           });
 
           setAllEmployeeDataMain(mergedData);
+
+          if (mergedData) {
+            setSelectedMetalType(mergedData[0]?.metaltypename);
+          }
+
           const metalFilteredData = mergedData?.filter(
             (item) =>
               item.metaltypename?.toLowerCase() ==
-              selectedMetalType?.toLowerCase()
+              mergedData[0]?.metaltypename?.toLowerCase()
           );
+
           setAllEmployeeData(metalFilteredData);
           GetTotlaData(metalFilteredData);
         } else if (rd[0]?.stat == 0) {
@@ -279,6 +285,7 @@ export default function Spliter() {
     );
 
     const firstLocation = selectedL ?? sortedLocationSummary[0]?.location;
+
     if (sortedLocationSummary?.length == 0) {
       setLocationSummaryData([]);
       setGroupedDepartments([]);
@@ -293,7 +300,11 @@ export default function Spliter() {
       handleSelectLocation(
         firstLocation,
         allEmployeeData,
-        masterData?.rd?.ignoreFirstSpliter ? showWithouLocationData : false
+        masterData?.rd?.ignoreFirstSpliter
+          ? allEmployeeData?.length == 1
+            ? false
+            : showWithouLocationData
+          : false
       );
     }
   };
@@ -303,8 +314,9 @@ export default function Spliter() {
     allEmployeeData,
     showData = false
   ) => {
-    console.log("handleSelecEmployee showDatashowDatashowData", showData);
-    if (!showData) {
+    if (showData) {
+      setSelectedLocation(null);
+    } else {
       setSelectedLocation(location);
     }
 
@@ -578,11 +590,7 @@ export default function Spliter() {
                           handleToggle("All");
                           showWithoutLocationData();
                           setShowWithouLocationData(true);
-                          handleSelecEmployee(
-                            null,
-                            allEmployeeData,
-                            true
-                          );
+                          handleSelecEmployee(null, allEmployeeData, true);
                           setSelectedLocation(null);
                         }}
                       >

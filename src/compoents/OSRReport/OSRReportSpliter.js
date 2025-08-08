@@ -424,8 +424,6 @@ export default function OSRReportSpliter() {
     emp.customerfirmname.toLowerCase().includes(customerSearch.toLowerCase())
   );
 
-  console.log("filteredCustomerData", filteredCustomerData);
-
   return (
     <div className="OSRReportSpliter_top">
       {isLoading && (

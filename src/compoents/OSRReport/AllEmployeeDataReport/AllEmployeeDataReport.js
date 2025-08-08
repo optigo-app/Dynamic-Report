@@ -26,6 +26,7 @@ import {
   Modal,
   Select,
   Slide,
+  TextField,
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
@@ -38,6 +39,7 @@ import OtherKeyData from "./AllEmployeeData.json";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import SingleEmployeeWiseData from "./SingleEmployeeWiseData/SingleEmployeeWiseData";
 import { ChevronsLeft, ChevronsRight } from "lucide-react";
+import Warper from "../../WorkerReportSpliterView/AllEmployeeDataReport/warper";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -217,6 +219,7 @@ export default function AllEmployeeDataReport({
             </div>
           ),
           width: col.Width,
+          realHeaderName: col.headerName,
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
           filterable: col.ColumFilter,
@@ -707,6 +710,8 @@ export default function AllEmployeeDataReport({
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
     const filtersToRender = col.filterTypes;
 
+    console.log("colcol", col);
+
     return filtersToRender.map((filterType) => {
       switch (filterType) {
         case "NormalFilter":
@@ -715,7 +720,7 @@ export default function AllEmployeeDataReport({
               <CustomTextField
                 key={`filter-${col.field}-NormalFilter`}
                 type="text"
-                placeholder={`Filter by ${col.field}`}
+                placeholder={`${col.realHeaderName}`}
                 value={filters[col.field] || ""}
                 onChange={(e) => handleFilterChange(col.field, e.target.value)}
                 className="filter_column_box"
@@ -822,7 +827,7 @@ export default function AllEmployeeDataReport({
         >
           <CustomTextField
             fullWidth
-            placeholder={field}
+            placeholder={col?.realHeaderName}
             value={filters[field] || ""}
             onChange={(e) => handleInputChange(e.target.value)}
             onFocus={() => {
@@ -930,12 +935,12 @@ export default function AllEmployeeDataReport({
           return (
             <div
               key={`filter-${col.field}-selectDropdownFilter`}
-              style={{ width: "100%", margin: "10px 20px" }}
+              style={{ width: "100%", margin: "10px 20px"  }}
             >
               <CustomTextField
                 select
                 fullWidth
-                label={`Select ${col.field}`}
+                label={`${col.realHeaderName}`}
                 value={filters[col.field] || ""}
                 onChange={(e) => handleFilterChange(col.field, e.target.value)}
                 size="small"
@@ -943,7 +948,7 @@ export default function AllEmployeeDataReport({
                 variant="filled"
               >
                 <MenuItem value="">
-                  <em>{`Select ${col.field}`}</em>
+                  <em>{`All`}</em>
                 </MenuItem>
                 {uniqueValues.map((value) => (
                   <MenuItem key={`select-${col.field}-${value}`} value={value}>
@@ -1408,7 +1413,7 @@ export default function AllEmployeeDataReport({
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
-        className="worker_AllEmoployee_mainGridView"
+        className="OSR_AllEmoployee_mainGridView"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
         ref={gridContainerRef}
       >
@@ -1473,6 +1478,13 @@ export default function AllEmployeeDataReport({
                 {renderFilter(col)}
               </div>
             ))}
+          {columns
+            .filter((col) => col.filterable)
+            .map((col) => (
+              <div key={col.field} style={{ gap: "10px" }}>
+                {renderFiltersuggestionFilter(col)}
+              </div>
+            ))}
 
           {columns
             .filter((col) => col.filterable)
@@ -1491,14 +1503,6 @@ export default function AllEmployeeDataReport({
             .map((col) => (
               <div key={col.field} style={{ display: "flex", gap: "10px" }}>
                 {renderFilterDropDown(col)}
-              </div>
-            ))}
-
-          {columns
-            .filter((col) => col.filterable)
-            .map((col) => (
-              <div key={col.field} style={{ gap: "10px" }}>
-                {renderFiltersuggestionFilter(col)}
               </div>
             ))}
         </Drawer>
@@ -1724,7 +1728,7 @@ export default function AllEmployeeDataReport({
 
             <CustomTextField
               type="text"
-              placeholder="Common Search..."
+              placeholder="Search"
               value={commonSearch}
               customBorderColor="rgba(47, 43, 61, 0.2)"
               onChange={(e) => setCommonSearch(e.target.value)}
@@ -1784,56 +1788,58 @@ export default function AllEmployeeDataReport({
               />
             </div>
           ) : (
-            <DataGrid
-              rows={filteredRows ?? []}
-              columns={columns ?? []}
-              pageSize={pageSize}
-              autoHeight={false}
-              localeText={{ noRowsLabel: "No Data" }}
-              columnBuffer={17}
-              paginationModel={paginationModel}
-              onPaginationModelChange={setPaginationModel}
-              getRowId={(row) => row.id} // make sure this is correct!
-              sortModel={sortModel}
-              onSortModelChange={(model) => setSortModel(model)}
-              initialState={{
-                columns: {
-                  columnVisibilityModel: {
-                    status: false,
-                    traderName: false,
+            <Warper>
+              <DataGrid
+                rows={filteredRows ?? []}
+                columns={columns ?? []}
+                pageSize={pageSize}
+                autoHeight={false}
+                localeText={{ noRowsLabel: "No Data" }}
+                columnBuffer={17}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={[10, 20, 50, 100]}
+                getRowId={(row) => row.id} // make sure this is correct!
+                sortModel={sortModel}
+                onSortModelChange={(model) => setSortModel(model)}
+                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                initialState={{
+                  columns: {
+                    columnVisibilityModel: {
+                      status: false,
+                      traderName: false,
+                    },
                   },
-                },
-              }}
-              loading={isLoading}
-              components={{
-                Toolbar: () => null,
-                LoadingOverlay: () => (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100%",
-                    }}
-                  >
-                    {/* Loading... */}
-                    <CircularProgress className="loadingBarManage" />
-                  </div>
-                ),
-              }}
-              onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-              rowsPerPageOptions={[5, 10, 15, 25, 50]}
-              className="simpleGridView"
-              pagination
-              sx={{
-                "& .MuiDataGrid-menuIcon": {
-                  display: "none",
-                },
-                marginLeft: 2,
-                marginRight: 2,
-                marginBottom: 2,
-              }}
-            />
+                }}
+                loading={isLoading}
+                components={{
+                  Toolbar: () => null,
+                  LoadingOverlay: () => (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        height: "100%",
+                      }}
+                    >
+                      {/* Loading... */}
+                      <CircularProgress className="loadingBarManage" />
+                    </div>
+                  ),
+                }}
+                className="simpleGridView"
+                pagination
+                sx={{
+                  "& .MuiDataGrid-menuIcon": {
+                    display: "none",
+                  },
+                  marginLeft: 2,
+                  marginRight: 2,
+                  marginBottom: 2,
+                }}
+              />
+            </Warper>
           )}
         </div>
       </div>
