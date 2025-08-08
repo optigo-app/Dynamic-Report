@@ -23,8 +23,12 @@ import RefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
 import LossRefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
 import MaterialWiseWIP from "./compoents/MaterialWiseWIP/MaterialWiseWIP";
 import CustomerReceiveReport from "./compoents/CustomerReceiveReport/CustomerReceiveReport";
+// Rajan Report
 import FactoryLossReport from "./compoents/Rajan/components/FactoryLossReport/index";
 import OrderCompletionReport from "./compoents/Rajan/components/OrderCompletionReport/index";
+import QuoteAnalysisReport from "./compoents/Rajan/components/QuoteAnalysisReport/index";
+import SalesAnalysisReport from "./compoents/Rajan/components/SalesAnalysisReport/index";
+// End Rajan Report
 import CustomerReturnReport from "./compoents/CustomerReturnReport/CustomerReturnReport";
 import SignageDisplayList from "./compoents/SignageDisplayList/SignageDisplayList";
 import MaterialPurhcaseReturnReport from "./compoents/MaterialPurhcaseReturnReport/MaterialPurhcaseReturnReport";
@@ -188,7 +192,12 @@ const GridMain = () => {
       return <OrderCompletionReport />; // Rajan
     } else if (pid == 1000) {
       return <ItaskReport />; // 1256 Doc.
-    } else {
+    }else if (pid == 18315) {
+      return <QuoteAnalysisReport />; // 1256 Doc.
+    }else if (pid == 18314) {
+      return <SalesAnalysisReport />; // 1256 Doc.
+    }
+     else {
       return (
         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>
       );
