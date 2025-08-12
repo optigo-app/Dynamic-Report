@@ -1,8 +1,11 @@
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18312
+
 import React, { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./StockValuation.scss";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
+import { CircularProgress, TextField } from "@mui/material";
 
 const StockValuation = () => {
   const [entryDate, setEntryDate] = useState(new Date());
@@ -156,18 +159,47 @@ const StockValuation = () => {
     }));
   };
 
-  if (loading) return <div className="loading">Loading...</div>;
+  const hanldeNaviagte = (material, indata) => {
+    let url_optigo = "http://nzen/";
+    const pid = "18316";
+    const dateParam = encodeURIComponent(entryDate.toISOString());
+
+    window.parent.addTab(
+      "Stock Detail",
+      "icon-StockDetail",
+      `${url_optigo}testreport/?sp=9&ifid=StockDetail&pid=${pid}&material=${encodeURIComponent(
+        material
+      )}&inData=${indata}&entryDate=${dateParam}`
+    );
+  };
 
   return (
     <div className="stock-valuation">
-      <h2>Stock Valuation Report</h2>
-
-      <div className="date-picker-container">
+      {loading && (
+        <div className="loader-overlay">
+          <CircularProgress className="loadingBarManage" />
+        </div>
+      )}
+      <div
+        className="date-picker-container"
+        style={{
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
         <label>Select Entry Date: </label>
         <DatePicker
           selected={entryDate}
           onChange={(date) => setEntryDate(date)}
           dateFormat="yyyy-MM-dd"
+          customInput={
+            <TextField
+              label="Select Date"
+              variant="outlined"
+              fullWidth
+              size="small"
+            />
+          }
         />
       </div>
 
@@ -261,53 +293,70 @@ const StockValuation = () => {
                             <td>0.00</td>
                           </tr>
 
-                          {isExpanded && (() => {
-                            const groupedIN = groupByNarration(group.in);
-                            const groupedOUT = groupByNarration(group.out);
+                          {isExpanded &&
+                            (() => {
+                              const groupedIN = groupByNarration(group.in);
+                              const groupedOUT = groupByNarration(group.out);
 
-                            return (
-                              <>
-                                {Object.entries(groupedIN).map(
-                                  ([narration, val], i) => (
-                                    <tr
-                                      key={`in-${i}`}
-                                      className="sub-entry-row"
-                                    >
-                                      <td></td>
-                                      <td
-                                        colSpan={2}
-                                        style={{ paddingLeft: "30px" }}
+                              return (
+                                <>
+                                  {Object.entries(groupedIN).map(
+                                    ([narration, val], i) => (
+                                      <tr
+                                        key={`in-${i}`}
+                                        className="sub-entry-row"
                                       >
-                                        (+) {narration}
-                                      </td>
-                                      <td>{val.weight.toFixed(3)}</td>
-                                      <td>{val.amount.toFixed(2)}</td>
-                                      <td colSpan={5}></td>
-                                    </tr>
-                                  )
-                                )}
-                                {Object.entries(groupedOUT).map(
-                                  ([narration, val], i) => (
-                                    <tr
-                                      key={`out-${i}`}
-                                      className="sub-entry-row"
-                                    >
-                                      <td></td>
-                                      <td
-                                        colSpan={2}
-                                        style={{ paddingLeft: "30px" }}
+                                        <td></td>
+                                        <td
+                                          colSpan={2}
+                                          style={{
+                                            paddingLeft: "30px",
+                                            color: "blue",
+                                            textDecoration: "underline",
+                                            cursor: "pointer",
+                                          }}
+                                          onClick={() =>
+                                            hanldeNaviagte(narration, true)
+                                          }
+                                        >
+                                          (+) {narration}
+                                        </td>
+                                        <td>{val.weight.toFixed(3)}</td>
+                                        <td>{val.amount.toFixed(2)}</td>
+                                        <td colSpan={5}></td>
+                                      </tr>
+                                    )
+                                  )}
+                                  {Object.entries(groupedOUT).map(
+                                    ([narration, val], i) => (
+                                      <tr
+                                        key={`out-${i}`}
+                                        className="sub-entry-row"
                                       >
-                                        (-) {narration}
-                                      </td>
-                                      <td>{val.weight.toFixed(3)}</td>
-                                      <td>{val.amount.toFixed(2)}</td>
-                                      <td colSpan={2}></td>
-                                    </tr>
-                                  )
-                                )}
-                              </>
-                            );
-                          })()}
+                                        <td></td>
+                                        <td
+                                          colSpan={2}
+                                          style={{
+                                            paddingLeft: "30px",
+                                            color: "blue",
+                                            textDecoration: "underline",
+                                            cursor: "pointer",
+                                          }}
+                                          onClick={() =>
+                                            hanldeNaviagte(narration, false)
+                                          }
+                                        >
+                                          (-) {narration}
+                                        </td>
+                                        <td>{val.weight.toFixed(3)}</td>
+                                        <td>{val.amount.toFixed(2)}</td>
+                                        <td colSpan={2}></td>
+                                      </tr>
+                                    )
+                                  )}
+                                </>
+                              );
+                            })()}
                         </React.Fragment>
                       );
                     }

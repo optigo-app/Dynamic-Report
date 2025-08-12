@@ -33,9 +33,7 @@ function App() {
 
 export default AppWrapper;
 
-
 // basename="/testreport"
 // "homepage": "/testreport",
-
 
 // Win + Alt + R

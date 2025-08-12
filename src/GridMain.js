@@ -36,6 +36,10 @@ import Materialmemoreport from "./compoents/MaterialMemoReport/MaterialMemoRepor
 import MaterialSaleReport from "./compoents/MaterialSaleReport/MaterialSaleReport";
 import MaterialPurhcaseReport from "./compoents/MaterialPurhcaseReport/MaterialPurhcaseReport";
 import STOCKVALUATION from "./compoents/STOCKVALUATION/STOCKVALUATION";
+import StockDetailIN from "./compoents/StockDetail/StockDetailIN/StockDetailIN";
+import StockMain from "./compoents/StockDetail/StockMain";
+import StockDetailINTemp from "./compoents/StockDetailTemp/StockDetailINTemp/StockDetailINTemp";
+import StockDetailOUTTemp from "./compoents/StockDetailTemp/StockDetailOUTTemp/StockDetailOUTTemp";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -66,7 +70,6 @@ const GridMain = () => {
   };
 
   useEffect(() => {
-
     //      Cookies.set(
     //    "skey",
     //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
@@ -189,6 +192,12 @@ const GridMain = () => {
       return <SignageDisplayList />; // 1256 Doc.
     } else if (pid == 18312) {
       return <STOCKVALUATION />; // 1438 Doc.
+    }  else if (pid == 18316) {
+      return <StockMain />; // 1438 Doc.
+    } else if (pid == 18317) {
+      return <StockDetailINTemp />; // 1438 Doc.
+    } else if (pid == 18319) {
+      return <StockDetailOUTTemp />; // 1438 Doc.
     } else if (pid == 18301) {
       return <FactoryLossReport />; //Rajan
     } else if (pid == 18300) {
