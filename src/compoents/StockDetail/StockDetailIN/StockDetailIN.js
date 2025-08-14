@@ -613,7 +613,6 @@ export default function StockDetailIN() {
     setColumns([srColumn, ...columnData]);
   }, [allColumData, masterData, grupEnChekBox, sortModel]);
 
-
   useEffect(() => {
     if (!allColumData) return;
     const defaultChecked = {};

@@ -167,12 +167,13 @@ const DualDatePicker = ({
       setError("Please select a valid range.");
       return;
     }
-    if (!withountDateFilter) {
-      if (endDate > today) {
-        setError("Future dates are not allowed.");
-        return;
-      }
 
+    if (endDate > today) {
+      setError("Future dates are not allowed.");
+      return;
+    }
+
+    if (!withountDateFilter) {
       const diffInMs = endDate.getTime() - startDate.getTime();
       const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
 
@@ -334,7 +335,7 @@ const DualDatePicker = ({
                     new Date().getMonth(),
                     0
                   ),
-                }
+                },
                 // ,
                 // {
                 //   label: "ALL",

@@ -277,7 +277,6 @@ export default function StockDetailINTemp() {
   useEffect(() => {
     if (!allColumData || !masterData) return;
 
-    // --- Master Mapping Helpers ---
     const getItemName = (itemid) => {
       return masterData.rd.find((x) => x.id === itemid)?.itemname || "";
     };
@@ -296,6 +295,10 @@ export default function StockDetailINTemp() {
         return (
           masterData.rd4.find((x) => x.shapeid === shapeid)?.Miscshape || ""
         );
+      }else if (itemName === "METAL" || itemName === "MOUNT" || itemName === "FINDING") {
+        return (
+          masterData.rd19.find((x) => x.metaltypeid === shapeid)?.metaltype || ""
+        );
       }
       return shapeid || "";
     };
@@ -303,16 +306,28 @@ export default function StockDetailINTemp() {
     const getColorName = (itemName, colorid) => {
       if (itemName === "DIAMOND") {
         return (
-          masterData.rd5?.find((x) => x.colorid === colorid)?.DiamondColor || ""
+          masterData.rd5?.find((x) => x.colorid === colorid)?.Diamondcolor || ""
         );
       } else if (itemName === "COLOR STONE") {
         return (
-          masterData.rd6?.find((x) => x.colorid === colorid)?.ColorStoneColor ||
+          masterData.rd6?.find((x) => x.colorid === colorid)?.ColorStonecolor ||
           ""
         );
       } else if (itemName === "MISC") {
         return (
-          masterData.rd7?.find((x) => x.colorid === colorid)?.MiscColor || ""
+          masterData.rd7?.find((x) => x.colorid === colorid)?.Misccolor || ""
+        );
+      } else if (itemName === "METAL") {
+        return (
+          masterData.rd7?.find((x) => x.colorid === colorid)?.Metalcolor || ""
+        );
+      } else if (itemName === "MOUNT") {
+        return (
+          masterData.rd18?.find((x) => x.colorid === colorid)?.mountcolor || ""
+        );
+      } else if (itemName === "FINDING") {
+        return (
+          masterData.rd17?.find((x) => x.colorid === colorid)?.Metalcolor || ""
         );
       }
       return colorid || "";
@@ -322,21 +337,26 @@ export default function StockDetailINTemp() {
       if (itemName === "DIAMOND") {
         return (
           masterData.rd8?.find((x) => x.qualityid === qualityid)
-            ?.DiamondQuality || ""
+            ?.diamondquality || ""
         );
       } else if (itemName === "COLOR STONE") {
         return (
           masterData.rd9?.find((x) => x.qualityid === qualityid)
-            ?.ColorStoneQuality || ""
+            ?.colorstonequality || ""
         );
       } else if (itemName === "MISC") {
         return (
           masterData.rd10?.find((x) => x.qualityid === qualityid)
-            ?.MiscQuality || ""
+            ?.miscquality || ""
         );
       } else if (itemName === "FINDING") {
         return (
           masterData.rd11?.find((x) => x.qualityid === qualityid)
+            ?.FindingQuality || ""
+        );
+      } else if (itemName === "METAL") {
+        return (
+          masterData.rd16?.find((x) => x.qualityid === qualityid)
             ?.FindingQuality || ""
         );
       }
@@ -346,16 +366,16 @@ export default function StockDetailINTemp() {
     const getSizeName = (itemName, sizeId) => {
       if (itemName === "DIAMOND") {
         return (
-          masterData.rd12?.find((x) => x.sizeid === sizeId)?.DiamondSize || ""
+          masterData.rd11?.find((x) => x.sizeid === sizeId)?.diamondsize || ""
         );
       } else if (itemName === "COLOR STONE") {
         return (
-          masterData.rd13?.find((x) => x.sizeid === sizeId)?.ColorStoneSize ||
+          masterData.rd12?.find((x) => x.sizeid === sizeId)?.colorstonesize ||
           ""
         );
       } else if (itemName === "MISC") {
         return (
-          masterData.rd14?.find((x) => x.sizeid === sizeId)?.MiscSize || ""
+          masterData.rd13?.find((x) => x.sizeid === sizeId)?.miscsize || ""
         );
       } else if (itemName === "FINDING") {
         return (

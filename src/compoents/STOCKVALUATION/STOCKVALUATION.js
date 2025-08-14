@@ -207,7 +207,7 @@ const StockValuation = () => {
         <thead>
           <tr>
             <th></th>
-            <th>Item ID</th>
+            {/* <th>Item ID</th> */}
             <th>Item Name</th>
             <th>Opening Weight</th>
             <th>Opening Amount</th>
@@ -236,7 +236,7 @@ const StockValuation = () => {
                       {expandedItemId === row.itemId ? "−" : "+"}
                     </button>
                   </td>
-                  <td>{row.itemId}</td>
+                  {/* <td>{row.itemId}</td> */}
                   <td>{row.itemName}</td>
                   <td>{row.openingWeight.toFixed(3)}</td>
                   <td>{row.openingAmount.toFixed(2)}</td>

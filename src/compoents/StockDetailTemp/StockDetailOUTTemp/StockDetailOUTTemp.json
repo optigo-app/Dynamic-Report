@@ -234,7 +234,7 @@
     {
       "colid": 6,
       "headerName": "Quality",
-      "field": "quality",
+      "field": "qualityid",
       "Width": 130,
       "Align": "left",
       "hrefLink": "",

@@ -33,6 +33,7 @@ import {
   Paper,
   Select,
   Slide,
+  TextField,
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
@@ -53,6 +54,7 @@ import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, CircleX } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
+import dayjs from "dayjs";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -152,8 +154,11 @@ export default function MaterialPurhcaseReport() {
   const [endDate, setEndDate] = useState();
   const [AllFinalData, setFinalData] = useState();
   const [status500, setStatus500] = useState(false);
+  const [purchaseBtnDis, setPurchaseBtnDis] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
-  const [sortModel, setSortModel] = useState([]);
+  const [sortModel, setSortModel] = React.useState([
+    { field: "invoicedate", sort: "desc" },
+  ]);
 
   const [allUserNameList, setAllUserNameList] = useState([]);
   const [selectedUser, setSelectedUser] = useState("ALL Users");
@@ -161,7 +166,7 @@ export default function MaterialPurhcaseReport() {
   const [allCurrencyData, setAllCurrencyData] = useState([]);
   const [selectedDateColumn, setSelectedDateColumn] = useState("INR");
 
-  const [selectedMetal, setSelectedMetal] = useState("All");
+  const [selectedMetal, setSelectedMetal] = useState("Select Material");
   const [selectedDateColumnHyBrid, setSelectedDateColumnHyBrid] =
     useState("ALL");
   const [materialPurchase, setMaterialPurchase] = useState("ALL");
@@ -174,7 +179,7 @@ export default function MaterialPurhcaseReport() {
   });
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    pageSize: 10,
+    pageSize: 20,
   });
   const [showAllData, setShowAllData] = useState(false);
   const [filterState, setFilterState] = useState({
@@ -463,6 +468,7 @@ export default function MaterialPurhcaseReport() {
         );
       },
     };
+
     setColumns([srColumn, ...columnData]);
   }, [allColumData, grupEnChekBox, sortModel, paginationModel]);
 
@@ -510,7 +516,7 @@ export default function MaterialPurhcaseReport() {
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
   const uniqueCustomers = [
-    "All",
+    "Select Material",
     ...Array.from(new Set(originalRows?.map((row) => row?.itemname))),
   ];
 
@@ -547,7 +553,7 @@ export default function MaterialPurhcaseReport() {
         return false;
       }
 
-      if (isMatch && selectedMetal !== "All") {
+      if (isMatch && selectedMetal !== "Select Material") {
         if (row.itemname !== selectedMetal) {
           isMatch = false;
         }
@@ -632,19 +638,19 @@ export default function MaterialPurhcaseReport() {
     const selectedCurrency = allCurrencyData?.find(
       (c) => c.Currencycode === selectedDateColumn
     );
-
     const rate = selectedCurrency?.CurrencyRate || 1;
-    const currencyUpdatedRows = rowsWithSrNo?.map((row) => ({
+    const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
+    const currencyUpdatedRows = safeRows.map((row) => ({
       ...row,
-      // averagerate: row.averagerate
-      //   ? parseFloat((row.averagerate / rate).toFixed(2))
-      //   : row.averagerate,
-      amount: row.totalprice
+      totalprice: row.totalprice
         ? parseFloat((row.totalprice / rate).toFixed(2))
         : row.totalprice,
     }));
+    const sorted = [...currencyUpdatedRows].sort((a, b) => {
+      return new Date(b.date) - new Date(a.date);
+    });
 
-    setCurrencyAdjustedRows(currencyUpdatedRows);
+    setCurrencyAdjustedRows(sorted);
   }, [
     filters,
     commonSearch,
@@ -1064,83 +1070,120 @@ export default function MaterialPurhcaseReport() {
   };
 
   const renderSummary = () => {
-    const summaryColumnsAdd = columns.filter((col) => {
-      const columnData = Object.values(allColumData).find(
-        (data) => data.field === col.field
-      );
-      return columnData?.summary;
-    });
-    const itemSummaryMap = {
-      METAL: "Total Metal Weight",
-      DIAMOND: "Total Diamond",
-      "COLOR STONE": "Total Color Stone",
-      MISC: "Total Misc",
-      FINDING: "Total Finding",
-      "LAB GROWRN": "Total Lab Grown",
-      MOUNT: "Total Mount",
-      ALLOY: "Total Alloy",
+    const summaryConfig = {
+      "SELECT MATERIAL": ["totalAmount"],
+
+      METAL: ["totalAmount", "averageRate", "totalWeight", "totalWeightPure"],
+
+      DIAMOND: ["totalAmount", "averageRate", "totalWeight"],
+
+      "LAB GROWN": ["totalAmount", "averageRate", "totalWeight"],
+
+      "COLOR STONE": ["totalAmount", "averageRate", "totalWeight"],
+
+      MOUNT: [
+        "totalAmount",
+        "averageRate",
+        "totalWeight",
+        "totalWeightPure",
+        "labourAmount",
+        "materialAmount",
+      ],
+
+      FINDING: [
+        "totalAmount",
+        "averageRate",
+        "totalWeight",
+        "totalWeightPure",
+        "labourAmount",
+        "materialAmount",
+      ],
+
+      ALLOY: ["totalAmount", "averageRate", "totalWeight", "totalWeightPure"],
+
+      MISC: ["totalAmount", "averageRate", "totalWeight"],
     };
 
-    const summaryByItem = Object.entries(itemSummaryMap).map(
-      ([itemKey, summaryTitle]) => {
-        const totalWeight = filteredRows
-          ?.filter((row) => row.itemname?.toUpperCase() === itemKey)
-          .reduce((sum, row) => sum + (parseFloat(row.totalwt) || 0), 0);
+    const calcTotalAmount = () =>
+      filteredRows?.reduce(
+        (sum, row) => sum + (parseFloat(row.totalprice) || 0),
+        0
+      );
 
-        return {
-          key: itemKey,
-          summaryTitle,
-          totalValue: totalWeight?.toFixed(3),
-        };
-      }
-    );
+    const calcTotalWeight = () =>
+      filteredRows?.reduce(
+        (sum, row) => sum + (parseFloat(row.totalwt) || 0),
+        0
+      );
+
+    const calcTotalWeightPure = () =>
+      filteredRows?.reduce(
+        (sum, row) => sum + (parseFloat(row.purewt) || 0),
+        0
+      );
+
+    const calcAverageRate = () => {
+      const amount = calcTotalAmount();
+      const weight = calcTotalWeight();
+      return weight > 0 ? amount / weight : 0;
+    };
+
+    const calcLabourAmount = () =>
+      filteredRows?.reduce(
+        (sum, row) => sum + (parseFloat(row.labouramount) || 0),
+        0
+      );
+
+    const calcMaterialAmount = () => calcTotalAmount() - calcLabourAmount();
+
+    const summaryCalcMap = {
+      totalAmount: { label: "Total Amount", fn: calcTotalAmount, decimals: 2 },
+      averageRate: { label: "Average Rate", fn: calcAverageRate, decimals: 2 },
+      totalWeight: { label: "Total Weight", fn: calcTotalWeight, decimals: 3 },
+      totalWeightPure: {
+        label: "Total Weight (Pure)",
+        fn: calcTotalWeightPure,
+        decimals: 3,
+      },
+      labourAmount: { label: "L.Amount", fn: calcLabourAmount, decimals: 2 },
+      materialAmount: {
+        label: "M.Amount",
+        fn: calcMaterialAmount,
+        decimals: 2,
+      },
+    };
+
+    const itemsToShow = summaryConfig[selectedMetal?.toUpperCase()] || [];
+
+    const weightUnit = ["DIAMOND", "LAB GROWN", "COLOR STONE"].includes(
+      selectedMetal?.toUpperCase()
+    )
+      ? " Ctw"
+      : " Gm";
 
     return (
       <div className="summaryBox">
-        {summaryByItem.map((item) => (
-          <div className="summaryItem" key={item.key}>
-            <div className="AllEmploe_boxViewTotal">
-              <div>
-                <p className="AllEmplo_boxViewTotalValue">{item.totalValue}</p>
-                <p className="boxViewTotalTitle">{item.summaryTitle}</p>
-              </div>
-            </div>
-          </div>
-        ))}
+        {itemsToShow.map((key) => {
+          const { label, fn, decimals } = summaryCalcMap[key];
+          const value = fn();
 
-        {summaryColumnsAdd.map((col) => {
-          let calculatedValue = 0;
-
-          if (col.field === "rate") {
-            const totalprice =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.totalprice) || 0),
-                0
-              ) || 0;
-
-            const totalwt =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row.totalwt) || 0),
-                0
-              ) || 1;
-
-            calculatedValue = totalprice / totalwt;
+          let displayValue;
+          if (key === "totalWeight" || key === "totalWeightPure") {
+            // Show decimal + unit
+            displayValue = `${value?.toFixed(decimals)}${weightUnit}`;
           } else {
-            calculatedValue =
-              filteredRows?.reduce(
-                (sum, row) => sum + (parseFloat(row[col.field]) || 0),
-                0
-              ) || 0;
+            // Add thousand separator
+            displayValue = value
+              ?.toFixed(decimals)
+              .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
           }
 
           return (
-            <div className="summaryItem" key={col.field}>
+            <div className="summaryItem" key={key}>
               <div className="AllEmploe_boxViewTotal">
                 <div>
-                  <p className="AllEmplo_boxViewTotalValue">
-                    {calculatedValue.toFixed(col?.summuryValueKey ?? 2)}
-                  </p>
-                  <p className="boxViewTotalTitle">{col.summaryTitle}</p>
+                  <p className="AllEmplo_boxViewTotalValue">{displayValue}</p>
+                  <p className="boxViewTotalTitle">{label}</p>
                 </div>
               </div>
             </div>
@@ -1172,6 +1215,7 @@ export default function MaterialPurhcaseReport() {
     const isIsoDateTime = (str) =>
       typeof str === "string" && /^\d{4}-\d{2}-\d{2}T/.test(str);
     const fieldToHeader = {};
+
     columns?.forEach((col) => {
       let header = "";
       if (typeof col.headerName === "string") {
@@ -1186,14 +1230,31 @@ export default function MaterialPurhcaseReport() {
       }
       fieldToHeader[col.field] = header;
     });
+
     return rows?.map((row, idx) => {
       const ordered = {};
       columns?.forEach((col) => {
         const header = fieldToHeader[col.field];
         let value = row[col.field] ?? "";
+
+        // Custom Supplier column logic
+        if (col.field === "istorecust_customercode1") {
+          if (value && String(value).trim() !== "") {
+            // keep as is
+          } else if (
+            row.istorecust_customercode &&
+            String(row.istorecust_customercode).trim() !== ""
+          ) {
+            value = row.istorecust_customercode;
+          } else {
+            value = ""; // keep blank if both empty
+          }
+        }
+
         if (header === "Sr#") {
           value = idx + 1;
         }
+
         if (col.field === "Venderfgage") {
           let finalDate = 0;
           const fgDateStr = row.fgdate;
@@ -1216,6 +1277,7 @@ export default function MaterialPurhcaseReport() {
           }
           value = finalDate;
         }
+
         if (isIsoDateTime(value)) {
           const dateObj = new Date(value);
           const day = String(dateObj.getDate()).padStart(2, "0");
@@ -1223,18 +1285,18 @@ export default function MaterialPurhcaseReport() {
           const year = dateObj.getFullYear();
           value = `${day}-${month}-${year}`;
         }
+
         ordered[header] = value;
       });
       return ordered;
     });
   }
   const converted = mapRowsToHeaders(columns, filteredRows);
-
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
 
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
@@ -1256,7 +1318,7 @@ export default function MaterialPurhcaseReport() {
       .replace(/[/:]/g, "-")
       .replace(/, /g, "_");
 
-    const fileName = `MaterialPurhcase_Return_Report_${dateString}.xlsx`;
+    const fileName = `MaterialPurchaseReport_${dateString}.xlsx`;
     saveAs(data, fileName);
   };
 
@@ -1443,7 +1505,12 @@ export default function MaterialPurhcaseReport() {
                         col={col}
                         index={index}
                         checkedColumns={checkedColumns}
-                        setCheckedColumns={setCheckedColumns}
+                        handleCheckboxChange={() =>
+                          setCheckedColumns((prev) => ({
+                            ...prev,
+                            [col.field]: !prev[col.field],
+                          }))
+                        }
                       />
                     ))}
                     {provided.placeholder}
@@ -1556,6 +1623,7 @@ export default function MaterialPurhcaseReport() {
                   setFilterState={setFilterState}
                   validDay={186}
                   validMonth={6}
+                  withountDateFilter={true}
                 />
                 <Button
                   onClick={() => {
@@ -1566,36 +1634,26 @@ export default function MaterialPurhcaseReport() {
                         endDate: new Date(),
                       },
                     });
+                    setPurchaseAgainMemo("");
+                    setPurchaseBtnDis(false);
                     setShowAllData(true);
+                    setFromDate(null);
+                    setToDate(null);
+                    setCommonSearch("");
+                    setFilters({});
+                    setSelectedMetal("Select Material");
+                    setPurchaseAgainMemo("ALL");
+                    setMaterialPurchase("ALL");
+                    setSelectedDateColumn("INR");
+                    setSelectedUser("ALL Users");
                   }}
                   className="FiletrBtnAll"
                 >
                   All
                 </Button>
               </div>
-              <FormControl size="small" sx={{ minWidth: 150, margin: "0px" }}>
-                <Select
-                  value={selectedMetal}
-                  onChange={(e) => setSelectedMetal(e.target.value)}
-                  displayEmpty
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 300,
-                        overflowY: "auto",
-                      },
-                    },
-                  }}
-                >
-                  {uniqueCustomers?.map((cust, index) => (
-                    <MenuItem key={index} value={cust}>
-                      {cust}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
 
-              <CustomTextField
+              <TextField
                 type="text"
                 placeholder="Search..."
                 value={commonSearch}
@@ -1615,8 +1673,62 @@ export default function MaterialPurhcaseReport() {
                     </InputAdornment>
                   ),
                 }}
-                style={{ width: "250px" }}
+                style={{
+                  width: "200px",
+                }}
+                sx={{
+                  "& .MuiInputBase-input": {
+                    padding: "5.5px !important",
+                  },
+                }}
               />
+              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+                <Select
+                  value={selectedMetal}
+                  onChange={(e) => setSelectedMetal(e.target.value)}
+                  displayEmpty
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        overflowY: "auto",
+                      },
+                    },
+                  }}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
+                >
+                  {uniqueCustomers?.map((cust, index) => (
+                    <MenuItem
+                      key={index}
+                      value={cust}
+                      style={{
+                        fontSize: "14px",
+                      }}
+                    >
+                      {cust}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button
+                className={purchaseBtnDis ? "PurchaseBtndis" : "PurchaseBtn"}
+                disabled={purchaseBtnDis}
+                onClick={() => {
+                  setPurchaseAgainMemo("PurchaseAgainst");
+                  setPurchaseBtnDis(true);
+                }}
+              >
+                Purchase Against Memo
+              </Button>
             </div>
             {columns
               .filter((col) => col.filterable)
@@ -1700,24 +1812,6 @@ export default function MaterialPurhcaseReport() {
                 </button>
               </div>
             </div>
-            {/* <div style={{ display: "flex" }}>
-              {masterData?.rd3.map((data) => (
-                <abbr title={data?.name}>
-                  <p
-                    key={data.id}
-                    style={{
-                      backgroundColor: data?.colorcode,
-                      cursor: "pointer",
-                      border: selectedColors.includes(data.id)
-                        ? "2px solid black"
-                        : "none",
-                    }}
-                    className="colorFiled"
-                    onClick={() => toggleColorSelection(data.id)} // Handle color click
-                  ></p>
-                </abbr>
-              ))}
-            </div> */}
           </div>
           <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
             {masterKeyData?.mailButton && (
@@ -1784,7 +1878,7 @@ export default function MaterialPurhcaseReport() {
               </button>
             )}
 
-            <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
+            {/* <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
               <Select
                 value={purchaseAgainMemo}
                 onChange={(e) => setPurchaseAgainMemo(e.target.value)}
@@ -1794,20 +1888,51 @@ export default function MaterialPurhcaseReport() {
                   Purchase Against Memo
                 </MenuItem>
               </Select>
-            </FormControl>
+            </FormControl> */}
 
-            <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
+            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
               <Select
                 value={materialPurchase}
                 onChange={(e) => setMaterialPurchase(e.target.value)}
+                style={{
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                sx={{
+                  "& .MuiSelect-select": {
+                    padding: "7px !important",
+                  },
+                }}
               >
-                <MenuItem value="ALL">ALL</MenuItem>
-                <MenuItem value="MaterialPurchase">Material Purchase</MenuItem>
-                <MenuItem value="OldMetalPurchase">Old Metal Purchase</MenuItem>
+                <MenuItem
+                  value="ALL"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  Voucher Type
+                </MenuItem>
+                <MenuItem
+                  value="MaterialPurchase"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  Material Purchase
+                </MenuItem>
+                <MenuItem
+                  value="OldMetalPurchase"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  Old Metal Purchase
+                </MenuItem>
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
+            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
               <Select
                 value={selectedDateColumn}
                 onChange={(e) => setSelectedDateColumn(e.target.value)}
@@ -1819,16 +1944,32 @@ export default function MaterialPurhcaseReport() {
                     },
                   },
                 }}
+                style={{
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                sx={{
+                  "& .MuiSelect-select": {
+                    padding: "7px !important",
+                  },
+                }}
               >
                 {allCurrencyData?.map((col) => (
-                  <MenuItem key={col?.id} value={col?.Currencycode}>
+                  <MenuItem
+                    key={col?.id}
+                    value={col?.Currencycode}
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
                     {col?.Currencycode}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
+            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
               <Select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
@@ -1840,10 +1981,33 @@ export default function MaterialPurhcaseReport() {
                     },
                   },
                 }}
+                style={{
+                  fontSize: "14px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+                sx={{
+                  "& .MuiSelect-select": {
+                    padding: "7px !important",
+                  },
+                }}
               >
-                <MenuItem value="ALL Users">ALL Users</MenuItem>
+                <MenuItem
+                  value="ALL Users"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  ALL Users
+                </MenuItem>
                 {allUserNameList?.map((col) => (
-                  <MenuItem key={col["1"]} value={col["1"]}>
+                  <MenuItem
+                    key={col["1"]}
+                    value={col["1"]}
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
                     {col["2"]}
                   </MenuItem>
                 ))}
@@ -1905,29 +2069,21 @@ export default function MaterialPurhcaseReport() {
                   },
                   pagination: {
                     paginationModel: {
-                      pageSize: 10,
+                      pageSize: 20,
                       page: 0,
                     },
                   },
                 }}
                 sortModel={sortModel}
                 onSortModelChange={(model) => setSortModel(model)}
-                sortingOrder={["asc", "desc"]} // For Sorting.....
+                // sortingOrder={["asc", "desc"]} // For Sorting.....
+                sortingOrder={["desc", "asc"]}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
-                pageSizeOptions={[10, 20, 50, 100]}
+                pageSizeOptions={[20, 30, 50, 100, 200]}
                 className="simpleGridView"
                 pagination
                 sx={{
-                  // "& .MuiDataGrid-cell": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeaders": {
-                  //   borderBottom: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeader": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
