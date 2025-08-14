@@ -1122,10 +1122,18 @@ export default function MaterialPurhcaseReport() {
         0
       );
 
+    const calcTotalTunchWeight = () =>
+      filteredRows?.reduce(
+        (sum, row) => sum + (parseFloat(row.tunchweight) || 0),
+        0
+      );
+
     const calcAverageRate = () => {
       const amount = calcTotalAmount();
       const weight = calcTotalWeight();
-      return weight > 0 ? amount / weight : 0;
+      const tounchWt = calcTotalTunchWeight();
+      let findTunch = (tounchWt * 100) / weight;
+      return weight > 0 ? amount / findTunch : 0;
     };
 
     const calcLabourAmount = () =>
@@ -1627,11 +1635,12 @@ export default function MaterialPurhcaseReport() {
                 />
                 <Button
                   onClick={() => {
+                    fetchData("", "");
                     setFilterState({
                       ...filterState,
                       dateRange: {
-                        startDate: new Date("2000-01-01T18:30:00.000Z"),
-                        endDate: new Date(),
+                        startDate: "",
+                        endDate: "",
                       },
                     });
                     setPurchaseAgainMemo("");

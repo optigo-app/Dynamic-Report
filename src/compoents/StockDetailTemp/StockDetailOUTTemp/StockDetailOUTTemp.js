@@ -683,9 +683,126 @@ export default function StockDetailOUTTemp() {
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
 
-  useEffect(() => {
+ useEffect(() => {
+    const getItemName = (itemid) => {
+      return masterData.rd.find((x) => x.id === itemid)?.itemname || "";
+    };
+
+    const getShapeName = (itemName, shapeid) => {
+      if (itemName === "DIAMOND") {
+        return (
+          masterData.rd2.find((x) => x.shapeid === shapeid)?.DiamondShape || ""
+        );
+      } else if (itemName === "COLOR STONE") {
+        return (
+          masterData.rd3.find((x) => x.shapeid === shapeid)?.ColorStoneShape ||
+          ""
+        );
+      } else if (itemName === "MISC") {
+        return (
+          masterData.rd4.find((x) => x.shapeid === shapeid)?.Miscshape || ""
+        );
+      }
+      return shapeid || "";
+    };
+
+    const getColorName = (itemName, colorid) => {
+      if (itemName === "DIAMOND") {
+        return (
+          masterData.rd5?.find((x) => x.colorid === colorid)?.Diamondcolor || ""
+        );
+      } else if (itemName === "COLOR STONE") {
+        return (
+          masterData.rd6?.find((x) => x.colorid === colorid)?.ColorStonecolor ||
+          ""
+        );
+      } else if (itemName === "MISC") {
+        return (
+          masterData.rd7?.find((x) => x.colorid === colorid)?.Misccolor || ""
+        );
+      }
+      return colorid || "";
+    };
+
+    const getQualityName = (itemName, qualityid) => {
+      console.log("itemNameitemName", itemName, qualityid);
+      if (itemName === "DIAMOND") {
+        return (
+          masterData.rd8?.find((x) => x.qualityid === qualityid)
+            ?.diamondquality || ""
+        );
+      } else if (itemName === "COLOR STONE") {
+        return (
+          masterData.rd9?.find((x) => x.qualityid === qualityid)
+            ?.colorstonequality || ""
+        );
+      } else if (itemName === "MISC") {
+        return (
+          masterData.rd10?.find((x) => x.qualityid === qualityid)
+            ?.miscquality || ""
+        );
+      } else if (itemName === "FINDING") {
+        return (
+          masterData.rd11?.find((x) => x.qualityid === qualityid)
+            ?.FindingQuality || ""
+        );
+      }
+      return qualityid || "";
+    };
+
+    const getSizeName = (itemName, sizeId) => {
+      if (itemName === "DIAMOND") {
+        return (
+          masterData.rd11?.find((x) => x.sizeid === sizeId)?.diamondsize || ""
+        );
+      } else if (itemName === "COLOR STONE") {
+        return (
+          masterData.rd12?.find((x) => x.sizeid === sizeId)?.colorstonesize ||
+          ""
+        );
+      } else if (itemName === "MISC") {
+        return (
+          masterData.rd13?.find((x) => x.sizeid === sizeId)?.miscsize || ""
+        );
+      } else if (itemName === "FINDING") {
+        return (
+          masterData.rd15?.find((x) => x.sizeid === sizeId)?.FindingSize || ""
+        );
+      } else if (itemName === "METAL") {
+        return (
+          masterData.rd16?.find((x) => x.sizeid === sizeId)?.MetalSize || ""
+        );
+      }
+      return sizeId || "";
+    };
+
+    const getMaterialName = (qualityid) => {
+      const match = masterData.rd1?.find((x) => x.materialtypeid === qualityid);
+      return match?.materialtypename || qualityid || "";
+    };
+    
     const newFilteredRows = originalRows?.filter((row) => {
       let isMatch = true;
+
+      const itemName = getItemName(row.itemid); // use same mapping
+      const getDisplayValue = (field, value) => {
+        switch (field) {
+          case "shapeid":
+            return getShapeName(itemName, value);
+          case "colorid":
+            return getColorName(itemName, value);
+          case "qualityid":
+            return getQualityName(itemName, value);
+          case "sizeid":
+            return getSizeName(itemName, value);
+          case "materialtypeid":
+            return getMaterialName(value);
+          case "itemid":
+            return itemName;
+          default:
+            return value;
+        }
+      };
 
       if (selectedMaterial && row.event !== selectedMaterial) {
         isMatch = false;
@@ -695,7 +812,7 @@ export default function StockDetailOUTTemp() {
         const filterValue = filters[filterField];
         if (!filterValue || filterValue.length === 0) continue;
 
-        const rawRowValue = row[filterField];
+        const rawRowValue = getDisplayValue(filterField, row[filterField]);
 
         if (filterField.includes("_min") || filterField.includes("_max")) {
           const baseField = filterField.replace("_min", "").replace("_max", "");
@@ -756,9 +873,10 @@ export default function StockDetailOUTTemp() {
 
       if (isMatch && commonSearch) {
         const searchText = commonSearch.toLowerCase();
-        const hasMatch = Object.values(row).some((value) =>
-          value?.toString().toLowerCase().includes(searchText)
-        );
+        const hasMatch = Object.keys(row).some((key) => {
+          const displayVal = getDisplayValue(key, row[key]);
+          return displayVal?.toString().toLowerCase().includes(searchText);
+        });
         if (!hasMatch) {
           isMatch = false;
         }
@@ -1483,9 +1601,9 @@ export default function StockDetailOUTTemp() {
         >
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-              <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
+              {/* <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
                 Filter
-              </button>
+              </button> */}
               {/* <FormControl size="small" sx={{ minWidth: 200, margin: "0px" }}>
                 <InputLabel>Date Type</InputLabel>
                 <Select
