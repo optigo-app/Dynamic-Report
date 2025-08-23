@@ -23,12 +23,6 @@ import RefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
 import LossRefiningReport from "./compoents/LossRefiningReport/LossRefiningReport";
 import MaterialWiseWIP from "./compoents/MaterialWiseWIP/MaterialWiseWIP";
 import CustomerReceiveReport from "./compoents/CustomerReceiveReport/CustomerReceiveReport";
-// Rajan Report
-import FactoryLossReport from "./compoents/Rajan/components/FactoryLossReport/index";
-import OrderCompletionReport from "./compoents/Rajan/components/OrderCompletionReport/index";
-import QuoteAnalysisReport from "./compoents/Rajan/components/QuoteAnalysisReport/index";
-import SalesAnalysisReport from "./compoents/Rajan/components/SalesAnalysisReport/index";
-// End Rajan Report
 import CustomerReturnReport from "./compoents/CustomerReturnReport/CustomerReturnReport";
 import SignageDisplayList from "./compoents/SignageDisplayList/SignageDisplayList";
 import MaterialPurhcaseReturnReport from "./compoents/MaterialPurhcaseReturnReport/MaterialPurhcaseReturnReport";
@@ -40,6 +34,7 @@ import StockDetailIN from "./compoents/StockDetail/StockDetailIN/StockDetailIN";
 import StockMain from "./compoents/StockDetail/StockMain";
 import StockDetailINTemp from "./compoents/StockDetailTemp/StockDetailINTemp/StockDetailINTemp";
 import StockDetailOUTTemp from "./compoents/StockDetailTemp/StockDetailOUTTemp/StockDetailOUTTemp";
+import NewFirstSample from "./compoents/AA_NewSampleReport/NewFirstSample";
 
 // Test73  :-    http://nzen/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
 // http://localhost:3000/testreport/?sv=/e3tsaXZlLm9wdGlnb2FwcHMuY29tfX17ezIwfX17e3Rlc3Q3M319e3t0ZXN0NzN9fQ==/1&ifid=WorkerReportPro&pid=18223
@@ -74,16 +69,13 @@ const GridMain = () => {
     //    "skey",
     //    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJpdGFzayIsImF1ZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJleHAiOjE3NDU5MTEwNDcsInVpZCI6ImFtVnVhWE5BWldjdVkyOXQiLCJ5YyI6ImUzdHVlbVZ1ZlgxN2V6SXdmWDE3ZTI5eVlXbHNNalY5Zlh0N2IzSmhhV3d5TlgxOSIsInN2IjoiMCJ9.9n0tGL-CArkbq3sn0Bfh17xZC7sgubAOWaHDe7rl25w"
     //  );
-    
     const interval = setInterval(() => {
       const token = Cookies.get("skey");
       if (!token) {
         setTokenMissing(true);
       }
     }, 500);
-
     const token = Cookies.get("skey");
-
     if (token) {
       getQueryParams();
     } else {
@@ -177,39 +169,32 @@ const GridMain = () => {
     } else if (pid == 18296) {
       return <MaterialWiseWIP />; // 1728 Doc.
     } else if (pid == 18297) {
-      return <CustomerReceiveReport />; // 1729 Doc.       // new tab open code
+      return <CustomerReceiveReport />; // 1729 Doc.            // new tab open code
     } else if (pid == 18303) {
-      return <CustomerReturnReport />; // 1748 Doc.        // new tab open code
+      return <CustomerReturnReport />; // 1748 Doc.             // new tab open code
     } else if (pid == 18309) {
-      return <Materialmemoreport />; // 1747 Doc.          // new tab open code
+      return <Materialmemoreport />; // 1747 Doc.               // new tab open code
     } else if (pid == 18304) {
-      return <MaterialPurhcaseReturnReport />; // 1751 Doc.       // new tab open code
+      return <MaterialPurhcaseReturnReport />; // 1751 Doc.     // new tab open code
     } else if (pid == 18305) {
-      return <MaterialSaleReport />; // 1752 Doc.          // new tab open code
+      return <MaterialSaleReport />; // 1752 Doc.               // new tab open code
     } else if (pid == 18307) {
-      return <MaterialPurhcaseReport />; // 1750 Doc.          // new tab open code
+      return <MaterialPurhcaseReport />; // 1750 Doc.           // new tab open code
     } else if (pid == 18310) {
       return <SignageDisplayList />; // 1256 Doc.
     } else if (pid == 18312) {
       return <STOCKVALUATION />; // 1438 Doc.
-    }  else if (pid == 18316) {
+    } else if (pid == 18316) {
       return <StockMain />; // 1438 Doc.
     } else if (pid == 18317) {
       return <StockDetailINTemp />; // 1438 Doc.
     } else if (pid == 18319) {
       return <StockDetailOUTTemp />; // 1438 Doc.
-    } else if (pid == 18301) {
-      return <FactoryLossReport />; //Rajan
-    } else if (pid == 18300) {
-      return <OrderCompletionReport />; // Rajan
     } else if (pid == 1000) {
       return <ItaskReport />; // 1256 Doc.
-    }else if (pid == 18315) {
-      return <QuoteAnalysisReport />; // Rajan
-    }else if (pid == 18314) {
-      return <SalesAnalysisReport />; // Rajan
-    }
-     else {
+    } else if (pid == 18324) {
+      return <NewFirstSample />; 
+    } else {
       return (
         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>
       );

@@ -1,27 +1,28 @@
-// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18307
+// http://localhost:3000/testreport/?sp=9&ifid=ToolsReport&pid=18324
+// \\nzen\allpublish\lib\jo\28\reactSampleTest
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Box from "@mui/material/Box";
-import { DataGrid } from "@mui/x-data-grid";
-import "./MaterialPurhcaseReport.scss";
-import OtherKeyData from "./MaterialPurhcaseReport.json";
-import DatePicker from "react-datepicker";
-// import masterData from "./masterData.json";
+import { DataGrid, useGridApiRef } from "@mui/x-data-grid";
+import "./NewSampleReport.scss";
+import "react-datepicker/dist/react-datepicker.css";
 import mainButton from "../images/Mail_32.png";
 import printButton from "../images/print.png";
-import customerR from "../images/customerR.png";
 import gridView from "../images/GriedView.png";
 import imageView from "../images/ImageView2.png";
 import { RiFullscreenLine } from "react-icons/ri";
-import "react-datepicker/dist/react-datepicker.css";
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Button,
+  Card,
   Checkbox,
   CircularProgress,
   Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Drawer,
   FormControl,
   FormControlLabel,
@@ -34,6 +35,7 @@ import {
   Select,
   Slide,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
@@ -43,23 +45,27 @@ import {
   MdOutlineFilterAlt,
   MdOutlineFilterAltOff,
 } from "react-icons/md";
-import CustomTextField from "../text-field/index";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { AiFillSetting } from "react-icons/ai";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import DualDatePicker from "../DatePicker/DualDatePicker";
-import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, CircleX } from "lucide-react";
-import { IoMdClose } from "react-icons/io";
+import { AlertTriangle, CircleX, FunnelPlus, FunnelX } from "lucide-react";
+import SummarizeIcon from "@mui/icons-material/Summarize";
+import { DateRangePicker } from "mui-daterange-picker";
+import DatePicker from "react-datepicker";
+import masterData from "./masterData.json";
+import CustomTextField from "../text-field";
+import DualDatePicker from "../DatePicker/DualDatePicker";
+import { GoCopy } from "react-icons/go";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
-import dayjs from "dayjs";
 
 let popperPlacement = "bottom-start";
+
 const ItemType = {
   COLUMN: "COLUMN",
 };
+
 const EXCEL_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
 
@@ -75,25 +81,23 @@ const style = {
   p: 4,
 };
 
-const DraggableColumn = ({ col, index, checkedColumns, setCheckedColumns }) => {
+const DraggableColumn = ({
+  col,
+  index,
+  handleCheckboxChange,
+  checkedColumns,
+}) => {
   return (
     <Draggable draggableId={col.field.toString()} index={index}>
       {(provided, snapshot) => (
-        <div
+        <Card
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          className="banner_card"
           style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "8px",
-            border: "1px solid lightgray",
-            marginBottom: "15px",
-            height: "55px",
-            background: snapshot.isDragging ? "#e0e0e0" : "rgb(234, 234, 234)",
-            borderRadius: "4px",
-            cursor: "grab",
             opacity: snapshot.isDragging ? 0.5 : 1,
+            cursor: "grab",
             transition: "opacity 0.2s ease",
             ...provided.draggableProps.style,
           }}
@@ -102,17 +106,17 @@ const DraggableColumn = ({ col, index, checkedColumns, setCheckedColumns }) => {
             control={
               <Checkbox
                 checked={checkedColumns[col.field]}
-                onChange={() =>
-                  setCheckedColumns((prev) => ({
-                    ...prev,
-                    [col.field]: !prev[col.field],
-                  }))
-                }
+                onChange={() => handleCheckboxChange(col.field)}
               />
             }
             label={col.headerName}
+            sx={{
+              "& .MuiCheckbox-sizeSmall": {
+                display: "none!important",
+              },
+            }}
           />
-        </div>
+        </Card>
       )}
     </Draggable>
   );
@@ -126,75 +130,59 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-export default function MaterialPurhcaseReport() {
+export default function NewSampleReport({ OtherKeyData, mode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [toDate, setToDate] = useState(null);
   const [fromDate, setFromDate] = useState(null);
-  const [open, setOpen] = useState(false);
   const gridContainerRef = useRef(null);
   const [showImageView, setShowImageView] = useState(false);
-  const [selectedColors, setSelectedColors] = useState([]);
   const [openPopup, setOpenPopup] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const [openHrefModel, setOpenHrefModel] = useState(false);
   const [columns, setColumns] = useState([]);
   const [openPDate, setOpenPDate] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedRd3Name, setSelectedRd3Name] = useState("");
   const [masterKeyData, setMasterKeyData] = useState();
   const [allColumIdWiseName, setAllColumIdWiseName] = useState();
   const [allColumData, setAllColumData] = useState();
   const [allRowData, setAllRowData] = useState();
   const [checkedColumns, setCheckedColumns] = useState({});
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState();
-  const [selectedEmployeeCode, setSelectedEmployeeCode] = useState();
-  const [lastUpdated, setLastUpdated] = useState("");
   const gridRef = useRef(null);
   const [searchParams] = useSearchParams();
-  const [startDate, setStartDate] = useState();
-  const [endDate, setEndDate] = useState();
-  const [AllFinalData, setFinalData] = useState();
   const [status500, setStatus500] = useState(false);
-  const [purchaseBtnDis, setPurchaseBtnDis] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
-  const [sortModel, setSortModel] = React.useState([
-    { field: "invoicedate", sort: "desc" },
-  ]);
+  const [sortModel, setSortModel] = useState([]);
+  const [summaryData, setSummaryData] = useState([]);
+  const [activeActionColumn, setActiveActionColumn] = useState(null);
+  const [tempValue, setTempValue] = useState("");
+  const [selectionModel, setSelectionModel] = useState([]);
 
-  const [allUserNameList, setAllUserNameList] = useState([]);
-  const [selectedUser, setSelectedUser] = useState("ALL Users");
+  //Date Filters
+  const [dateColumnOptions, setDateColumnOptions] = useState([]);
+  const [selectedDateColumn, setSelectedDateColumn] = useState("");
+  const [filterState, setFilterState] = useState({
+    dateRange: { startDate: null, endDate: null },
+  });
 
-  const [allCurrencyData, setAllCurrencyData] = useState([]);
-  const [selectedDateColumn, setSelectedDateColumn] = useState("INR");
+  const startDate = filterState?.dateRange?.startDate;
+  const endDate = filterState?.dateRange?.endDate;
+  const apiRef = useGridApiRef();
 
-  const [selectedMetal, setSelectedMetal] = useState("Select Material");
-  const [selectedDateColumnHyBrid, setSelectedDateColumnHyBrid] =
-    useState("ALL");
-  const [materialPurchase, setMaterialPurchase] = useState("ALL");
-  const [purchaseAgainMemo, setPurchaseAgainMemo] = useState("ALL");
-  const [currencyAdjustedRows, setCurrencyAdjustedRows] = useState([]);
   const [grupEnChekBox, setGrupEnChekBox] = useState({
-    designation: true,
+    empbarcode: true,
     dept: true,
-    empname: true,
   });
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
     pageSize: 20,
   });
-  const [showAllData, setShowAllData] = useState(false);
-  const [filterState, setFilterState] = useState({
-    dateRange: { startDate: null, endDate: null },
-  });
 
+  const pid = searchParams.get("pid");
   const firstTimeLoadedRef = useRef(false);
 
   useEffect(() => {
     const now = new Date();
     const formattedDate = formatToMMDDYYYY(now);
-    setStartDate(formattedDate);
-    setEndDate(formattedDate);
     fetchData(formattedDate, formattedDate);
-    getMasterData();
     setFilterState({
       dateRange: {
         startDate: now,
@@ -203,7 +191,7 @@ export default function MaterialPurhcaseReport() {
     });
     setTimeout(() => {
       firstTimeLoadedRef.current = true;
-    }, 0);
+    }, 0); // lets React finish updating state first
   }, []);
 
   useEffect(() => {
@@ -212,84 +200,61 @@ export default function MaterialPurhcaseReport() {
     if (s && e) {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
-
-      setStartDate(formattedStart);
-      setEndDate(formattedEnd);
-
       fetchData(formattedStart, formattedEnd);
-      getMasterData();
     }
   }, [filterState.dateRange]);
 
-  const getMasterData = async () => {
-    const sp = searchParams.get("sp");
-    let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
-    const body = {
-      con: `{"id":"","mode":"materialpurchasereport_master","appuserid":"${AllData?.uid}"}`,
-      p: "",
-      f: "Task Management (taskmaster)",
-    };
-    try {
-      const fetchedData = await GetWorkerData(body, sp);
-      setAllCurrencyData(fetchedData?.Data?.rd);
-      setAllUserNameList(fetchedData?.Data?.rd2);
-    } catch (error) {
-      if (error?.status == 500) {
-        setStatus500(true);
-      }
-      setIsLoading(false);
-    }
-  };
+  useEffect(() => {
+    setTimeout(() => {
+      const items = document.querySelectorAll(
+        ".MuiButtonBase-root.MuiListItem-root.MuiListItem-gutters.MuiListItem-padding.MuiListItem-button"
+      );
+      items.forEach((item) => {
+        const textElement = item.querySelector(".MuiListItemText-root");
+        if (textElement) {
+          const text = textElement.textContent.trim();
+          if (text === "Last Year" || text === "This Year") {
+            item.style.display = "none";
+          }
+        }
+      });
+    }, 100);
+  }, []);
 
   const fetchData = async (stat, end) => {
-    const sp = searchParams.get("sp");
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
-
+    const sp = searchParams.get("sp");
     setIsLoading(true);
-    const body = {
-      con: `{"id":"","mode":"materialpurchasereport","appuserid":"${AllData?.uid}"}`,
-      p: `{"fdate":"${stat}","tdate":"${end}"}`,
-      f: "Task Management (taskmaster)",
-    };
-
     try {
-      const fetchedData = await GetWorkerData(body, sp);
-      if (showAllData) {
-        setFilterState({
-          ...filterState,
-          dateRange: {
-            startDate: null,
-            endDate: null,
-          },
-        });
-        setShowAllData(false);
-      }
-      setAllRowData(fetchedData?.Data?.rd1);
-      setAllColumIdWiseName(fetchedData?.Data?.rd);
+      // const res = await fetch("/lib/jo/28/reactSampleTest/sampledata.json");
+      // if (!res.ok) {
+      //   throw new Error(`HTTP error! status: ${res.status}`);
+      // }
+      // const OtherKeyData = await res.json();
+      // const data = await res.json();
+      setAllRowData(OtherKeyData?.rd3);
+      setAllColumIdWiseName(OtherKeyData?.rd2);
       setMasterKeyData(OtherKeyData?.rd);
       setAllColumData(OtherKeyData?.rd1);
-      setFinalData(fetchedData?.Data);
-      setIsLoading(false);
+      const grupCheckboxMap = (OtherKeyData?.rd1 || [])
+        .filter((col) => col?.grupChekBox)
+        .reduce((acc, col) => {
+          if (col.defaultGrupChekBox) {
+            acc[col.field] = true;
+          } else {
+            acc[col.field] = false;
+          }
+          return acc;
+        }, {});
+      setGrupEnChekBox(grupCheckboxMap);
+      setStatus500(false);
     } catch (error) {
-      if (error?.status == 500) {
-        setStatus500(true);
-      }
+      console.error("Fetch error:", error);
+      setStatus500(true);
+    } finally {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    const now = new Date();
-    const formatNumber = (n) => n.toString().padStart(2, "0");
-
-    const formattedDate = `${formatNumber(now.getDate())}-${formatNumber(
-      now.getMonth() + 1
-    )}-${now.getFullYear()} ${formatNumber(now.getHours())}:${formatNumber(
-      now.getMinutes()
-    )}:${formatNumber(now.getSeconds())}`;
-
-    setLastUpdated(formattedDate);
-  }, []);
 
   useEffect(() => {
     if (allColumData) {
@@ -301,20 +266,27 @@ export default function MaterialPurhcaseReport() {
     }
   }, [allColumData]);
 
+  const handleGrupEnChekBoxChange = (field) => {
+    setGrupEnChekBox((prev) => ({
+      ...prev,
+      [field]: !prev[field],
+    }));
+  };
+
   useEffect(() => {
     if (!allColumData) return;
     const columnData = Object?.values(allColumData)
       ?.filter((col) => col.ColumShow)
       ?.map((col, index) => {
-        const isPriorityFilter = col.proiorityFilter === true;
         return {
           field: col.field,
           headerName: (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              {col.GrupChekBox && (
+              {col.grupChekBox && (
                 <Checkbox
-                  checked={grupEnChekBox[col.field] ?? true} // 👉 Correct binding to grupEnChekBox
-                  onChange={() => handleGrupEnChekBoxChange(col.field)} // 👉 Correct handler
+                  checked={grupEnChekBox[col.field] ?? true}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={() => handleGrupEnChekBoxChange(col.field)}
                   size="small"
                   sx={{ p: 0 }}
                 />
@@ -322,29 +294,34 @@ export default function MaterialPurhcaseReport() {
               {col.headerName}
             </div>
           ),
-          headerNameSub: col?.headerName,
+          headerNameSub: col.headerName,
           width: col.Width,
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
           filterable: col.ColumFilter,
+          headerNamesingle: col.headerName,
           suggestionFilter: col.suggestionFilter,
           hrefLink: col.HrefLink,
+          onHrefLinkModel: col.onHrefLinkModel,
+          onHrefNavigate: col.onHrefNavigate,
           summuryValueKey: col.summuryValueKey,
-          summaryTitle: col.summaryTitle,
-          ToFixedValue: col.ToFixedValue,
+          summaryValueFormated: col.summaryValueFormated,
           flex: 1,
-          sortable: col.sortable,
+          summaryTitle: col.summaryTitle,
+          summaryUnit: col.summaryUnit,
+          columToFixedValue: col.columToFixedValue,
+          copyButton: col.copyButton,
           filterTypes: [
             col.NormalFilter && "NormalFilter",
-            col.DateRangeFilter && "DateRangeFilter",
-            col.multiSelection && "multiSelection",
+            col.MultiSelection && "MultiSelection",
             col.RangeFilter && "RangeFilter",
             col.suggestionFilter && "suggestionFilter",
             col.selectDropdownFilter && "selectDropdownFilter",
           ].filter(Boolean),
 
           renderCell: (params) => {
-            if (col.ToFixedValue) {
+            const displayValue = params.value;
+            if (col.columToFixedValue) {
               return (
                 <span
                   style={{
@@ -352,14 +329,21 @@ export default function MaterialPurhcaseReport() {
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "0px",
+                    padding: "5px 20px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
-                  {params.value?.toFixed(col.ToFixedValue)}
+                  {params.value?.toFixed(col.columToFixedValue)}
                 </span>
               );
-            } else if (params?.field === "istorecust_customercode1") {
+            }
+            if (col.dateColumn == true) {
+              const date = new Date(params.value);
+              const formattedDate = date.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              });
               return (
                 <span
                   style={{
@@ -367,71 +351,83 @@ export default function MaterialPurhcaseReport() {
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "0px",
-                    borderRadius: col.BorderRadius,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <p className="osr_mainName">
-                    <b>{params.value}</b>
-                  </p>
-                  <p className="osr_subname">
-                    {params?.row?.istorecust_customercode}
-                  </p>
-                </span>
-              );
-            } else if (col.dateColumn == true) {
-              const formattedDate =
-                params.value && !isNaN(new Date(params.value).getTime())
-                  ? new Date(params.value).toLocaleDateString("en-GB", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })
-                  : "";
-              return (
-                <span
-                  style={{
-                    color: col.Color || "inherit",
-                    backgroundColor: col.BackgroundColor || "inherit",
-                    fontSize: col.FontSize || "inherit",
-                    textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "0px",
+                    padding: "5px 20px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
                   {formattedDate}
                 </span>
               );
+            } else if (col.copyButton) {
+              
+              const handleCopy = () => {
+                navigator.clipboard
+                  .writeText(displayValue)
+                  .then(() => {
+                    console.log("Copied to clipboard");
+                  })
+                  .catch((err) => {
+                    console.error("Failed to copy: ", err);
+                  });
+              };
+
+              return (
+                <div
+                  style={{
+                    display: "flex",
+                    width: "100%",
+                    height: "100%",
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: col.Color || "inherit",
+                      backgroundColor: col.BackgroundColor || "inherit",
+                      fontSize: col.FontSize || "inherit",
+                      textTransform: col.ColumTitleCapital
+                        ? "uppercase"
+                        : "none",
+                      padding: "5px 20px",
+                      borderRadius: col.BorderRadius,
+                    }}
+                  >
+                    {displayValue}
+                  </span>
+                  <Button
+                    onClick={handleCopy}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      marginLeft: "8px",
+                    }}
+                    title="Copy to clipboard"
+                  >
+                    <GoCopy style={{ fontSize: "18px", color: "black" }} />
+                  </Button>
+                </div>
+              );
             } else if (col.hrefLink) {
               return (
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <a
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "blue",
-                      textDecoration: "underline",
-                      fontSize: col.FontSize || "inherit",
-                      padding: "0px",
-                      cursor: "pointer",
-                      fontSize: col.FontSize || "inherit",
-                      textOverflow: "ellipsis",
-                      overflow: "hidden",
-                      width: "120px",
-                    }}
-                    onClick={() => handleClick(params)}
-                  >
-                    {params.value}
-                  </a>
-
-                  <img
-                    src={customerR}
-                    style={{ cursor: "pointer", width: "20px", height: "20px" }}
-                    onClick={() => handleClickInvoiceImg(params)}
-                  />
-                </div>
+                <a
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "blue",
+                    textDecoration: "underline",
+                    fontSize: col.FontSize || "inherit",
+                    padding: "5px 20px",
+                    cursor: "pointer",
+                    width: "120px",
+                    fontSize: col.FontSize || "inherit",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                  }}
+                  onClick={() => handleCellClick(params)}
+                >
+                  {params.value}
+                </a>
               );
             } else {
               return (
@@ -441,7 +437,7 @@ export default function MaterialPurhcaseReport() {
                     backgroundColor: col.BackgroundColor || "inherit",
                     fontSize: col.FontSize || "inherit",
                     textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-                    padding: "0px",
+                    padding: "5px 20px",
                     borderRadius: col.BorderRadius,
                   }}
                 >
@@ -455,52 +451,101 @@ export default function MaterialPurhcaseReport() {
 
     const srColumn = {
       field: "sr",
-      headerName: "Sr#",
-      width: 70,
+      headerName: (
+        <>
+          {masterKeyData?.chekboxSelection ? (
+            <>
+              <Checkbox
+                checked={
+                  filteredRows?.length > 0 &&
+                  selectionModel.length === filteredRows.length
+                }
+                indeterminate={
+                  selectionModel.length > 0 &&
+                  selectionModel.length < filteredRows.length
+                }
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    const start =
+                      paginationModel.page * paginationModel.pageSize;
+                    const end = start + paginationModel.pageSize;
+                    const pageRows = filteredRows.slice(start, end);
+                    setSelectionModel(pageRows.map((r) => r.id));
+                  } else {
+                    // ✅ Clear all
+                    setSelectionModel([]);
+                  }
+                }}
+                size="small"
+              />
+              Sr#
+            </>
+          ) : (
+            "Sr#"
+          )}
+        </>
+      ),
+      width: 90,
       sortable: false,
       filterable: false,
       renderCell: (params) => {
-        const indexOnPage = params.api.getRowIndexRelativeToVisibleRows(
-          params.id
-        );
+        const isChecked = selectionModel.includes(params.id);
         return (
-          paginationModel.page * paginationModel.pageSize + indexOnPage + 1
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {masterKeyData?.chekboxSelection && (
+              <Checkbox
+                size="small"
+                checked={selectionModel.includes(params.id)}
+                onChange={() => {
+                  if (selectionModel.includes(params.id)) {
+                    setSelectionModel((prev) =>
+                      prev.filter((id) => id !== params.id)
+                    );
+                  } else {
+                    setSelectionModel((prev) => [...prev, params.id]);
+                  }
+                }}
+              />
+            )}
+            {paginationModel.page * paginationModel.pageSize +
+              params.api.getRowIndexRelativeToVisibleRows(params.id) +
+              1}
+          </div>
         );
       },
     };
 
     setColumns([srColumn, ...columnData]);
-  }, [allColumData, grupEnChekBox, sortModel, paginationModel]);
+  }, [allColumData, grupEnChekBox, sortModel, paginationModel, selectionModel]);
 
-  //  if (params?.field === "ratecolum") {
-  //           const totalWt = parseFloat(params?.row?.totalwt) || 0;
-  //           const tunchWeight = parseFloat(params?.row?.tunchweight) || 0;
-  //           const totalPrice = parseFloat(params?.row?.totalprice) || 0;
+  // useEffect(() => {
+  //   if (!allColumData) return;
+  //   const defaultChecked = {};
+  //   Object.values(allColumData).forEach((col) => {
+  //     if (col.grupChekBox) {
+  //       defaultChecked[col.field] = true;
+  //     }
+  //   });
 
-  //           const calculatedWeight = (totalWt * tunchWeight) / 100;
-  //           const finalValue =
-  //             calculatedWeight > 0 ? totalPrice / calculatedWeight : null;
-
-  //           return (
-  //             <span
-  //               style={{
-  //                 color: col.Color || "inherit",
-  //                 backgroundColor: col.BackgroundColor || "inherit",
-  //                 fontSize: col.FontSize || "inherit",
-  //                 textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-  //                 padding: "0px",
-  //                 borderRadius: col.BorderRadius,
-  //               }}
-  //             >
-  //               {finalValue ? finalValue.toFixed(col.ToFixedValue ?? 2) : "-"}
-  //             </span>
-  //           );
-  //         }
+  //   setCheckedColumns(defaultChecked);
+  // }, [allColumData]);
 
   const handleCellClick = (params) => {
-    setSelectedDepartmentId(params?.row?.deptid);
-    setSelectedEmployeeCode(params?.row?.employeecode);
-    setOpen(true);
+    let url_optigo = sessionStorage.getItem("url_optigo");
+
+    if (params?.colDef?.onHrefNavigate) {
+      window?.parent.addTab(
+        "Material Purchase",
+        "icon-InventoryManagement_invoiceSummary",
+        url_optigo +
+          "mfg/app/InventoryManagement_invoiceList?invoiceof=supplier&invoiceno=" +
+          btoa(params?.formattedValue) +
+          "&IsOldMetal=" +
+          params?.row?.isoldmetal
+      );
+    } else if (params?.colDef?.onHrefLinkModel) {
+      setOpenHrefModel(true);
+    }
   };
 
   const originalRows =
@@ -513,55 +558,36 @@ export default function MaterialPurhcaseReport() {
       return { id: index, ...formattedRow };
     });
 
+  useEffect(() => {
+    if (allColumData) {
+      const dateCols = allColumData.filter((col) => col.dateColumn === true);
+      setDateColumnOptions(
+        dateCols.map((col) => ({
+          field: col.field,
+          label: col.headerName,
+        }))
+      );
+
+      if (dateCols.length > 0) {
+        setSelectedDateColumn(dateCols[0].field);
+      }
+    }
+  }, [allColumData]);
+
+  const [pageSize, setPageSize] = useState(10);
   const [filteredRows, setFilteredRows] = useState(originalRows);
   const [filters, setFilters] = useState({});
-  const uniqueCustomers = [
-    "Select Material",
-    ...Array.from(new Set(originalRows?.map((row) => row?.itemname))),
-  ];
 
   useEffect(() => {
+
     const newFilteredRows = originalRows?.filter((row) => {
+
       let isMatch = true;
-
-      if (materialPurchase === "MaterialPurchase") {
-        isMatch = parseInt(row.isoldmetal) === 0;
-      }
-
-      if (materialPurchase === "OldMetalPurchase") {
-        isMatch = parseInt(row.isoldmetal) === 1;
-      }
-
-      if (
-        selectedDateColumnHyBrid === "Hybrid" &&
-        parseInt(row.ishybridbill) !== 1
-      ) {
-        return false;
-      }
-
-      if (
-        purchaseAgainMemo === "PurchaseAgainst" &&
-        parseInt(row.ispurchaseagainstmemo) === 0
-      ) {
-        return false;
-      }
-
-      if (
-        selectedUser !== "ALL Users" &&
-        parseInt(selectedUser) !== row.salesrep_id
-      ) {
-        return false;
-      }
-
-      if (isMatch && selectedMetal !== "Select Material") {
-        if (row.itemname !== selectedMetal) {
-          isMatch = false;
-        }
-      }
-
       for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
         if (!filterValue || filterValue.length === 0) continue;
+
+        const rawRowValue = row[filterField];
 
         if (filterField.includes("_min") || filterField.includes("_max")) {
           const baseField = filterField.replace("_min", "").replace("_max", "");
@@ -585,37 +611,30 @@ export default function MaterialPurhcaseReport() {
             break;
           }
         } else if (Array.isArray(filterValue)) {
-          if (!filterValue.includes(row[filterField])) {
+          if (!filterValue.includes(rawRowValue)) {
             isMatch = false;
             break;
           }
         } else {
-          const rowValue = row[filterField]?.toString().toLowerCase() || "";
-          if (!rowValue.includes(filterValue.toLowerCase())) {
+          const rowValue = rawRowValue?.toString().toLowerCase() || "";
+          const filterValueLower = filterValue.toLowerCase();
+          if (rowValue !== filterValueLower) {
             isMatch = false;
             break;
           }
         }
       }
-      if (isMatch && selectedColors.length > 0 && row.PriorityId) {
-        if (!selectedColors.includes(row.PriorityId)) {
+      if (isMatch && filterState && selectedDateColumn) {
+        const toDateOnly = (d) => new Date(new Date(d).toDateString());
+        const rowDate = toDateOnly(row[selectedDateColumn]);
+        const parsedStart = toDateOnly(startDate);
+        const parsedEnd = toDateOnly(endDate);
+        if (
+          isNaN(rowDate.getTime()) ||
+          rowDate < parsedStart ||
+          rowDate > parsedEnd
+        ) {
           isMatch = false;
-        }
-      }
-      if (isMatch && fromDate && toDate) {
-        const dateColumn = columns.find(
-          (col) =>
-            col.filterTypes && col.filterTypes.includes("DateRangeFilter")
-        );
-        if (dateColumn) {
-          const rowDate = new Date(row[dateColumn.field]);
-          if (
-            isNaN(rowDate.getTime()) ||
-            rowDate < fromDate ||
-            rowDate > toDate
-          ) {
-            isMatch = false;
-          }
         }
       }
       if (isMatch && commonSearch) {
@@ -628,6 +647,7 @@ export default function MaterialPurhcaseReport() {
         }
       }
       return isMatch;
+
     });
 
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
@@ -635,44 +655,26 @@ export default function MaterialPurhcaseReport() {
       srNo: index + 1,
     }));
 
-    setFilteredRows(rowsWithSrNo);
-    const selectedCurrency = allCurrencyData?.find(
-      (c) => c.Currencycode === selectedDateColumn
-    );
+    if (masterKeyData?.grupChekBox) {
+      const groupedRows = groupRows(rowsWithSrNo, grupEnChekBox);
+      setFilteredRows(groupedRows);
+    } else {
+      setFilteredRows(rowsWithSrNo);
+    }
 
-    const rate = selectedCurrency?.CurrencyRate || 1;
-    const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
-    const currencyUpdatedRows = safeRows.map((row) => ({
-      ...row,
-      totalprice: row.totalprice
-        ? parseFloat((row.totalprice / rate).toFixed(2))
-        : row.totalprice,
-    }));
-    const sorted = [...currencyUpdatedRows].sort((a, b) => {
-      return new Date(b.date) - new Date(a.date);
-    });
-
-    setCurrencyAdjustedRows(sorted);
   }, [
     filters,
     commonSearch,
     fromDate,
     toDate,
+    startDate,
     columns,
-    originalRows,
-    selectedColors,
     selectedDateColumn,
-    selectedUser,
-    selectedDateColumnHyBrid,
-    purchaseAgainMemo,
-    materialPurchase,
-    selectedMetal,
-    allCurrencyData,
   ]);
 
   const handleFilterChange = (field, value, filterType) => {
     setFilters((prevFilters) => {
-      if (filterType === "multiSelection") {
+      if (filterType === "MultiSelection") {
         const selectedValues = prevFilters[field] || [];
         let newValues;
 
@@ -701,11 +703,11 @@ export default function MaterialPurhcaseReport() {
       switch (filterType) {
         case "NormalFilter":
           return (
-            <div style={{ margin: "10px", width: "100%" }} key={col.field}>
+            <div style={{ width: "100%", margin: "10px 20px" }}>
               <CustomTextField
                 key={`filter-${col.field}-NormalFilter`}
                 type="text"
-                placeholder={`${col.headerNameSub}`}
+                placeholder={`${col.headerNamesingle}`}
                 value={filters[col.field] || ""}
                 onChange={(e) => handleFilterChange(col.field, e.target.value)}
                 className="filter_column_box"
@@ -722,6 +724,7 @@ export default function MaterialPurhcaseReport() {
   const [suggestionVisibility, setSuggestionVisibility] = useState({});
   const suggestionRefs = useRef({});
   useEffect(() => {
+
     function handleClickOutside(event) {
       for (const field in suggestionRefs.current) {
         if (
@@ -740,9 +743,10 @@ export default function MaterialPurhcaseReport() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
+    
   }, []);
 
-  const renderFilterSuggestionFilter = (col) => {
+  const renderSuggestionFilter = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
 
     const filtersToRender = col.filterTypes;
@@ -809,7 +813,7 @@ export default function MaterialPurhcaseReport() {
         <div
           key={`filter-${field}-suggestionFilter`}
           ref={refCallback}
-          style={{ margin: "10px", position: "relative" }}
+          style={{ margin: "10px 20px", position: "relative", width: "100%" }}
         >
           <CustomTextField
             fullWidth
@@ -867,47 +871,6 @@ export default function MaterialPurhcaseReport() {
     });
   };
 
-  const renderDateFilter = (col) => {
-    if (!col.filterTypes || col.filterTypes.length === 0) return null;
-    const filtersToRender = col.filterTypes;
-
-    return filtersToRender.map((filterType) => {
-      switch (filterType) {
-        case "DateRangeFilter":
-          return (
-            <DatePicker
-              key={`filter-${col.field}-DateRangeFilter`}
-              selectsRange
-              showYearDropdown
-              showMonthDropdown
-              monthsShown={2}
-              endDate={toDate}
-              selected={fromDate}
-              startDate={fromDate}
-              shouldCloseOnSelect={false}
-              id="date-range-picker-months"
-              onChange={handleOnChangeRange}
-              customInput={
-                <CustomTextField
-                  customBorderColor="rgba(47, 43, 61, 0.2)"
-                  borderoutlinedColor="#00CFE8"
-                  customTextColor="#2F2B3DC7"
-                  customFontSize="0.8125rem"
-                  label="Specific Date Range"
-                />
-              }
-              popperPlacement={popperPlacement}
-              dateFormat="dd-MM-yyyy"
-              placeholderText={"dd-mm-yyyy dd-mm-yyyy"}
-              className="rangeDatePicker"
-            />
-          );
-        default:
-          return null;
-      }
-    });
-  };
-
   const renderFilterDropDown = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
     const filtersToRender = col.filterTypes;
@@ -916,7 +879,7 @@ export default function MaterialPurhcaseReport() {
       switch (filterType) {
         case "selectDropdownFilter": {
           const uniqueValues = [
-            ...new Set(originalRows.map((row) => row[col.field])),
+            ...new Set(originalRows?.map((row) => row[col.field])),
           ];
           return (
             <div
@@ -962,14 +925,17 @@ export default function MaterialPurhcaseReport() {
       switch (filterType) {
         case "RangeFilter":
           return (
-            <div key={`filter-${col.field}-RangeFilter`}>
-              <div>
-                <Typography>{col.headerName} :</Typography>
+            <div
+              key={`filter-${col.field}-RangeFilter`}
+              style={{ margin: "10px 20px" }}
+            >
+              <div style={{ display: "flex" }}>
+                <p style={{ margin: "0px" }}>{col.headerName}</p>
               </div>
               <CustomTextField
                 type="number"
                 className="minTexBox"
-                customBorderColor="rgba(47, 43, 61, 0.2)"
+                customBorderColor="rgba(47, 43, 61, 0.06)"
                 placeholder="Min"
                 value={filters[`${col.field}_min`] || ""}
                 onChange={(e) => {
@@ -1015,17 +981,22 @@ export default function MaterialPurhcaseReport() {
     const filtersToRender = col.filterTypes;
     return filtersToRender.map((filterType) => {
       switch (filterType) {
-        case "multiSelection":
+        case "MultiSelection":
           const uniqueValues = [
-            ...new Set(originalRows?.map((row) => row[col.field])),
+            ...new Set(originalRows.map((row) => row[col.field])),
           ];
           return (
-            <div key={col.field} style={{ width: "100%", margin: "10px" }}>
+            <div key={col.field} style={{ margin: "10px 20px" }}>
               <Accordion>
                 <AccordionSummary
                   expandIcon={<MdExpandMore />}
                   aria-controls={`${col.field}-content`}
                   id={`${col.field}-header`}
+                  sx={{
+                    "& .MuiButtonBase-root": {
+                      display: "none",
+                    },
+                  }}
                 >
                   <Typography>{col.headerName}</Typography>
                 </AccordionSummary>
@@ -1040,7 +1011,7 @@ export default function MaterialPurhcaseReport() {
                           handleFilterChange(
                             col.field,
                             { value, checked: e.target.checked },
-                            "multiSelection"
+                            "MultiSelection"
                           )
                         }
                       />
@@ -1058,139 +1029,103 @@ export default function MaterialPurhcaseReport() {
     });
   };
 
-  const handleOnChangeRange = (dates) => {
-    const [start, end] = dates;
-    setFromDate(start);
-    setToDate(end);
-  };
-
-  const handleClose = () => setOpen(false);
   const [sideFilterOpen, setSideFilterOpen] = useState(false);
   const toggleDrawer = (newOpen) => () => {
     setSideFilterOpen(newOpen);
   };
 
   const renderSummary = () => {
-    const summaryConfig = {
-      "SELECT MATERIAL": ["totalAmount"],
-
-      METAL: ["totalAmount", "averageRate", "totalWeight", "totalWeightPure"],
-
-      DIAMOND: ["totalAmount", "averageRate", "totalWeight"],
-
-      "LAB GROWN": ["totalAmount", "averageRate", "totalWeight"],
-
-      "COLOR STONE": ["totalAmount", "averageRate", "totalWeight"],
-
-      MOUNT: [
-        "totalAmount",
-        "averageRate",
-        "totalWeight",
-        "totalWeightPure",
-        "labourAmount",
-        "materialAmount",
-      ],
-
-      FINDING: [
-        "totalAmount",
-        "averageRate",
-        "totalWeight",
-        "totalWeightPure",
-        "labourAmount",
-        "materialAmount",
-      ],
-
-      ALLOY: ["totalAmount", "averageRate", "totalWeight", "totalWeightPure"],
-
-      MISC: ["totalAmount", "averageRate", "totalWeight"],
-    };
-
-    const formatIndianNumber = (value, decimals = 2) => {
-      return value?.toLocaleString("en-IN", {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
-    };
-
-    const calcTotalAmount = () =>
-      filteredRows?.reduce(
-        (sum, row) => sum + (parseFloat(row.totalprice) || 0),
-        0
+    const summaryColumns = columns.filter((col) => {
+      const columnData = Object.values(allColumData).find(
+        (data) => data.field === col.field
       );
-
-    const calcTotalWeight = () =>
-      filteredRows?.reduce(
-        (sum, row) => sum + (parseFloat(row.totalwt) || 0),
-        0
-      );
-
-    const calcTotalWeightPure = () =>
-      filteredRows?.reduce(
-        (sum, row) => sum + (parseFloat(row.purewt) || 0),
-        0
-      );
-
-    const calcAverageRate = () => {
-      const amount = calcTotalAmount();
-      const weight = calcTotalWeight();
-      return weight > 0 ? amount / weight : 0;
-    };
-
-    const calcLabourAmount = () =>
-      filteredRows?.reduce(
-        (sum, row) => sum + (parseFloat(row.labouramount) || 0),
-        0
-      );
-
-    const calcMaterialAmount = () => calcTotalAmount() - calcLabourAmount();
-
-    const summaryCalcMap = {
-      totalAmount: { label: "Total Amount", fn: calcTotalAmount, decimals: 2 },
-      averageRate: { label: "Average Rate", fn: calcAverageRate, decimals: 2 },
-      totalWeight: { label: "Total Weight", fn: calcTotalWeight, decimals: 3 },
-      totalWeightPure: {
-        label: "Total Weight (Pure)",
-        fn: calcTotalWeightPure,
-        decimals: 3,
-      },
-      labourAmount: { label: "L.Amount", fn: calcLabourAmount, decimals: 2 },
-      materialAmount: {
-        label: "M.Amount",
-        fn: calcMaterialAmount,
-        decimals: 2,
-      },
-    };
-    const itemsToShow = summaryConfig[selectedMetal?.toUpperCase()] || [];
-    const weightUnit = ["DIAMOND", "LAB GROWN", "COLOR STONE"].includes(
-      selectedMetal?.toUpperCase()
-    )
-      ? " Ctw"
-      : " Gm";
+      return columnData?.summary;
+    });
 
     return (
       <div className="summaryBox">
-        {itemsToShow.map((key) => {
-          const { label, fn, decimals } = summaryCalcMap[key];
-          const value = fn();
-
-          let displayValue;
-          if (key === "totalWeight" || key === "totalWeightPure") {
-            displayValue = `${value?.toFixed(decimals)}${weightUnit}`;
-          } else {
-            displayValue = formatIndianNumber(value, decimals);
-          }
-
-          return (
-            <div className="summaryItem" key={key}>
-              <div className="AllEmploe_boxViewTotal">
-                <div>
-                  <p className="AllEmplo_boxViewTotalValue">{displayValue}</p>
-                  <p className="boxViewTotalTitle">{label}</p>
+        {pid == 18231
+          ? summaryData?.map((col) => {
+              return (
+                <div className="summaryItem" key={col.field}>
+                  <div className="AllEmploe_boxViewTotal">
+                    <div>
+                      <p className="AllEmplo_boxViewTotalValue">{col.value}</p>
+                      <p className="boxViewTotalTitle">{col.title}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          );
-        })}
+              );
+            })
+          : summaryColumns.map((col) => {
+              let calculatedValue = 0;
+              if (col.field === "lossperfm") {
+                const totalLossWt =
+                  filteredRows?.reduce(
+                    (sum, row) => sum + (parseFloat(row.losswt) || 0),
+                    0
+                  ) || 0;
+
+                const totalNetReturnWt =
+                  filteredRows?.reduce(
+                    (sum, row) => sum + (parseFloat(row.netretunwt) || 0),
+                    0
+                  ) || 1; // prevent division by 0
+                calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+              } else if (col.field === "lossper") {
+                const totalLossWt =
+                  filteredRows?.reduce(
+                    (sum, row) => sum + (parseFloat(row.losswt) || 0),
+                    0
+                  ) || 0;
+
+                const totalNetReturnWt =
+                  filteredRows?.reduce(
+                    (sum, row) => sum + (parseFloat(row.netretunwtfm) || 0),
+                    0
+                  ) || 1; // prevent division by 0
+                calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+              } else if (col.field === "losspergross") {
+                const totalLossWt =
+                  filteredRows?.reduce(
+                    (sum, row) => sum + (parseFloat(row.losswt) || 0),
+                    0
+                  ) || 0;
+
+                const totalNetReturnWt =
+                  filteredRows?.reduce(
+                    (sum, row) => sum + (parseFloat(row.grossnetretunwt) || 0),
+                    0
+                  ) || 1; // prevent division by 0
+                calculatedValue = (totalLossWt / totalNetReturnWt) * 100;
+              } else {
+                calculatedValue =
+                  filteredRows?.reduce(
+                    (sum, row) => sum + (parseFloat(row[col.field]) || 0),
+                    0
+                  ) || 0;
+              }
+              return (
+                <div className="summaryItem" key={col.field}>
+                  <div className="AllEmploe_boxViewTotal">
+                    <div>
+                      <p className="AllEmplo_boxViewTotalValue">
+                        {col?.summaryValueFormated
+                          ? Number(calculatedValue).toLocaleString("en-IN", {
+                              minimumFractionDigits: col?.summuryValueKey,
+                              maximumFractionDigits: col?.summuryValueKey,
+                            })
+                          : calculatedValue.toFixed(col?.summuryValueKey)}{" "}
+                        <span style={{ fontSize: "17px" }}>
+                          {col?.summaryUnit}
+                        </span>
+                      </p>
+                      <p className="boxViewTotalTitle">{col.summaryTitle}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
       </div>
     );
   };
@@ -1217,7 +1152,6 @@ export default function MaterialPurhcaseReport() {
     const isIsoDateTime = (str) =>
       typeof str === "string" && /^\d{4}-\d{2}-\d{2}T/.test(str);
     const fieldToHeader = {};
-
     columns?.forEach((col) => {
       let header = "";
       if (typeof col.headerName === "string") {
@@ -1232,31 +1166,14 @@ export default function MaterialPurhcaseReport() {
       }
       fieldToHeader[col.field] = header;
     });
-
     return rows?.map((row, idx) => {
       const ordered = {};
       columns?.forEach((col) => {
         const header = fieldToHeader[col.field];
         let value = row[col.field] ?? "";
-
-        // Custom Supplier column logic
-        if (col.field === "istorecust_customercode1") {
-          if (value && String(value).trim() !== "") {
-            // keep as is
-          } else if (
-            row.istorecust_customercode &&
-            String(row.istorecust_customercode).trim() !== ""
-          ) {
-            value = row.istorecust_customercode;
-          } else {
-            value = ""; // keep blank if both empty
-          }
-        }
-
         if (header === "Sr#") {
           value = idx + 1;
         }
-
         if (col.field === "Venderfgage") {
           let finalDate = 0;
           const fgDateStr = row.fgdate;
@@ -1279,7 +1196,6 @@ export default function MaterialPurhcaseReport() {
           }
           value = finalDate;
         }
-
         if (isIsoDateTime(value)) {
           const dateObj = new Date(value);
           const day = String(dateObj.getDate()).padStart(2, "0");
@@ -1287,18 +1203,19 @@ export default function MaterialPurhcaseReport() {
           const year = dateObj.getFullYear();
           value = `${day}-${month}-${year}`;
         }
-
         ordered[header] = value;
       });
       return ordered;
     });
   }
+
   const converted = mapRowsToHeaders(columns, filteredRows);
+
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
-
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
@@ -1318,9 +1235,10 @@ export default function MaterialPurhcaseReport() {
         hour12: false,
       })
       .replace(/[/:]/g, "-")
-      .replace(/, /g, "_");
+      .replace(/, /g, "_"); // Format: dd-MM-yyyy_HH-mm-ss
 
-    const fileName = `MaterialPurchaseReport_${dateString}.xlsx`;
+    const fileName = `Job Completion Lead Report_${dateString}.xlsx`;
+
     saveAs(data, fileName);
   };
 
@@ -1360,23 +1278,6 @@ export default function MaterialPurhcaseReport() {
     setShowImageView((prevState) => !prevState);
   };
 
-  const toggleColorSelection = (colorId) => {
-    setSelectedColors((prevSelected) => {
-      if (prevSelected.includes(colorId)) {
-        return prevSelected.filter((id) => id !== colorId);
-      } else {
-        return [...prevSelected, colorId];
-      }
-    });
-  };
-
-  const handleGrupEnChekBoxChange = (field) => {
-    setGrupEnChekBox((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
-  };
-
   const handleClickOpenPoup = () => {
     setOpenPopup(true);
   };
@@ -1385,50 +1286,119 @@ export default function MaterialPurhcaseReport() {
     setOpenPopup(false);
   };
 
-  const handleCheckboxChange = (event) => {
-    setIsChecked(event.target.checked);
-  };
-
   const handleSave = () => {
     console.log("Saving data...");
     console.log("Selected Date:", selectedDate);
-    console.log("Selected Rd3 Name:", selectedRd3Name);
   };
 
-  const onDragEnd = () => {};
+  const moveColumn = (dragIndex, hoverIndex) => {
+    const updatedColumns = [...columns];
+    const [movedColumn] = updatedColumns.splice(dragIndex, 1);
+    updatedColumns.splice(hoverIndex, 0, movedColumn);
+    setColumns(updatedColumns);
+  };
+
+  const onDragEnd = (result) => {
+    moveColumn(result.source.index, result.destination.index);
+  };
+
+  useEffect(() => {
+    let metalAmount = 0;
+    let totalDiamondAmount = 0;
+    let totalCSTAmount = 0;
+    let totalMISCAmount = 0;
+    let metalWeight = 0;
+    let diamondWeight = 0,
+      diamondPcs = 0;
+    let colorStoneWeight = 0,
+      colorStonePcs = 0;
+    let miscWeight = 0,
+      miscPcs = 0;
+    let totalPureWeight = 0;
+    let totalAmount = 0;
+
+    filteredRows?.forEach((item) => {
+      const { material, amount, weight, pcs, purewt } = item;
+
+      if (material === "METAL") {
+        metalAmount += amount;
+      }
+
+      if (material === "METAL" || material === "FINDING") {
+        metalWeight += weight;
+      }
+
+      if (material === "DIAMOND") {
+        totalDiamondAmount += amount;
+        diamondWeight += weight;
+        diamondPcs += pcs;
+      }
+
+      if (material === "COLOR STONE") {
+        totalCSTAmount += amount;
+        colorStoneWeight += weight;
+        colorStonePcs += pcs;
+      }
+      if (material === "MISC") {
+        totalMISCAmount += amount;
+        miscWeight += weight;
+        miscPcs += pcs;
+      }
+
+      totalPureWeight += purewt;
+      totalAmount += amount;
+    });
+
+    const finalSummary = [
+      { title: "Total Metal Amt", value: metalAmount?.toFixed(2) },
+      { title: "Total Dia. Amt", value: totalDiamondAmount?.toFixed(2) },
+      { title: "Total CST Amt", value: totalCSTAmount?.toFixed(2) },
+      { title: "Total MISC Amt", value: totalMISCAmount?.toFixed(2) },
+      { title: "Metal Weight", value: metalWeight?.toFixed(3) },
+      {
+        title: "Diamond Wt/Pcs",
+        value: `${diamondWeight?.toFixed(3)} / ${diamondPcs}`,
+      },
+      {
+        title: "Colorstone Wt/Pcs",
+        value: `${colorStoneWeight?.toFixed(3)} / ${colorStonePcs}`,
+      },
+      { title: "MISC Wt/Pcs", value: `${miscWeight?.toFixed(3)} / ${miscPcs}` },
+      { title: "Total Pure Wt", value: totalPureWeight?.toFixed(3) },
+      { title: "Total Amount", value: totalAmount?.toFixed(2) },
+    ];
+
+    setSummaryData(finalSummary);
+  }, [filteredRows]);
 
   const groupRows = (rows, groupCheckBox) => {
-    const grouped = {};
+    const grouped = [];
+    if (!Array.isArray(rows)) {
+      console.warn("groupRows: rows is not an array!", rows);
+      return grouped;
+    }
 
-    rows?.forEach((row) => {
+    rows.forEach((row) => {
       const newRow = { ...row };
-
-      const deptChecked = groupCheckBox["dept"];
-      const designationChecked = groupCheckBox["designation"];
-      const empnameChecked = groupCheckBox["empname"];
-
-      if (!deptChecked) newRow.dept = "-";
-      if (!designationChecked) newRow.designation = "-";
-      if (!empnameChecked) newRow.empname = "-";
-
-      let keyParts = [];
-
-      // 🔥 Always group by item at least
-      if (deptChecked) keyParts.push(newRow.dept);
-      if (designationChecked) keyParts.push(newRow.designation);
-      if (empnameChecked) keyParts.push(newRow.empname);
-
-      // 👉 Always push item into keyParts even if itemChecked is false
-      keyParts.push(newRow.item);
+      const keyParts = [];
+      for (const [field, checked] of Object.entries(groupCheckBox)) {
+        if (checked) {
+          keyParts.push(newRow[field]);
+        } else {
+          newRow[field] = "-";
+        }
+      }
 
       const groupKey = keyParts.join("|");
-
       if (!grouped[groupKey]) {
         grouped[groupKey] = { ...newRow };
       } else {
-        grouped[groupKey].issqty += newRow.issqty || 0;
-        grouped[groupKey].retqty += newRow.retqty || 0;
-        grouped[groupKey].remqty += newRow.remqty || 0;
+        for (const col of allColumData) {
+          if (!col.grupChekBox && typeof newRow[col.field] === "number") {
+            grouped[groupKey][col.field] =
+              (grouped[groupKey][col.field] || 0) + (newRow[col.field] || 0);
+          }
+        }
       }
     });
 
@@ -1439,52 +1409,15 @@ export default function MaterialPurhcaseReport() {
     }));
   };
 
-  // function openInvoiceList(invoiceno) {
-  //           if ($.trim(_hdn_invoiceof) == 'supplier') {
-  //               parent.CloseTab('Material Purchase');
-  //               parent.CloseTab('Customer Receive');
-  //               parent.addTab('Material Purchase', 'icon-InventoryManagement_invoiceSummary', ADPT + 'mfg/app/InventoryManagement_invoiceList?invoiceof=supplier&invoiceno=' + invoiceno + '&IsOldMetal=' + IsOldMetal)
-  //           }
-  //           else {
-  //               parent.CloseTab('Material Purchase');
-  //               parent.CloseTab('Customer Receive');
-  //               parent.addTab('Customer Receive', 'icon-InventoryManagement_invoiceSummary', ADPT + 'mfg/app/InventoryManagement_invoiceList?invoiceof=customer&invoiceno=' + invoiceno + '&IsOldMetal=' + IsOldMetal)
-  //           }
-  //       }
-  // window.parent.addTab(
-  //   "Job Completion Report",
-  //   "tabs-icon icon-report",
-  //   "http://nzen/R50B3/mfg/app/InventoryManagement_invoiceList?invoiceof=customer&invoiceno=Q1IvMTI3LzIwMjU=-AdQ2EGwrOJI=&IsOldMetal=0&ifid=CustomerReceive&pid=undefined"
-  // );
-
-  const handleClick = (params) => {
-    let url_optigo = sessionStorage.getItem("url_optigo");
-    window?.parent.addTab(
-      "Material Purchase",
-      "icon-InventoryManagement_invoiceSummary",
-      url_optigo +
-        "mfg/app/InventoryManagement_invoiceList?invoiceof=supplier&invoiceno=" +
-        btoa(params?.formattedValue) +
-        "&IsOldMetal=" +
-        params?.row?.isoldmetal
-    );
-  };
-
-  const handleClickInvoiceImg = (params) => {
-    let url_optigo = sessionStorage.getItem("url_optigo");
-    window.parent.addTab(
-      "Transaction Log",
-      "icon-TransactionLog",
-      url_optigo +
-        "login/app/LoginManagement_LogHistory?mode=logsearch&sf=" +
-        params?.formattedValue
-    );
-  };
+  const allChecked = useMemo(
+    () => Object.values(grupEnChekBox).every((val) => val === true),
+    [grupEnChekBox]
+  );
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
-        className="MaterialPurhcaseReportMain_mainGridView"
+        className="dynamic_sample_report_main"
         sx={{ width: "100vw", display: "flex", flexDirection: "column" }}
         ref={gridContainerRef}
       >
@@ -1493,6 +1426,12 @@ export default function MaterialPurhcaseReport() {
             <CircularProgress className="loadingBarManage" />
           </div>
         )}
+
+        <Dialog open={openHrefModel} onClose={() => setOpenHrefModel(false)}>
+          <div className="ConversionMain">
+            <h1>Hello Model......</h1>
+          </div>
+        </Dialog>
 
         <Dialog open={openPopup} onClose={handleClosePopup}>
           <div className="ConversionMain">
@@ -1519,7 +1458,15 @@ export default function MaterialPurhcaseReport() {
                   </div>
                 )}
               </Droppable>
-              <Button>Save</Button>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "20px",
+                }}
+              >
+                <Button className="btn_SaveColumModel">Save</Button>
+              </div>
             </div>
           </div>
         </Dialog>
@@ -1551,14 +1498,13 @@ export default function MaterialPurhcaseReport() {
               onClick={() => setSideFilterOpen(false)}
             />
           </div>
-
-          {columns
-            .filter((col) => col.filterable)
-            .map((col) => (
-              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                {renderFilterMulti(col)}
-              </div>
-            ))}
+          <div>
+            {columns
+              .filter((col) => col.filterable)
+              .map((col) => (
+                <div key={col.field}>{renderFilterMulti(col)}</div>
+              ))}
+          </div>
 
           {columns
             .filter((col) => col.filterable)
@@ -1577,8 +1523,8 @@ export default function MaterialPurhcaseReport() {
           {columns
             .filter((col) => col.filterable)
             .map((col) => (
-              <div key={col.field} style={{ gap: "10px" }}>
-                {renderFilterSuggestionFilter(col)}
+              <div key={col.field} style={{ display: "flex", gap: "10px" }}>
+                {renderFilter(col)}
               </div>
             ))}
 
@@ -1586,162 +1532,267 @@ export default function MaterialPurhcaseReport() {
             .filter((col) => col.filterable)
             .map((col) => (
               <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                {renderFilter(col)}
+                {renderSuggestionFilter(col)}
               </div>
             ))}
         </Drawer>
+
+        <Dialog
+          open={Boolean(activeActionColumn)}
+          onClose={() => setActiveActionColumn(null)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <div style={{ height: "400px" }}>
+            <DialogTitle>
+              {activeActionColumn
+                ? `Update ${activeActionColumn.headerName}`
+                : ""}
+            </DialogTitle>
+
+            <DialogContent dividers>
+              {activeActionColumn?.dateColumn ? (
+                <DatePicker
+                  label="Select Date"
+                  value={tempValue ? new Date(tempValue) : null}
+                  onChange={(newValue) => {
+                    if (newValue) {
+                      const formatted = newValue.toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      });
+                      setTempValue(formatted);
+                    } else {
+                      setTempValue("");
+                    }
+                  }}
+                  renderInput={(params) => <TextField {...params} fullWidth />}
+                />
+              ) : activeActionColumn?.actionMasterName ? (
+                <TextField
+                  select
+                  fullWidth
+                  label={`Select ${activeActionColumn.headerName}`}
+                  value={tempValue || ""}
+                  onChange={(e) => setTempValue(e.target.value)}
+                >
+                  {masterData[activeActionColumn.actionMasterName]?.map(
+                    (item) => (
+                      <MenuItem
+                        key={item.id}
+                        value={item.userJob || item.amount}
+                      >
+                        {item.userJob || item.amount}
+                      </MenuItem>
+                    )
+                  )}
+                </TextField>
+              ) : (
+                <TextField
+                  fullWidth
+                  label={`Enter ${activeActionColumn?.headerName}`}
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                />
+              )}
+            </DialogContent>
+
+            <DialogActions>
+              <Button onClick={() => setActiveActionColumn(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  if (!selectionModel || selectionModel.length === 0) {
+                    alert("Please select at least one row first.");
+                    return;
+                  }
+                  if (!tempValue) return;
+
+                  setFilteredRows((prev) =>
+                    prev.map((row) =>
+                      selectionModel.includes(row.id)
+                        ? {
+                            ...row,
+                            [activeActionColumn.field]:
+                              activeActionColumn.dateColumn
+                                ? new Date(tempValue).toISOString()
+                                : tempValue,
+                          }
+                        : row
+                    )
+                  );
+
+                  setActiveActionColumn(null);
+                  setTempValue("");
+                }}
+              >
+                Save
+              </Button>
+            </DialogActions>
+          </div>
+        </Dialog>
+
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           {renderSummary()}
 
-          {masterKeyData?.ColumnSettingPopup && (
-            <div className="topSettingBtnPopup" onClick={handleClickOpenPoup}>
-              <AiFillSetting style={{ height: "25px", width: "25px" }} />
-            </div>
-          )}
-          {masterKeyData?.fullScreenGridButton && (
-            <button className="fullScreenButton" onClick={toggleFullScreen}>
-              <RiFullscreenLine
-                style={{ marginInline: "5px", fontSize: "30px" }}
-              />
-            </button>
-          )}
+          <div style={{ display: "flex" }}>
+            {masterKeyData?.columSettingModel && (
+              <div className="fullScreenButton  " onClick={handleClickOpenPoup}>
+                <AiFillSetting style={{ height: "25px", width: "25px" }} />
+              </div>
+            )}
+            {masterKeyData?.fullScreenGridButton && (
+              <button className="fullScreenButton" onClick={toggleFullScreen}>
+                <RiFullscreenLine
+                  style={{ marginInline: "5px", fontSize: "30px" }}
+                />
+              </button>
+            )}
+          </div>
         </div>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            padding: "10px 5px",
+            padding: "5px",
           }}
         >
           <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-              <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                <MdOutlineFilterAlt style={{ height: "30px", width: "30px" }} />
-              </button>
+            {masterKeyData?.MultiDateFilter ? (
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "20px" }}
+              >
+                <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
+                  <MdOutlineFilterAlt
+                    style={{ height: "30px", width: "30px" }}
+                  />
+                </button>
 
-              <div style={{ display: "flex", gap: "5px" }}>
+                <FormControl size="small" sx={{ minWidth: 200, margin: "0px" }}>
+                  <InputLabel>Date Type</InputLabel>
+                  <Select
+                    label="Date Type"
+                    value={selectedDateColumn}
+                    onChange={(e) => setSelectedDateColumn(e.target.value)}
+                  >
+                    {dateColumnOptions.map((col) => (
+                      <MenuItem key={col.field} value={col.field}>
+                        {col.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 <DualDatePicker
                   filterState={filterState}
                   setFilterState={setFilterState}
                   validDay={186}
                   validMonth={6}
-                  withountDateFilter={true}
                 />
                 <Button
                   onClick={() => {
-                    fetchData("", "");
                     setFilterState({
                       ...filterState,
                       dateRange: {
-                        startDate: "",
-                        endDate: "",
+                        startDate: new Date("2000-01-01T18:30:00.000Z"),
+                        endDate: new Date(),
                       },
                     });
-                    setPurchaseAgainMemo("");
-                    setPurchaseBtnDis(false);
-                    setShowAllData(true);
                     setFromDate(null);
                     setToDate(null);
-                    setCommonSearch("");
-                    setFilters({});
-                    setSelectedMetal("Select Material");
-                    setPurchaseAgainMemo("ALL");
-                    setMaterialPurchase("ALL");
-                    setSelectedDateColumn("INR");
-                    setSelectedUser("ALL Users");
                   }}
-                  className="FiletrBtnAll"
+                  className="btn_FiletrBtnAll"
                 >
                   All
                 </Button>
               </div>
-
-              <TextField
-                type="text"
-                placeholder="Search..."
-                value={commonSearch}
-                onChange={(e) => setCommonSearch(e.target.value)}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                InputProps={{
-                  endAdornment: commonSearch && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={() => setCommonSearch("")}
-                        aria-label="clear"
-                      >
-                        <CircleX size={20} color="#888" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                style={{
-                  width: "200px",
-                }}
-                sx={{
-                  "& .MuiInputBase-input": {
-                    padding: "5.5px !important",
-                  },
-                }}
-              />
-
-              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-                <Select
-                  value={selectedMetal}
-                  onChange={(e) => setSelectedMetal(e.target.value)}
-                  displayEmpty
-                  MenuProps={{
-                    PaperProps: {
-                      style: {
-                        maxHeight: 300,
-                        overflowY: "auto",
-                      },
-                    },
-                  }}
-                  style={{
-                    fontSize: "14px",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                  sx={{
-                    "& .MuiSelect-select": {
-                      padding: "7px !important",
-                    },
-                  }}
+            ) : (
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "10px" }}
+              >
+                <Button
+                  onClick={toggleDrawer(true)}
+                  className="btn_FiletrBtnOpen"
                 >
-                  {uniqueCustomers?.map((cust, index) => (
-                    <MenuItem
-                      key={index}
-                      value={cust}
-                      style={{
-                        fontSize: "14px",
+                  <MdOutlineFilterAlt
+                    style={{ height: "30px", width: "30px" }}
+                  />
+                </Button>
+                <DualDatePicker
+                  filterState={filterState}
+                  setFilterState={setFilterState}
+                  validDay={186}
+                  validMonth={6}
+                />
+                <Button
+                  onClick={() => {
+                    setFilterState({
+                      ...filterState,
+                      dateRange: {
+                        startDate: new Date("2000-01-01T18:30:00.000Z"),
+                        endDate: new Date(),
+                      },
+                    });
+                    setFromDate(null);
+                    setToDate(null);
+                  }}
+                  className="btn_FiletrBtnAll"
+                >
+                  All
+                </Button>
+              </div>
+            )}
+            <TextField
+              type="text"
+              placeholder="Search..."
+              value={commonSearch}
+              onChange={(e) => setCommonSearch(e.target.value)}
+              customBorderColor="rgba(47, 43, 61, 0.2)"
+              InputProps={{
+                endAdornment: commonSearch && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => setCommonSearch("")}
+                      aria-label="clear"
+                    >
+                      <CircleX size={20} color="#888" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              style={{
+                width: "200px",
+              }}
+              sx={{
+                "& .MuiInputBase-input": {
+                  padding: "5.5px !important",
+                },
+              }}
+            />
+
+            <div style={{ display: "flex", gap: "8px" }}>
+              {allColumData &&
+                Object.values(allColumData).map((col) =>
+                  col.actionFilter ? (
+                    <Button
+                      key={col.field}
+                      variant="outlined"
+                      size="small"
+                      className="btn_Action_FiletrBtnOpen"
+                      onClick={() => {
+                        setActiveActionColumn(col);
+                        setTempValue("");
                       }}
                     >
-                      {cust}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <Button
-                className={purchaseBtnDis ? "PurchaseBtndis" : "PurchaseBtn"}
-                disabled={purchaseBtnDis}
-                onClick={() => {
-                  setPurchaseAgainMemo("PurchaseAgainst");
-                  setPurchaseBtnDis(true);
-                }}
-              >
-                Purchase Against Memo
-              </Button>
+                      Set {col.headerName}
+                    </Button>
+                  ) : null
+                )}
             </div>
-            {columns
-              .filter((col) => col.filterable)
-              .map((col) => (
-                <div key={col.field} style={{ display: "flex", gap: "10px" }}>
-                  {renderDateFilter(col)}
-                </div>
-              ))}
 
             <div
               className="date-selector"
@@ -1755,7 +1806,6 @@ export default function MaterialPurhcaseReport() {
                   Set P.Date
                 </button>
               )}
-
               <div
                 className={`transition-container ${
                   openPDate ? "open" : "closed"
@@ -1784,29 +1834,6 @@ export default function MaterialPurhcaseReport() {
                   }
                   placeholderText="Select Date"
                 />
-
-                {/* <CustomTextField
-                  select
-                  fullWidth
-                  value={filters.someField || ""}
-                  onChange={(e) => handleFilterChange(e.target.value)}
-                  customBorderColor="rgba(47, 43, 61, 0.2)"
-                  borderoutlinedColor="#00CFE8"
-                  customTextColor="#2F2B3DC7"
-                  customFontSize="0.8125rem"
-                  size="small"
-                  className="selectDropDownMain"
-                  variant="filled"
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {masterData.rd3.map((item) => (
-                    <MenuItem key={item.id} value={item.name}>
-                      {item.name}
-                    </MenuItem>
-                  ))}
-                </CustomTextField> */}
 
                 <button
                   onClick={handleSave}
@@ -1860,211 +1887,71 @@ export default function MaterialPurhcaseReport() {
               </div>
             )}
 
-            {masterKeyData?.fullScreenGridButton && (
-              <button className="fullScreenButton" onClick={toggleFullScreen}>
-                <RiFullscreenLine
-                  style={{ marginInline: "5px", fontSize: "30px" }}
-                />
-              </button>
-            )}
-
             {masterKeyData?.ExcelExport && (
-              <button onClick={exportToExcel} className="All_exportButton">
-                <svg
-                  stroke="currentColor"
-                  fill="currentColor"
-                  stroke-width="0"
-                  viewBox="0 0 384 512"
-                  height="2em"
-                  width="2em"
-                  xmlns="http://www.w3.org/2000/svg"
+              <Tooltip title="Export to Excel">
+                <IconButton
+                  onClick={exportToExcel}
+                  sx={{
+                    background:
+                      "linear-gradient(270deg, rgba(115, 103, 240, 0.7) 0%, rgb(115, 103, 240) 100%) !important",
+                    color: "#fff",
+                    "&:hover": {
+                      backgroundColor: "#1565c0",
+                    },
+                  }}
                 >
-                  <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
-                </svg>
-              </button>
+                  <SummarizeIcon />
+                </IconButton>
+              </Tooltip>
             )}
-
-            {/* <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
-              <Select
-                value={purchaseAgainMemo}
-                onChange={(e) => setPurchaseAgainMemo(e.target.value)}
-              >
-                <MenuItem value="ALL">ALL</MenuItem>
-                <MenuItem value="PurchaseAgainst">
-                  Purchase Against Memo
-                </MenuItem>
-              </Select>
-            </FormControl> */}
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={materialPurchase}
-                onChange={(e) => setMaterialPurchase(e.target.value)}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                <MenuItem
-                  value="ALL"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  Voucher Type
-                </MenuItem>
-                <MenuItem
-                  value="MaterialPurchase"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  Material Purchase
-                </MenuItem>
-                <MenuItem
-                  value="OldMetalPurchase"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  Old Metal Purchase
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={selectedDateColumn}
-                onChange={(e) => setSelectedDateColumn(e.target.value)}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                      overflowY: "auto",
-                    },
-                  },
-                }}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                {allCurrencyData?.map((col) => (
-                  <MenuItem
-                    key={col?.id}
-                    value={col?.Currencycode}
-                    style={{
-                      fontSize: "14px",
-                    }}
-                  >
-                    {col?.Currencycode}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                      overflowY: "auto",
-                    },
-                  },
-                }}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                <MenuItem
-                  value="ALL Users"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  ALL Users
-                </MenuItem>
-                {allUserNameList?.map((col) => (
-                  <MenuItem
-                    key={col["1"]}
-                    value={col["1"]}
-                    style={{
-                      fontSize: "14px",
-                    }}
-                  >
-                    {col["2"]}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </div>
         </div>
         <div
           ref={gridRef}
-          style={{ height: "calc(100vh - 170px)", margin: "5px" }}
+          style={{ height: "calc(100vh - 180px)", margin: "5px" }}
         >
           {showImageView ? (
             <div>
               <img
                 className="imageViewImgage"
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQVXLW1j3zO3UP6dIu96A3IpZihTe3fVRsm9g&s"
+                src="https://i.etsystatic.com/27743818/r/il/510b96/3776218288/il_1080xN.3776218288_ava6.jpg"
               />
               <img
                 className="imageViewImgage"
-                src="https://help.earthsoft.com/ent-data_grid_widget-sample.png"
+                src="https://stardustdiamonds.in/cdn/shop/files/SDLR0231.jpg?v=1747660984&width=1200"
               />
               <img
                 className="imageViewImgage"
-                src="https://i0.wp.com/thewwwmagazine.com/wp-content/uploads/2020/07/Screenshot-2020-07-09-at-7.36.56-PM.png?resize=1404%2C1058&ssl=1"
+                src="https://5.imimg.com/data5/ANDROID/Default/2023/8/334910083/NS/MY/II/194318398/product-jpeg.jpeg"
               />
               <img
                 className="imageViewImgage"
-                src="https://docs.devexpress.com/WPF/images/wpf-data-grid.png"
+                src="https://i.ebayimg.com/images/g/E-AAAOSwKTNip7K7/s-l1200.jpg"
               />
               <img
                 className="imageViewImgage"
-                src="https://www.infragistics.com/products/ignite-ui-web-components/web-components/images/general/landing-grid-page.png"
+                src="https://cdn.freepixel.com/preview/free-photos-wedding-couple-rings-photo---a-captivating-image-showcases-a-dazzling-diamond-ring-mounted-on-a-fing-preview-1004227194.jpg"
               />
               <img
                 className="imageViewImgage"
-                src="https://i0.wp.com/angularscript.com/wp-content/uploads/2020/04/Angular-Data-Grid-For-The-Enterprise-nGrid.png?fit=1245%2C620&ssl=1"
+                src="https://i.ebayimg.com/images/g/w2wAAOSwlhZZcOgp/s-l1200.jpg"
               />
               <img
                 className="imageViewImgage"
-                src="https://angularscript.com/wp-content/uploads/2015/12/ng-bootstrap-grid-370x297.jpg"
+                src="https://images.pexels.com/photos/1457801/pexels-photo-1457801.jpeg?cs=srgb&dl=pexels-enginakyurt-1457801.jpg&fm=jpg"
               />
             </div>
           ) : (
             <Warper>
               <DataGrid
-                rows={currencyAdjustedRows ?? []}
+                apiRef={apiRef}
+                rows={filteredRows ?? []}
                 columns={columns ?? []}
+                pageSize={pageSize}
                 autoHeight={false}
-                rowHeight={40}
-                headerHeight={40}
                 columnBuffer={17}
+                sortModel={sortModel}
+                onSortModelChange={(model) => setSortModel(model)}
                 localeText={{ noRowsLabel: "No Data" }}
                 initialState={{
                   columns: {
@@ -2073,17 +1960,8 @@ export default function MaterialPurhcaseReport() {
                       traderName: false,
                     },
                   },
-                  pagination: {
-                    paginationModel: {
-                      pageSize: 20,
-                      page: 0,
-                    },
-                  },
                 }}
-                sortModel={sortModel}
-                onSortModelChange={(model) => setSortModel(model)}
-                // sortingOrder={["asc", "desc"]} // For Sorting.....
-                sortingOrder={["desc", "asc"]}
+                rowsPerPageOptions={[5, 10, 15, 25, 50]}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
                 pageSizeOptions={[20, 30, 50, 100, 200]}
@@ -2093,32 +1971,9 @@ export default function MaterialPurhcaseReport() {
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
-
-                  "& .MuiTablePagination-selectLabel": {
-                    margin: "0px",
-                    padding: "0px",
-                  },
-
-                  "& .MuiTablePagination-displayedRows": {
-                    margin: "0px",
-                    padding: "0px",
-                  },
-
-                  "& .MuiTablePagination-actions .MuiButtonBase-root": {
-                    padding: "0px",
-                    margin: "0px",
-                  },
-
-                  "& .MuiDataGrid-footerContainer": {
-                    minHeight: "30px",
-                  },
-
-                  "& .MuiTablePagination-toolbar": {
-                    minHeight: "30px",
-                  },
-                  marginLeft: 2,
-                  marginRight: 2,
-                  marginBottom: 2,
+                  // marginLeft: 2,
+                  // marginRight: 2,
+                  // marginBottom: 2,
                 }}
               />
             </Warper>

@@ -529,8 +529,8 @@ export default function FgSpliter() {
                   <DualDatePicker
                     filterState={filterState}
                     setFilterState={setFilterState}
-                    validDay={31}
-                    validMonth={1}
+                    validDay={93}
+                    validMonth={3}
                   />
 
                   {uniqueMetalTypes?.length !== 0 && (

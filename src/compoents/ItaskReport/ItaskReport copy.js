@@ -10,15 +10,10 @@ import {
   Box,
   Typography,
   Checkbox,
-  InputAdornment,
-  IconButton,
-  TextField,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useSearchParams } from "react-router-dom";
 import { GetWorkerData } from "../../API/GetWorkerData/GetWorkerData";
-import { ClearIcon } from "@mui/x-date-pickers";
-import { SearchIcon } from "lucide-react";
 
 const normalize = (s) =>
   (s || "").toString().trim().toLowerCase().replace(/\s+/g, "");
@@ -35,13 +30,15 @@ export default function ItaskReport() {
   const [rd2, setRd2] = useState([]); // attributes (id -> label)
   const [rd3, setRd3] = useState([]); // relations
 
+  // quicklist
   const [qlColIdToName, setQlColIdToName] = useState({});
   const [rawRows, setRawRows] = useState([]);
 
+  // selections
   const [selectedMainGroupId, setSelectedMainGroupId] = useState("");
   const [selectedAttrsByGroupId, setSelectedAttrsByGroupId] = useState({});
-  const [searchText, setSearchText] = useState("");
 
+  // ---------- load data ----------
   useEffect(() => {
     (async () => {
       setIsLoading(true);
@@ -155,10 +152,11 @@ export default function ItaskReport() {
         const base = {
           field: name,
           headerName: name.replace(/_/g, " ").toUpperCase(),
-          width: name == "taskid" ? 80 : name == "taskname" ? 250 : 120,
-          flex: name == "taskid" || name == "taskname" ? "" : 1,
+          minWidth: 140,
+          flex: 1,
         };
 
+        // For master columns (IDs), show label; 0/empty -> blank
         if (masterColNameSet.has(name)) {
           return {
             ...base,
@@ -212,6 +210,7 @@ export default function ItaskReport() {
     });
   }, [rawRows, qlColIdToName]);
 
+  // Map groupId -> column key (used for filtering)
   const groupIdToColumnKey = useMemo(() => {
     const byName = {};
     const normColNameToActual = {};
@@ -223,58 +222,40 @@ export default function ItaskReport() {
     return byName;
   }, [rd1, allColumnNames]);
 
+  // Apply dropdown filters (value "ALL" = no filter)
   const filteredRows = useMemo(() => {
-    let rows = originalRows;
     const activeGroupIds = Object.keys(selectedAttrsByGroupId).filter(
       (gid) =>
         selectedAttrsByGroupId[gid] && selectedAttrsByGroupId[gid].length > 0
     );
-    if (activeGroupIds.length > 0) {
-      rows = rows.filter((row) => {
-        for (const gid of activeGroupIds) {
-          const colKey = groupIdToColumnKey[gid];
-          if (!colKey) continue;
+    if (activeGroupIds.length === 0) return originalRows;
 
-          const selectedAttrIds = selectedAttrsByGroupId[gid].map(Number);
-          const rowVal = row[colKey];
-          if (rowVal === undefined || rowVal === null) return false;
+    return originalRows.filter((row) => {
+      for (const gid of activeGroupIds) {
+        const colKey = groupIdToColumnKey[gid];
+        if (!colKey) continue;
 
-          const rowValNum = Number(rowVal);
-          if (!Number.isNaN(rowValNum)) {
-            if (!selectedAttrIds.includes(rowValNum)) return false;
-          } else {
-            const labels = selectedAttrIds.map((id) => idToAttr.get(id));
-            if (
-              !labels.some(
-                (lbl) => normalize(String(rowVal)) === normalize(lbl)
-              )
-            ) {
-              return false;
-            }
+        const selectedAttrIds = selectedAttrsByGroupId[gid].map(Number);
+        const rowVal = row[colKey];
+        if (rowVal === undefined || rowVal === null) return false;
+
+        const rowValNum = Number(rowVal);
+        if (!Number.isNaN(rowValNum)) {
+          if (!selectedAttrIds.includes(rowValNum)) return false;
+        } else {
+          const labels = selectedAttrIds.map((id) => idToAttr.get(id));
+          if (
+            !labels.some((lbl) => normalize(String(rowVal)) === normalize(lbl))
+          ) {
+            return false;
           }
         }
-        return true;
-      });
-    }
+      }
+      return true;
+    });
+  }, [originalRows, selectedAttrsByGroupId, groupIdToColumnKey, idToAttr]);
 
-    if (searchText.trim() !== "") {
-      const lower = searchText.toLowerCase();
-      rows = rows.filter((row) =>
-        Object.values(row).some(
-          (val) => val && String(val).toLowerCase().includes(lower)
-        )
-      );
-    }
-
-    return rows;
-  }, [
-    originalRows,
-    selectedAttrsByGroupId,
-    groupIdToColumnKey,
-    idToAttr,
-    searchText,
-  ]);
-
+  // keep only valid selections when main group changes
   useEffect(() => {
     const validGids = new Set(groupsForMain.map((g) => g.groupId));
     setSelectedAttrsByGroupId((prev) => {
@@ -300,81 +281,57 @@ export default function ItaskReport() {
         </Typography>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
-          <FormControl size="small" sx={{ minWidth: 240 }}>
-            <InputLabel>Main Group</InputLabel>
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
+        <FormControl sx={{ minWidth: 240 }}>
+          <InputLabel>Main Group</InputLabel>
+          <Select
+            value={selectedMainGroupId}
+            label="Main Group"
+            onChange={(e) => setSelectedMainGroupId(e.target.value)}
+          >
+            {rd.map((mg) => (
+              <MenuItem key={mg.id} value={mg.id}>
+                {mg.filtermaingroup}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {groupsForMain.map(({ groupId, groupName }) => (
+          <FormControl key={groupId} sx={{ width: 250 }}>
+            <InputLabel>{groupName}</InputLabel>
             <Select
-              value={selectedMainGroupId}
-              label="Main Group"
-              onChange={(e) => setSelectedMainGroupId(e.target.value)}
+              multiple
+              value={selectedAttrsByGroupId[groupId] ?? []}
+              onChange={(e) =>
+                setSelectedAttrsByGroupId((prev) => ({
+                  ...prev,
+                  [groupId]: e.target.value,
+                }))
+              }
+              renderValue={(selected) => {
+                if (!selected || selected.length === 0) return <em>All</em>;
+                const opts = (groupOptions[groupId] || []).filter((o) =>
+                  selected.includes(o.attrId)
+                );
+                return opts.map((o) => o.attrName).join(", ");
+              }}
             >
-              {rd.map((mg) => (
-                <MenuItem key={mg.id} value={mg.id}>
-                  {mg.filtermaingroup}
+              {(groupOptions[groupId] || []).map((opt) => (
+                <MenuItem key={opt.attrId} value={opt.attrId}>
+                  <Checkbox
+                    checked={
+                      selectedAttrsByGroupId[groupId]?.includes(opt.attrId) ||
+                      false
+                    }
+                  />
+                  {opt.attrName}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-
-          {groupsForMain.map(({ groupId, groupName }) => (
-            <FormControl key={groupId} size="small" sx={{ minWidth: 250 }}>
-              <InputLabel>{groupName}</InputLabel>
-              <Select
-                multiple
-                label={groupName}
-                value={selectedAttrsByGroupId[groupId] ?? []}
-                onChange={(e) =>
-                  setSelectedAttrsByGroupId((prev) => ({
-                    ...prev,
-                    [groupId]: e.target.value,
-                  }))
-                }
-                renderValue={(selected) => {
-                  if (!selected || selected.length === 0) return <em>All</em>;
-                  const opts = (groupOptions[groupId] || []).filter((o) =>
-                    selected.includes(o.attrId)
-                  );
-                  return opts.map((o) => o.attrName).join(", ");
-                }}
-              >
-                {(groupOptions[groupId] || []).map((opt) => (
-                  <MenuItem key={opt.attrId} value={opt.attrId}>
-                    <Checkbox
-                      checked={
-                        selectedAttrsByGroupId[groupId]?.includes(opt.attrId) ||
-                        false
-                      }
-                    />
-                    {opt.attrName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          ))}
-        </Box>
-        <TextField
-          sx={{ minWidth: 280 }}
-          placeholder="Search..."
-          size="small"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: searchText && (
-              <InputAdornment position="end">
-                <IconButton onClick={() => setSearchText("")} edge="end">
-                  <ClearIcon />
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </div>
+        ))}
+      </Box>
 
       <Box sx={{ height: "calc(100vh - 220px)" }}>
         <DataGrid
