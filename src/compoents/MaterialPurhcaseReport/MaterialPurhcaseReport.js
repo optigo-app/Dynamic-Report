@@ -55,6 +55,20 @@ import { AlertTriangle, CircleX } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
 import dayjs from "dayjs";
+import {
+  GridPagination,
+  useGridApiContext,
+  useGridSelector,
+  gridPageSelector,
+  gridPageCountSelector,
+} from "@mui/x-data-grid";
+import {
+  FirstPage,
+  LastPage,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+} from "@mui/icons-material";
+import { FaRegFileExcel } from "react-icons/fa";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -126,6 +140,104 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
+function CustomPagination() {
+  const apiRef = useGridApiContext();
+  const page = useGridSelector(apiRef, gridPageSelector);
+  const pageCount = useGridSelector(apiRef, gridPageCountSelector);
+  const rowCount = apiRef.current.getRowsCount();
+  const pageSize = apiRef.current.state.pagination.paginationModel.pageSize;
+  const [inputPage, setInputPage] = React.useState(page + 1);
+
+  React.useEffect(() => {
+    setInputPage(page + 1);
+  }, [page]);
+
+  const handleInputChange = (e) => {
+    setInputPage(e.target.value);
+  };
+
+  const handleInputBlur = () => {
+    let newPage = Number(inputPage);
+
+    if (isNaN(newPage) || newPage < 1) {
+      newPage = 1;
+    } else if (newPage > pageCount) {
+      newPage = pageCount;
+    }
+
+    apiRef.current.setPage(newPage - 1);
+    setInputPage(newPage);
+  };
+  const startItem = page * pageSize + 1;
+  const endItem = Math.min((page + 1) * pageSize, rowCount);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        width: "100%",
+        padding: "0 8px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(0)}
+          disabled={page === 0}
+        >
+          <FirstPage fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page - 1)}
+          disabled={page === 0}
+        >
+          <KeyboardArrowLeft fontSize="small" />
+        </IconButton>
+
+        <p>Page</p>
+        <TextField
+          value={inputPage}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleInputBlur();
+            }
+          }}
+          size="small"
+          variant="outlined"
+          style={{ width: 60 }}
+          inputProps={{ style: { textAlign: "center", padding: "2px 4px" } }}
+        />
+        <span style={{ fontSize: 14 }}>of {pageCount}</span>
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page + 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <KeyboardArrowRight fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(pageCount - 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <LastPage fontSize="small" />
+        </IconButton>
+
+        <span style={{ fontSize: 14 }}>
+          Displaying {rowCount === 0 ? 0 : startItem} to {endItem} of {rowCount}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function MaterialPurhcaseReport() {
   const [isLoading, setIsLoading] = useState(false);
   const [toDate, setToDate] = useState(null);
@@ -194,6 +306,7 @@ export default function MaterialPurhcaseReport() {
     setStartDate(formattedDate);
     setEndDate(formattedDate);
     fetchData(formattedDate, formattedDate);
+    setShowAllData(false);
     getMasterData();
     setFilterState({
       dateRange: {
@@ -212,10 +325,9 @@ export default function MaterialPurhcaseReport() {
     if (s && e) {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
-
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
-
+      setShowAllData(false);
       fetchData(formattedStart, formattedEnd);
       getMasterData();
     }
@@ -254,16 +366,17 @@ export default function MaterialPurhcaseReport() {
 
     try {
       const fetchedData = await GetWorkerData(body, sp);
-      if (showAllData) {
-        setFilterState({
-          ...filterState,
-          dateRange: {
-            startDate: null,
-            endDate: null,
-          },
-        });
-        setShowAllData(false);
-      }
+      console.log("showAllDatashowAllData", showAllData);
+      // if (showAllData) {
+      //   setFilterState({
+      //     ...filterState,
+      //     dateRange: {
+      //       startDate: null,
+      //       endDate: null,
+      //     },
+      //   });
+      //   setShowAllData(false);
+      // }
       setAllRowData(fetchedData?.Data?.rd1);
       setAllColumIdWiseName(fetchedData?.Data?.rd);
       setMasterKeyData(OtherKeyData?.rd);
@@ -323,7 +436,9 @@ export default function MaterialPurhcaseReport() {
             </div>
           ),
           headerNameSub: col?.headerName,
-          width: col.Width,
+          width: col.Width, 
+          // minWidth: col.Width,
+          flex: col.flex, 
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
           filterable: col.ColumFilter,
@@ -332,7 +447,6 @@ export default function MaterialPurhcaseReport() {
           summuryValueKey: col.summuryValueKey,
           summaryTitle: col.summaryTitle,
           ToFixedValue: col.ToFixedValue,
-          flex: 1,
           sortable: col.sortable,
           filterTypes: [
             col.NormalFilter && "NormalFilter",
@@ -406,7 +520,13 @@ export default function MaterialPurhcaseReport() {
               );
             } else if (col.hrefLink) {
               return (
-                <div style={{ display: "flex", alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <a
                     target="_blank"
                     rel="noopener noreferrer"
@@ -419,7 +539,6 @@ export default function MaterialPurhcaseReport() {
                       fontSize: col.FontSize || "inherit",
                       textOverflow: "ellipsis",
                       overflow: "hidden",
-                      width: "120px",
                     }}
                     onClick={() => handleClick(params)}
                   >
@@ -456,7 +575,7 @@ export default function MaterialPurhcaseReport() {
     const srColumn = {
       field: "sr",
       headerName: "Sr#",
-      width: 70,
+      width: 60,
       sortable: false,
       filterable: false,
       renderCell: (params) => {
@@ -1074,35 +1193,35 @@ export default function MaterialPurhcaseReport() {
     const summaryConfig = {
       "SELECT MATERIAL": ["totalAmount"],
 
-      METAL: ["totalAmount", "averageRate", "totalWeight", "totalWeightPure"],
+      METAL: ["totalWeight", "totalWeightPure", "averageRate", "totalAmount"],
 
-      DIAMOND: ["totalAmount", "averageRate", "totalWeight"],
+      DIAMOND: ["totalWeight", "averageRate", "totalAmount"],
 
-      "LAB GROWN": ["totalAmount", "averageRate", "totalWeight"],
+      "LAB GROWN": ["totalWeight", "averageRate", "totalAmount"],
 
-      "COLOR STONE": ["totalAmount", "averageRate", "totalWeight"],
+      "COLOR STONE": ["totalWeight", "averageRate", "totalAmount"],
 
       MOUNT: [
-        "totalAmount",
-        "averageRate",
         "totalWeight",
         "totalWeightPure",
+        "averageRate",
         "labourAmount",
         "materialAmount",
+        "totalAmount",
       ],
 
       FINDING: [
-        "totalAmount",
-        "averageRate",
         "totalWeight",
         "totalWeightPure",
+        "averageRate",
         "labourAmount",
         "materialAmount",
+        "totalAmount",
       ],
 
-      ALLOY: ["totalAmount", "averageRate", "totalWeight", "totalWeightPure"],
+      ALLOY: ["totalWeight", "totalWeightPure", "averageRate", "totalAmount"],
 
-      MISC: ["totalAmount", "averageRate", "totalWeight"],
+      MISC: ["totalWeight", "averageRate", "totalAmount"],
     };
 
     const formatIndianNumber = (value, decimals = 2) => {
@@ -1145,20 +1264,20 @@ export default function MaterialPurhcaseReport() {
     const calcMaterialAmount = () => calcTotalAmount() - calcLabourAmount();
 
     const summaryCalcMap = {
-      totalAmount: { label: "Total Amount", fn: calcTotalAmount, decimals: 2 },
-      averageRate: { label: "Average Rate", fn: calcAverageRate, decimals: 2 },
       totalWeight: { label: "Total Weight", fn: calcTotalWeight, decimals: 3 },
       totalWeightPure: {
         label: "Total Weight (Pure)",
         fn: calcTotalWeightPure,
         decimals: 3,
       },
+      averageRate: { label: "Average Rate", fn: calcAverageRate, decimals: 2 },
       labourAmount: { label: "L.Amount", fn: calcLabourAmount, decimals: 2 },
       materialAmount: {
         label: "M.Amount",
         fn: calcMaterialAmount,
         decimals: 2,
       },
+      totalAmount: { label: "Total Amount", fn: calcTotalAmount, decimals: 2 },
     };
     const itemsToShow = summaryConfig[selectedMetal?.toUpperCase()] || [];
     const weightUnit = ["DIAMOND", "LAB GROWN", "COLOR STONE"].includes(
@@ -1613,8 +1732,8 @@ export default function MaterialPurhcaseReport() {
             padding: "10px 5px",
           }}
         >
-          <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
                 <MdOutlineFilterAlt style={{ height: "30px", width: "30px" }} />
               </button>
@@ -1656,36 +1775,6 @@ export default function MaterialPurhcaseReport() {
                 </Button>
               </div>
 
-              <TextField
-                type="text"
-                placeholder="Search..."
-                value={commonSearch}
-                onChange={(e) => setCommonSearch(e.target.value)}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                InputProps={{
-                  endAdornment: commonSearch && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={() => setCommonSearch("")}
-                        aria-label="clear"
-                      >
-                        <CircleX size={20} color="#888" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                style={{
-                  width: "200px",
-                }}
-                sx={{
-                  "& .MuiInputBase-input": {
-                    padding: "5.5px !important",
-                  },
-                }}
-              />
-
               <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
                 <Select
                   value={selectedMetal}
@@ -1724,16 +1813,129 @@ export default function MaterialPurhcaseReport() {
                 </Select>
               </FormControl>
 
-              <Button
-                className={purchaseBtnDis ? "PurchaseBtndis" : "PurchaseBtn"}
-                disabled={purchaseBtnDis}
-                onClick={() => {
-                  setPurchaseAgainMemo("PurchaseAgainst");
-                  setPurchaseBtnDis(true);
-                }}
-              >
-                Purchase Against Memo
-              </Button>
+              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+                <Select
+                  value={materialPurchase}
+                  onChange={(e) => setMaterialPurchase(e.target.value)}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
+                >
+                  <MenuItem
+                    value="ALL"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    Voucher Type
+                  </MenuItem>
+                  <MenuItem
+                    value="MaterialPurchase"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    Material Purchase
+                  </MenuItem>
+                  <MenuItem
+                    value="OldMetalPurchase"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    Old Metal Purchase
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+                <Select
+                  value={selectedUser}
+                  onChange={(e) => setSelectedUser(e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        overflowY: "auto",
+                      },
+                    },
+                  }}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
+                >
+                  <MenuItem
+                    value="ALL Users"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    ALL Users
+                  </MenuItem>
+                  {allUserNameList?.map((col) => (
+                    <MenuItem
+                      key={col["1"]}
+                      value={col["1"]}
+                      style={{
+                        fontSize: "14px",
+                      }}
+                    >
+                      {col["2"]}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+                <Select
+                  value={selectedDateColumn}
+                  onChange={(e) => setSelectedDateColumn(e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        overflowY: "auto",
+                      },
+                    },
+                  }}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
+                >
+                  {allCurrencyData?.map((col) => (
+                    <MenuItem
+                      key={col?.id}
+                      value={col?.Currencycode}
+                      style={{
+                        fontSize: "14px",
+                      }}
+                    >
+                      {col?.Currencycode}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </div>
             {columns
               .filter((col) => col.filterable)
@@ -1868,9 +2070,57 @@ export default function MaterialPurhcaseReport() {
               </button>
             )}
 
+            <CustomTextField
+              type="text"
+              placeholder="Search..."
+              value={commonSearch}
+              onChange={(e) => setCommonSearch(e.target.value)}
+              customBorderColor="rgba(47, 43, 61, 0.2)"
+              InputProps={{
+                endAdornment: commonSearch && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => setCommonSearch("")}
+                      aria-label="clear"
+                    >
+                      <CircleX size={20} color="#888" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              style={{
+                width: "200px",
+              }}
+              sx={{
+                "& .MuiInputBase-input": {
+                  padding: "4.5px !important",
+                },
+              }}
+            />
+            <Button
+              className={purchaseBtnDis ? "PurchaseBtndis" : "PurchaseBtn"}
+              disabled={purchaseBtnDis}
+              onClick={() => {
+                setPurchaseAgainMemo("PurchaseAgainst");
+                setPurchaseBtnDis(true);
+              }}
+            >
+              Purchase Against Memo
+            </Button>
+
             {masterKeyData?.ExcelExport && (
               <button onClick={exportToExcel} className="All_exportButton">
-                <svg
+                <FaRegFileExcel
+                  style={{
+                    marginRight: "5px",
+                    fontSize: "20px",
+                    color: "green",
+                  }}
+                />
+                Excel
+                {/* <svg
                   stroke="currentColor"
                   fill="currentColor"
                   stroke-width="0"
@@ -1880,10 +2130,9 @@ export default function MaterialPurhcaseReport() {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
-                </svg>
+                </svg> */}
               </button>
             )}
-
             {/* <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
               <Select
                 value={purchaseAgainMemo}
@@ -1895,130 +2144,6 @@ export default function MaterialPurhcaseReport() {
                 </MenuItem>
               </Select>
             </FormControl> */}
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={materialPurchase}
-                onChange={(e) => setMaterialPurchase(e.target.value)}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                <MenuItem
-                  value="ALL"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  Voucher Type
-                </MenuItem>
-                <MenuItem
-                  value="MaterialPurchase"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  Material Purchase
-                </MenuItem>
-                <MenuItem
-                  value="OldMetalPurchase"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  Old Metal Purchase
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={selectedDateColumn}
-                onChange={(e) => setSelectedDateColumn(e.target.value)}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                      overflowY: "auto",
-                    },
-                  },
-                }}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                {allCurrencyData?.map((col) => (
-                  <MenuItem
-                    key={col?.id}
-                    value={col?.Currencycode}
-                    style={{
-                      fontSize: "14px",
-                    }}
-                  >
-                    {col?.Currencycode}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                      overflowY: "auto",
-                    },
-                  },
-                }}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                <MenuItem
-                  value="ALL Users"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  ALL Users
-                </MenuItem>
-                {allUserNameList?.map((col) => (
-                  <MenuItem
-                    key={col["1"]}
-                    value={col["1"]}
-                    style={{
-                      fontSize: "14px",
-                    }}
-                  >
-                    {col["2"]}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </div>
         </div>
         <div
@@ -2080,9 +2205,11 @@ export default function MaterialPurhcaseReport() {
                     },
                   },
                 }}
+                slots={{
+                  pagination: CustomPagination, // ✅ custom pagination
+                }}
                 sortModel={sortModel}
                 onSortModelChange={(model) => setSortModel(model)}
-                // sortingOrder={["asc", "desc"]} // For Sorting.....
                 sortingOrder={["desc", "asc"]}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
@@ -2111,6 +2238,8 @@ export default function MaterialPurhcaseReport() {
 
                   "& .MuiDataGrid-footerContainer": {
                     minHeight: "30px",
+                    justifyContent: "flex-end", // align right
+                    paddingRight: 2,
                   },
 
                   "& .MuiTablePagination-toolbar": {

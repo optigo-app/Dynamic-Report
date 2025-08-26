@@ -123,14 +123,12 @@ export default function ItaskReport() {
     return byGroup;
   }, [rd2, rd3ForSelectedMain, groupsForMain]);
 
-  // ---------- map quicklist to grid ----------
   const allColumnNames = useMemo(() => {
     return Object.keys(qlColIdToName)
       .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
       .map((k) => qlColIdToName[k]);
   }, [qlColIdToName]);
 
-  // Which column names are "master columns" (they store attr IDs)?
   const masterColNameSet = useMemo(() => {
     const normColNameToActual = {};
     allColumnNames.forEach((c) => (normColNameToActual[normalize(c)] = c));

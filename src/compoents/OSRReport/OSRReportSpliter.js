@@ -38,9 +38,8 @@ export default function OSRReportSpliter() {
   const [status500, setStatus500] = useState(false);
   const [showSalesRep, setShowSalesRep] = useState(true);
   const [searchParams] = useSearchParams();
-  const [selectedSalesRepCode, setSelectedSalesRepCode] = useState();
+  const [selectedSalesRepCode, setSelectedSalesRepCode] = useState(null);
   const [expandedEmployee, setExpandedEmployee] = useState(null);
-  const [allEmployeeData, setAllEmployeeData] = useState([]);
   const [startDate, setStartDate] = useState();
   const [endDate, setEndDate] = useState();
   const [AllFinalData, setFinalData] = useState();
@@ -173,13 +172,10 @@ export default function OSRReportSpliter() {
 
         rawDataRef.current = mergedData;
         filterData();
-        setFinalData(fetchedData?.Data);
       }
     } catch (error) {
       console.error("Fetch error:", error);
       if (error?.status == 500) setStatus500(true);
-      setAllEmployeeData([]);
-      setFinalData(null);
     } finally {
       setIsLoading(false);
     }
@@ -250,10 +246,11 @@ export default function OSRReportSpliter() {
     const salesRepData = dateFiltered.filter(
       (item) => item.isdefaultcustomer === 0
     );
+
     const regularCustomerData = dateFiltered.filter(
       (item) => item.isdefaultcustomer === 1
     );
-
+    setFinalData(dateFiltered);
     setSalesRepEmployeeData(salesRepData);
 
     GetTotlaData(salesRepData, true);
@@ -314,9 +311,12 @@ export default function OSRReportSpliter() {
       entry.totalWt += totalWt;
       summaryMap.get(key).totalcnt += Number(totalcnt || 0);
     });
-
     const summaryList = Array.from(summaryMap.values());
     setSalesRepSummaryData(summaryList);
+    console.log('selectCustomerCode', selectCustomerCode , summaryList);
+    if (summaryList?.length !== 0 && !showAllSalesrepData) {
+      setSelectCustomerCode(summaryList[0]?.customercode);
+    }
   }, [selectedSalesRepCode, salesRepEmployeeData]);
 
   useEffect(() => {
@@ -348,7 +348,6 @@ export default function OSRReportSpliter() {
     });
 
     const summaryList = Array.from(summaryMap.values());
-
     if (isSalesRep) {
       setSalesRepSummaryData(summaryList);
       if (summaryList?.length == 1) {
@@ -423,6 +422,8 @@ export default function OSRReportSpliter() {
   const filteredCustomerData = salesRepSummaryData?.filter((emp) =>
     emp.customerfirmname.toLowerCase().includes(customerSearch.toLowerCase())
   );
+
+  console.log("selectCustomerCode", selectCustomerCode);
 
   return (
     <div className="OSRReportSpliter_top">
@@ -517,145 +518,86 @@ export default function OSRReportSpliter() {
                   margin: "0px 10px",
                 }}
               >
-                {filteredCustomerData?.length !== 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      marginTop: "10px",
-                      gap: "10px",
-                    }}
-                  >
-                    {!isLoading && (
-                      <p className="osr_salesRepTitle">Select Sales Rep :-</p>
-                    )}
-                    {uniqueMetalTypes?.length !== 0 && (
-                      <select
-                        value={selectedSalesRepCode}
-                        onChange={(e) =>
-                          setSelectedSalesRepCode(e.target.value)
+                <div
+                  style={{
+                    display: "flex",
+                    marginTop: "10px",
+                    gap: "10px",
+                  }}
+                >
+                  {!isLoading && uniqueMetalTypes?.length !== 0 && (
+                    <p className="osr_salesRepTitle">Select Sales Rep :-</p>
+                  )}
+                  {uniqueMetalTypes?.length !== 0 && (
+                    <select
+                      value={selectedSalesRepCode}
+                      onChange={(e) => {
+                        setSelectedSalesRepCode(e.target.value);
+                        if (e.target.value == "All") {
+                          setShowAllSalesrepData(true);
+                          setSelectCustomerCode(null);
+                        } else {
+                          setShowAllSalesrepData(false);
                         }
-                        className="dropdownList_metal"
-                      >
-                        {uniqueMetalTypes.map((metal) => (
-                          <option key={metal} value={metal}>
-                            {metal}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                )}
+                      }}
+                      className="dropdownList_metal"
+                    >
+                      {uniqueMetalTypes.map((metal) => (
+                        <option key={metal} value={metal}>
+                          {metal}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
 
-                {filteredCustomerData?.length !== 0 && (
-                  <div
-                    className="customer-search-wrapper"
-                    style={{
-                      marginBottom: "15px",
-                      position: "relative",
-                      marginTop: "15px",
-                    }}
-                  >
-                    <input
-                      type="text"
-                      placeholder="Search customer..."
-                      value={customerSearch}
-                      onChange={(e) => setCustomerSearch(e.target.value)}
-                      className="customer-search-input"
-                      style={{ outline: "none" }}
-                    />
-                    {customerSearch && (
-                      <span
-                        onClick={() => setCustomerSearch("")}
-                        style={{
-                          position: "absolute",
-                          right: "-10px",
-                          top: "40%",
-                          fontSize: "25px",
-                          transform: "translateY(-50%)",
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                          color: "#999",
-                        }}
-                      >
-                        ×
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* {filteredCustomerData?.length !== 0 && ( */}
+                <div
+                  className="customer-search-wrapper"
+                  style={{
+                    marginBottom: "15px",
+                    position: "relative",
+                    marginTop: "15px",
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Search Customer Code..."
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    className="customer-search-input"
+                    style={{ outline: "none" }}
+                  />
+                  {customerSearch && (
+                    <span
+                      onClick={() => setCustomerSearch("")}
+                      style={{
+                        position: "absolute",
+                        right: "15px",
+                        top: "40%",
+                        fontSize: "25px",
+                        transform: "translateY(-50%)",
+                        cursor: "pointer",
+                        fontWeight: "bold",
+                        color: "#999",
+                      }}
+                    >
+                      ×
+                    </span>
+                  )}
+                </div>
+                {/*  )} */}
               </div>
               <div
                 className="employee-list"
                 style={{ padding: "0px 8px", marginTop: "20px" }}
               >
-                {filteredCustomerData?.length > 1 && (
-                  <div style={{ margin: "0px" }}>
-                    <div
-                      className={
-                        showAllSalesrepData
-                          ? "employee_card_selected"
-                          : "employee-card"
-                      }
-                    >
+                {filteredCustomerData?.length > 1 &&
+                  selectedSalesRepCode == "All" && (
+                    <div style={{ margin: "0px" }}>
                       <div
-                        className="employee-header"
-                        onClick={() => {
-                          handleToggle("All");
-                          setSelectCustomerCode(null);
-                          setShowAllSalesrepData(true);
-                        }}
-                      >
-                        <div className="location_first">
-                          <span
-                            className={
-                              showAllSalesrepData && "location_top_name"
-                            }
-                          >
-                            ALL
-                          </span>
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "5px",
-                            marginTop: "10px",
-                          }}
-                        >
-                          <p
-                            className={
-                              showAllSalesrepData
-                                ? "employee_detail_title"
-                                : "employee_detail"
-                            }
-                          >
-                            Total :
-                          </p>
-                          <p
-                            className={
-                              showAllSalesrepData
-                                ? "employee_detail_title"
-                                : "employee_detail"
-                            }
-                          >
-                            <b>
-                              {" "}
-                              {totalCount} / {totalCountWt?.toFixed(3)} Wt
-                            </b>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {filteredCustomerData?.length ? (
-                  filteredCustomerData.map((emp) => {
-                    const isExpanded = expandedEmployee === emp.customercode;
-                    return (
-                      <div
-                        key={emp.customercode}
                         className={
-                          selectCustomerCode == emp.customercode
+                          showAllSalesrepData
                             ? "employee_card_selected"
                             : "employee-card"
                         }
@@ -663,69 +605,56 @@ export default function OSRReportSpliter() {
                         <div
                           className="employee-header"
                           onClick={() => {
-                            handleToggle(emp.customercode);
-                            setShowAllSalesrepData(false);
-                            setSelectCustomerCode(emp.customercode);
+                            handleToggle("All");
+                            setSelectCustomerCode(null);
+                            setShowAllSalesrepData(true);
                           }}
                         >
                           <div className="location_first">
                             <span
                               className={
-                                selectCustomerCode == emp.customercode &&
-                                "location_top_name"
+                                showAllSalesrepData && "location_top_name"
                               }
                             >
-                              {emp.customerfirmname}({emp.customercode})
+                              ALL
                             </span>
                           </div>
+
                           <div
                             style={{
                               display: "flex",
-                              gap: "15px",
+                              gap: "5px",
                               marginTop: "10px",
                             }}
                           >
                             <p
                               className={
-                                selectCustomerCode == emp.customercode
+                                showAllSalesrepData
                                   ? "employee_detail_title"
                                   : "employee_detail"
                               }
-                              style={{ width: "50%" }}
                             >
-                              Total :{" "}
+                              Total :
+                            </p>
+                            <p
+                              className={
+                                showAllSalesrepData
+                                  ? "employee_detail_title"
+                                  : "employee_detail"
+                              }
+                            >
                               <b>
-                                {emp.totalcnt} / {emp?.totalWt?.toFixed(3)} Wt
+                                {" "}
+                                {totalCount} / {totalCountWt?.toFixed(3)} Wt
                               </b>
                             </p>
                           </div>
                         </div>
                       </div>
-                    );
-                  })
-                ) : (
-                  <div
-                    style={{
-                      height: "60vh",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontWeight: 600,
-                        fontSize: "17px",
-                        margin: "0px",
-                      }}
-                    >
-                      No Company Available
-                    </p>
-                  </div>
-                )}
-
+                    </div>
+                  )}
                 {regularSummaryData?.length !== 0 &&
+                  selectedSalesRepCode == "All" &&
                   regularSummaryData?.map((emp) => {
                     const isExpanded = expandedEmployee === emp.customercode;
                     return (
@@ -777,28 +706,84 @@ export default function OSRReportSpliter() {
                       </div>
                     );
                   })}
-              </div>
 
-              {/* <div
-                style={{
-                  margin: "5px",
-                }}
-              >
-                <div className="bottomTotla_main">
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div className="bottomTotal_box_main">
-                      <p className="bottomTotal_box_title">Total Count</p>
-                      <p className="bottomTotal_box_title">{totalCount}</p>
-                    </div>
-                  </div>
-                </div>
-              </div> */}
+                {filteredCustomerData?.length
+                  ? filteredCustomerData.map((emp) => {
+                      const isExpanded = expandedEmployee === emp.customercode;
+                      return (
+                        <div
+                          key={emp.customercode}
+                          className={
+                            selectCustomerCode == emp.customercode
+                              ? "employee_card_selected"
+                              : "employee-card"
+                          }
+                        >
+                          <div
+                            className="employee-header"
+                            onClick={() => {
+                              handleToggle(emp.customercode);
+                              setShowAllSalesrepData(false);
+                              setSelectCustomerCode(emp.customercode);
+                            }}
+                          >
+                            <div className="location_first">
+                              <span
+                                className={
+                                  selectCustomerCode == emp.customercode &&
+                                  "location_top_name"
+                                }
+                              >
+                                {emp.customerfirmname}({emp.customercode})
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "15px",
+                                marginTop: "10px",
+                              }}
+                            >
+                              <p
+                                className={
+                                  selectCustomerCode == emp.customercode
+                                    ? "employee_detail_title"
+                                    : "employee_detail"
+                                }
+                                style={{ width: "50%" }}
+                              >
+                                Total :{" "}
+                                <b>
+                                  {emp.totalcnt} / {emp?.totalWt?.toFixed(3)} Wt
+                                </b>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  : regularSummaryData?.length !== 0 && (
+                      <div
+                        style={{
+                          height: "60vh",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          flexDirection: "column",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontWeight: 600,
+                            fontSize: "17px",
+                            margin: "0px",
+                          }}
+                        >
+                          No Customer Available
+                        </p>
+                      </div>
+                    )}
+              </div>
             </div>
           </div>
         )}
@@ -807,7 +792,7 @@ export default function OSRReportSpliter() {
             <div className="splitter" onMouseDown={(e) => handleDrag(0, e)} />
             <div className="pane" style={{ width: paneWidths[1] }}>
               <AllEmployeeDataReport
-                AllFinalData={salesRepEmployeeData}
+                AllFinalData={AllFinalData}
                 selectCustomerCode={selectCustomerCode}
                 onClosePane={handleClose}
                 onOpenPane={handleOpen}

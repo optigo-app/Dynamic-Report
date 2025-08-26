@@ -1,6 +1,6 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridCloseIcon } from "@mui/x-data-grid";
 import "./AllEmployeeDataReport.scss";
 import DatePicker from "react-datepicker";
 import masterData from "./masterData.json";
@@ -21,6 +21,7 @@ import {
   Drawer,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Modal,
@@ -138,6 +139,7 @@ export default function AllEmployeeDataReport({
   const [grupEnChekBox, setGrupEnChekBox] = React.useState({
     po: true,
     skuno: true,
+    customercode: true
   });
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
@@ -146,8 +148,8 @@ export default function AllEmployeeDataReport({
 
   const [lastUpdated, setLastUpdated] = React.useState("");
   const gridRef = React.useRef(null);
-
   const APICall = () => {
+
     setIsLoading(true);
     const filteredCustomerData = AllFinalData?.filter((item) => {
       if (showAllSalesrepData) return true;
@@ -210,6 +212,7 @@ export default function AllEmployeeDataReport({
               {col.GrupChekBox && (
                 <Checkbox
                   checked={grupEnChekBox[col.field] ?? true}
+                  onClick={(e) => e.stopPropagation()}
                   onChange={() => handleGrupEnChekBoxChange(col.field)}
                   size="small"
                   sx={{ p: 0 }}
@@ -286,17 +289,8 @@ export default function AllEmployeeDataReport({
                     gap: "5px",
                   }}
                 >
-                  <span
-                    style={{
-                      color: "blue",
-                      cursor: "pointer",
-                    }}
-                    className="hyperLinkShow"
-                    onClick={() => handleCellClick(params)}
-                  >
-                    {params.value}{" "}
-                  </span>
-                  / {params?.row?.totalwt}
+                  <span>{params.value} </span>/{" "}
+                  {params?.row?.totalwt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "wipcnt") {
@@ -323,7 +317,7 @@ export default function AllEmployeeDataReport({
                   >
                     {params.value}{" "}
                   </span>
-                  / {params?.row?.wipwt}
+                  / {params?.row?.wipwt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "pipcnt") {
@@ -350,7 +344,7 @@ export default function AllEmployeeDataReport({
                   >
                     {params.value}{" "}
                   </span>
-                  / {params?.row?.pipwt}
+                  / {params?.row?.pipwt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "inqamcnt") {
@@ -377,7 +371,7 @@ export default function AllEmployeeDataReport({
                   >
                     {params.value}{" "}
                   </span>
-                  / {params?.row?.inqabookwt}
+                  / {params?.row?.inqabookwt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "inqccnt") {
@@ -394,7 +388,7 @@ export default function AllEmployeeDataReport({
                     gap: "5px",
                   }}
                 >
-                  {params.value} / {params?.row?.instockwt}
+                  {params.value} / {params?.row?.instockwt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "pendingcnt") {
@@ -411,7 +405,7 @@ export default function AllEmployeeDataReport({
                     gap: "5px",
                   }}
                 >
-                  {params.value} / {params?.row?.etapendingwt}
+                  {params.value} / {params?.row?.etapendingwt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "dispatchedcnt") {
@@ -428,7 +422,7 @@ export default function AllEmployeeDataReport({
                     gap: "5px",
                   }}
                 >
-                  {params.value} / {params?.row?.insalewt}
+                  {params.value} / {params?.row?.insalewt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "inmemo") {
@@ -445,7 +439,7 @@ export default function AllEmployeeDataReport({
                     gap: "5px",
                   }}
                 >
-                  {params.value} / {params?.row?.inmemowt}
+                  {params.value} / {params?.row?.inmemowt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "inmelt") {
@@ -462,7 +456,7 @@ export default function AllEmployeeDataReport({
                     gap: "5px",
                   }}
                 >
-                  {params.value} / {params?.row?.inmeltwt}
+                  {params.value} / {params?.row?.inmeltwt?.toFixed(3)}
                 </span>
               );
             } else if (params?.field == "incompany") {
@@ -479,7 +473,7 @@ export default function AllEmployeeDataReport({
                     gap: "5px",
                   }}
                 >
-                  {params.value} / {params?.row?.incompanywt}
+                  {params.value} / {params?.row?.incompanywt?.toFixed(3)}
                 </span>
               );
             } else if (col.hrefLink) {
@@ -536,7 +530,6 @@ export default function AllEmployeeDataReport({
   }, [allColumData, grupEnChekBox, sortModel, paginationModel]);
 
   const handleCellClick = (params) => {
-    console.log("paramsparams", params, params?.skuno);
     let url_optigo = sessionStorage.getItem("url_optigo");
 
     if (params?.field == "wipcnt") {
@@ -709,9 +702,6 @@ export default function AllEmployeeDataReport({
   const renderFilter = (col) => {
     if (!col.filterTypes || col.filterTypes.length === 0) return null;
     const filtersToRender = col.filterTypes;
-
-    console.log("colcol", col);
-
     return filtersToRender.map((filterType) => {
       switch (filterType) {
         case "NormalFilter":
@@ -929,13 +919,21 @@ export default function AllEmployeeDataReport({
     return filtersToRender.map((filterType) => {
       switch (filterType) {
         case "selectDropdownFilter": {
+          // const uniqueValues = [
+          //   ...new Set(originalRows?.map((row) => row[col.field])),
+          // ];
           const uniqueValues = [
-            ...new Set(originalRows?.map((row) => row[col.field])),
-          ];
+            ...new Map(
+              originalRows
+                ?.map((row) => row[col.field])
+                ?.filter(Boolean) // remove null/undefined/empty
+                .map((val) => [val.toLowerCase(), val]) // key = lowercase, value = original
+            ).values(),
+          ].sort((a, b) => a.localeCompare(b));
           return (
             <div
               key={`filter-${col.field}-selectDropdownFilter`}
-              style={{ width: "100%", margin: "10px 20px"  }}
+              style={{ width: "100%", margin: "10px 20px" }}
             >
               <CustomTextField
                 select
@@ -946,6 +944,16 @@ export default function AllEmployeeDataReport({
                 size="small"
                 className="selectDropDownMain"
                 variant="filled"
+                SelectProps={{
+                  MenuProps: {
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300, // set height
+                        overflowY: "auto", // enable scroll
+                      },
+                    },
+                  },
+                }}
               >
                 <MenuItem value="">
                   <em>{`All`}</em>
@@ -1126,7 +1134,7 @@ export default function AllEmployeeDataReport({
             : null;
 
           const summaryDisplay = `${countValue ?? "-"} / ${
-            weightValue != null ? weightValue.toFixed(2) : "-"
+            weightValue != null ? weightValue.toFixed(3) : "-"
           }`;
 
           return (
@@ -1732,8 +1740,19 @@ export default function AllEmployeeDataReport({
               value={commonSearch}
               customBorderColor="rgba(47, 43, 61, 0.2)"
               onChange={(e) => setCommonSearch(e.target.value)}
+              InputProps={{
+                endAdornment: commonSearch && (
+                  <IconButton
+                    size="small"
+                    onClick={() => setCommonSearch("")}
+                    edge="end"
+                  >
+                    <GridCloseIcon fontSize="small" />
+                  </IconButton>
+                ),
+              }}
+              style={{ width: "200px" }}
             />
-
             {masterKeyData?.ExcelExport && (
               <button onClick={exportToExcel} className="All_exportButton">
                 <svg

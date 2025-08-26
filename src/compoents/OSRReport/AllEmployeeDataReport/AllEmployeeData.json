@@ -17,7 +17,6 @@
       "Width": 150,
       "Align": "left",
       "hrefLink": "",
-      "dataType": "number",
       "ColumShow": true,
       "ColumFilter": true,
       "suggestionFilter": true,

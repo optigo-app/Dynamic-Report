@@ -231,6 +231,7 @@ const DualDatePicker = ({
             "& .MuiInputBase-input": {
               padding: "5px 2px",
               fontSize: "13px",
+              cursor: "pointer", 
             },
             "& .MuiInputBase-root": {
               padding: "3px",
@@ -258,6 +259,7 @@ const DualDatePicker = ({
             //   </InputAdornment>
             // ),
           }}
+          style={{ width: "210px" }}
         />
         <Popover
           open={Boolean(anchorEl)}

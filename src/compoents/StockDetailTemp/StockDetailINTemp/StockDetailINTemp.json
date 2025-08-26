@@ -43,7 +43,7 @@
       "flex": 1,
       "sortable": true
     },
-     {
+    {
       "colid": 1,
       "headerName": "Invoice Date",
       "field": "invoicedate",
@@ -138,7 +138,7 @@
       "EditData": true,
       "flex": 1
     },
-     {
+    {
       "colid": 3,
       "headerName": "Event",
       "field": "event",
@@ -388,7 +388,7 @@
       "ToFixedValue": 3,
       "flex": 1
     },
-     {
+    {
       "colid": 7,
       "headerName": "Rate",
       "field": "rate",
@@ -420,7 +420,7 @@
       "ToFixedValue": 2,
       "flex": 1
     },
-         {
+    {
       "colid": 7,
       "headerName": "Amount",
       "field": "amount",
@@ -452,7 +452,7 @@
       "ToFixedValue": 2,
       "flex": 1
     },
-     {
+    {
       "colid": 7,
       "headerName": "User",
       "field": "loginid",
@@ -483,7 +483,7 @@
       "EditData": false,
       "flex": 1
     },
-     {
+    {
       "colid": 7,
       "headerName": "ishybridbill",
       "field": "ishybridbill",
@@ -514,7 +514,7 @@
       "EditData": false,
       "flex": 1
     },
-     {
+    {
       "colid": 7,
       "headerName": "salesRepId",
       "field": "salesrep_id",

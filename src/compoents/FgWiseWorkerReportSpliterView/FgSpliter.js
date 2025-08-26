@@ -529,7 +529,7 @@ export default function FgSpliter() {
                   <DualDatePicker
                     filterState={filterState}
                     setFilterState={setFilterState}
-                    validDay={93}
+                    validDay={92}
                     validMonth={3}
                   />
 
