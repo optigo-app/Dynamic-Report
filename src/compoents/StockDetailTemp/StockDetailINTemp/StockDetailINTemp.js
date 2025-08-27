@@ -380,7 +380,8 @@ export default function StockDetailINTemp() {
         );
       } else if (itemName === "COLOR STONE") {
         return (
-          masterData.rd12?.find((x) => x.sizeid === sizeId)?.colorstonesize || ""
+          masterData.rd12?.find((x) => x.sizeid === sizeId)?.colorstonesize ||
+          ""
         );
       } else if (itemName === "MISC") {
         return (
@@ -896,12 +897,19 @@ export default function StockDetailINTemp() {
 
       return isMatch;
     });
-
+  
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
-    setFilteredRows(rowsWithSrNo);
+
+    const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
+
+    const sorted = [...safeRows].sort((a, b) => {
+      return new Date(b.entrydate) - new Date(a.entrydate);
+    });
+
+    setFilteredRows(sorted);
   }, [
     filters,
     commonSearch,

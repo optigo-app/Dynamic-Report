@@ -166,6 +166,11 @@ function CustomPagination() {
     apiRef.current.setPage(newPage - 1);
     setInputPage(newPage);
   };
+
+  const handlePageSizeChange = (e) => {
+    apiRef.current.setPageSize(Number(e.target.value));
+  };
+
   const startItem = page * pageSize + 1;
   const endItem = Math.min((page + 1) * pageSize, rowCount);
 
@@ -177,9 +182,35 @@ function CustomPagination() {
         justifyContent: "flex-end",
         width: "100%",
         padding: "0 8px",
+        gap: 16,
       }}
     >
+      {/* ✅ Page navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 14 }}>Rows per page:</span>
+        <TextField
+          select
+          size="small"
+          value={pageSize}
+          onChange={handlePageSizeChange}
+          SelectProps={{
+            native: true,
+          }}
+          style={{ width: 60 }}
+          sx={{
+            "& .MuiNativeSelect-select": {
+              padding: "2px 5px!important",
+              fontSize: "14px !important",
+            },
+          }}
+        >
+          {[20, 30, 50, 100].map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </TextField>
+
         <IconButton
           size="small"
           onClick={() => apiRef.current.setPage(0)}
@@ -212,6 +243,7 @@ function CustomPagination() {
           inputProps={{ style: { textAlign: "center", padding: "2px 4px" } }}
         />
         <span style={{ fontSize: 14 }}>of {pageCount}</span>
+
         <IconButton
           size="small"
           onClick={() => apiRef.current.setPage(page + 1)}
@@ -235,6 +267,7 @@ function CustomPagination() {
     </div>
   );
 }
+
 
 export default function MaterialSaleReport() {
   const [isLoading, setIsLoading] = useState(false);
@@ -265,7 +298,9 @@ export default function MaterialSaleReport() {
   const [AllFinalData, setFinalData] = useState();
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
-  const [sortModel, setSortModel] = useState([]);
+  const [sortModel, setSortModel] = React.useState([
+    { field: "entrydate", sort: "desc" },
+  ]);
   const [allUserNameList, setAllUserNameList] = useState([]);
   const [selectedDateColumn, setSelectedDateColumn] = useState("INR");
   const [selectedDateColumnHyBrid, setSelectedDateColumnHyBrid] =
@@ -281,14 +316,10 @@ export default function MaterialSaleReport() {
     page: 0,
     pageSize: 20,
   });
-
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
-  const [showAllData, setShowAllData] = useState(false);
-
   const firstTimeLoadedRef = useRef(false);
-
   useEffect(() => {
     const now = new Date();
     const formattedDate = formatToMMDDYYYY(now);
@@ -313,10 +344,8 @@ export default function MaterialSaleReport() {
     if (s && e) {
       const formattedStart = formatToMMDDYYYY(new Date(s));
       const formattedEnd = formatToMMDDYYYY(new Date(e));
-
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
-
       fetchData(formattedStart, formattedEnd);
       getMasterData();
     }
@@ -354,16 +383,6 @@ export default function MaterialSaleReport() {
 
     try {
       const fetchedData = await GetWorkerData(body, sp);
-      if (showAllData) {
-        setFilterState({
-          ...filterState,
-          dateRange: {
-            startDate: null,
-            endDate: null,
-          },
-        });
-        setShowAllData(false);
-      }
       setAllRowData(fetchedData?.Data?.rd1);
       setAllColumIdWiseName(fetchedData?.Data?.rd);
       setMasterKeyData(OtherKeyData?.rd);
@@ -693,7 +712,9 @@ export default function MaterialSaleReport() {
     );
 
     const rate = selectedCurrency?.CurrencyRate || 1;
-    const currencyUpdatedRows = rowsWithSrNo?.map((row) => ({
+    const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
+
+    const currencyUpdatedRows = safeRows?.map((row) => ({
       ...row,
       averagerate: row.averagerate
         ? parseFloat((row.averagerate / rate).toFixed(2))
@@ -703,7 +724,11 @@ export default function MaterialSaleReport() {
         : row.amount,
     }));
 
-    setCurrencyAdjustedRows(currencyUpdatedRows);
+    const sorted = [...currencyUpdatedRows].sort((a, b) => {
+      return new Date(b.entrydate) - new Date(a.entrydate);
+    });
+
+    setCurrencyAdjustedRows(sorted);
   }, [
     filters,
     commonSearch,
@@ -1121,9 +1146,9 @@ export default function MaterialSaleReport() {
 
   const renderSummary = () => {
     const summaryConfig = {
-      "SELECT MATERIAL": ["averageRate" , "totalAmount"],
+      "SELECT MATERIAL": ["averageRate", "totalAmount"],
 
-      METAL: [ "totalWeightPure", "averageRate", "totalAmount"],
+      METAL: ["totalWeightPure", "averageRate", "totalAmount"],
 
       DIAMOND: ["totalWeight", "averageRate", "totalAmount"],
 
@@ -1133,19 +1158,11 @@ export default function MaterialSaleReport() {
 
       "COLOR STONE": ["totalWeight", "averageRate", "totalAmount"],
 
-      MOUNT: [
-        "totalWeightPure",
-        "averageRate",
-        "totalAmount",
-      ],
+      MOUNT: ["totalWeightPure", "averageRate", "totalAmount"],
 
-      FINDING: [
-        "totalWeightPure",
-        "averageRate",
-        "totalAmount",
-      ],
+      FINDING: ["totalWeightPure", "averageRate", "totalAmount"],
 
-      ALLOY: [ "totalWeightPure", "averageRate", "totalAmount"],
+      ALLOY: ["totalWeightPure", "averageRate", "totalAmount"],
 
       MISC: ["totalWeight", "averageRate", "totalAmount"],
     };
@@ -1632,8 +1649,8 @@ export default function MaterialSaleReport() {
             padding: "10px 5px",
           }}
         >
-          <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
                 <MdOutlineFilterAlt style={{ height: "30px", width: "30px" }} />
               </button>
@@ -1647,21 +1664,20 @@ export default function MaterialSaleReport() {
                 />
                 <Button
                   onClick={() => {
+                    fetchData("", "");
                     setFilterState({
                       ...filterState,
                       dateRange: {
-                        startDate: new Date("2000-01-01T18:30:00.000Z"),
-                        endDate: new Date(),
+                        startDate: "",
+                        endDate: "",
                       },
                     });
-                    setShowAllData(true);
                     setFromDate(null);
                     setToDate(null);
                     setCommonSearch("");
                     setFilters({});
                     setSelectedMetal("Select Material");
                     setSelectedDateColumn("INR");
-                    setShowAllData(true);
                   }}
                   className="FiletrBtnAll"
                 >
@@ -1669,35 +1685,6 @@ export default function MaterialSaleReport() {
                 </Button>
               </div>
 
-              <CustomTextField
-                type="text"
-                placeholder="Search..."
-                value={commonSearch}
-                onChange={(e) => setCommonSearch(e.target.value)}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                InputProps={{
-                  endAdornment: commonSearch && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={() => setCommonSearch("")}
-                        aria-label="clear"
-                      >
-                        <CircleX size={20} color="#888" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                style={{
-                  width: "200px",
-                }}
-                sx={{
-                  "& .MuiInputBase-input": {
-                    padding: "5.5px !important",
-                  },
-                }}
-              />
               <FormControl size="small" sx={{ minWidth: 150, margin: "0px" }}>
                 <Select
                   value={selectedMetal}
@@ -1731,6 +1718,77 @@ export default function MaterialSaleReport() {
                       }}
                     >
                       {cust}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+                <Select
+                  value={selectedDateColumnHyBrid}
+                  onChange={(e) => setSelectedDateColumnHyBrid(e.target.value)}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
+                >
+                  <MenuItem
+                    value="ALL"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    ALL
+                  </MenuItem>
+                  <MenuItem
+                    value="Hybrid"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    Hybrid
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+                <Select
+                  value={selectedDateColumn}
+                  onChange={(e) => setSelectedDateColumn(e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        overflowY: "auto",
+                      },
+                    },
+                  }}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
+                >
+                  {allUserNameList?.map((col) => (
+                    <MenuItem
+                      key={col?.id}
+                      value={col?.Currencycode}
+                      style={{
+                        fontSize: "14px",
+                      }}
+                    >
+                      {col?.Currencycode}
                     </MenuItem>
                   ))}
                 </Select>
@@ -1818,24 +1876,6 @@ export default function MaterialSaleReport() {
                 </button>
               </div>
             </div>
-            {/* <div style={{ display: "flex" }}>
-              {masterData?.rd3.map((data) => (
-                <abbr title={data?.name}>
-                  <p
-                    key={data.id}
-                    style={{
-                      backgroundColor: data?.colorcode,
-                      cursor: "pointer",
-                      border: selectedColors.includes(data.id)
-                        ? "2px solid black"
-                        : "none",
-                    }}
-                    className="colorFiled"
-                    onClick={() => toggleColorSelection(data.id)} // Handle color click
-                  ></p>
-                </abbr>
-              ))}
-            </div> */}
           </div>
           <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
             {masterKeyData?.mailButton && (
@@ -1886,6 +1926,36 @@ export default function MaterialSaleReport() {
               </button>
             )}
 
+            <CustomTextField
+              type="text"
+              placeholder="Search..."
+              value={commonSearch}
+              onChange={(e) => setCommonSearch(e.target.value)}
+              customBorderColor="rgba(47, 43, 61, 0.2)"
+              InputProps={{
+                endAdornment: commonSearch && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => setCommonSearch("")}
+                      aria-label="clear"
+                    >
+                      <CircleX size={20} color="#888" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              style={{
+                width: "200px",
+              }}
+              sx={{
+                "& .MuiInputBase-input": {
+                  padding: "4.5px !important",
+                },
+              }}
+            />
+
             {masterKeyData?.ExcelExport && (
               <button onClick={exportToExcel} className="All_exportButton">
                 <FaRegFileExcel
@@ -1898,77 +1968,6 @@ export default function MaterialSaleReport() {
                 Excel
               </button>
             )}
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={selectedDateColumnHyBrid}
-                onChange={(e) => setSelectedDateColumnHyBrid(e.target.value)}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                <MenuItem
-                  value="ALL"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  ALL
-                </MenuItem>
-                <MenuItem
-                  value="Hybrid"
-                  style={{
-                    fontSize: "14px",
-                  }}
-                >
-                  Hybrid
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
-              <Select
-                value={selectedDateColumn}
-                onChange={(e) => setSelectedDateColumn(e.target.value)}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                      overflowY: "auto",
-                    },
-                  },
-                }}
-                style={{
-                  fontSize: "14px",
-                  display: "flex",
-                  alignItems: "center",
-                }}
-                sx={{
-                  "& .MuiSelect-select": {
-                    padding: "7px !important",
-                  },
-                }}
-              >
-                {allUserNameList?.map((col) => (
-                  <MenuItem
-                    key={col?.id}
-                    value={col?.Currencycode}
-                    style={{
-                      fontSize: "14px",
-                    }}
-                  >
-                    {col?.Currencycode}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
           </div>
         </div>
         <div
@@ -2043,6 +2042,10 @@ export default function MaterialSaleReport() {
                 pagination
                 sx={{
                   "& .MuiDataGrid-menuIcon": {
+                    display: "none",
+                  },
+
+                  "& .MuiDataGrid-selectedRowCount": {
                     display: "none",
                   },
 

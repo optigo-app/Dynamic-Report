@@ -168,6 +168,11 @@ function CustomPagination() {
     apiRef.current.setPage(newPage - 1);
     setInputPage(newPage);
   };
+
+  const handlePageSizeChange = (e) => {
+    apiRef.current.setPageSize(Number(e.target.value));
+  };
+
   const startItem = page * pageSize + 1;
   const endItem = Math.min((page + 1) * pageSize, rowCount);
 
@@ -179,9 +184,35 @@ function CustomPagination() {
         justifyContent: "flex-end",
         width: "100%",
         padding: "0 8px",
+        gap: 16,
       }}
     >
+      {/* ✅ Page navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 14 }}>Rows per page:</span>
+        <TextField
+          select
+          size="small"
+          value={pageSize}
+          onChange={handlePageSizeChange}
+          SelectProps={{
+            native: true,
+          }}
+          style={{ width: 60 }}
+          sx={{
+            "& .MuiNativeSelect-select": {
+              padding: "2px 5px!important",
+              fontSize: "14px !important",
+            },
+          }}
+        >
+          {[20, 30, 50, 100].map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </TextField>
+
         <IconButton
           size="small"
           onClick={() => apiRef.current.setPage(0)}
@@ -214,6 +245,7 @@ function CustomPagination() {
           inputProps={{ style: { textAlign: "center", padding: "2px 4px" } }}
         />
         <span style={{ fontSize: 14 }}>of {pageCount}</span>
+
         <IconButton
           size="small"
           onClick={() => apiRef.current.setPage(page + 1)}
@@ -293,7 +325,6 @@ export default function MaterialPurhcaseReport() {
     page: 0,
     pageSize: 20,
   });
-  const [showAllData, setShowAllData] = useState(false);
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
@@ -306,7 +337,6 @@ export default function MaterialPurhcaseReport() {
     setStartDate(formattedDate);
     setEndDate(formattedDate);
     fetchData(formattedDate, formattedDate);
-    setShowAllData(false);
     getMasterData();
     setFilterState({
       dateRange: {
@@ -327,7 +357,6 @@ export default function MaterialPurhcaseReport() {
       const formattedEnd = formatToMMDDYYYY(new Date(e));
       setStartDate(formattedStart);
       setEndDate(formattedEnd);
-      setShowAllData(false);
       fetchData(formattedStart, formattedEnd);
       getMasterData();
     }
@@ -366,7 +395,6 @@ export default function MaterialPurhcaseReport() {
 
     try {
       const fetchedData = await GetWorkerData(body, sp);
-      console.log("showAllDatashowAllData", showAllData);
       // if (showAllData) {
       //   setFilterState({
       //     ...filterState,
@@ -436,9 +464,9 @@ export default function MaterialPurhcaseReport() {
             </div>
           ),
           headerNameSub: col?.headerName,
-          width: col.Width, 
+          width: col.Width,
           // minWidth: col.Width,
-          flex: col.flex, 
+          flex: col.flex,
           align: col.ColumAlign || "left",
           headerAlign: col.Align,
           filterable: col.ColumFilter,
@@ -761,12 +789,14 @@ export default function MaterialPurhcaseReport() {
 
     const rate = selectedCurrency?.CurrencyRate || 1;
     const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
+
     const currencyUpdatedRows = safeRows.map((row) => ({
       ...row,
       totalprice: row.totalprice
         ? parseFloat((row.totalprice / rate).toFixed(2))
         : row.totalprice,
     }));
+
     const sorted = [...currencyUpdatedRows].sort((a, b) => {
       return new Date(b.date) - new Date(a.date);
     });
@@ -1758,7 +1788,6 @@ export default function MaterialPurhcaseReport() {
                     });
                     setPurchaseAgainMemo("");
                     setPurchaseBtnDis(false);
-                    setShowAllData(true);
                     setFromDate(null);
                     setToDate(null);
                     setCommonSearch("");
@@ -1775,7 +1804,11 @@ export default function MaterialPurhcaseReport() {
                 </Button>
               </div>
 
-              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+              <FormControl
+                size="small"
+                sx={{ width: 150, margin: "0px" }}
+                className="dropDownMainClass"
+              >
                 <Select
                   value={selectedMetal}
                   onChange={(e) => setSelectedMetal(e.target.value)}
@@ -1798,6 +1831,7 @@ export default function MaterialPurhcaseReport() {
                       padding: "7px !important",
                     },
                   }}
+                  className="dropDownListFont"
                 >
                   {uniqueCustomers?.map((cust, index) => (
                     <MenuItem
@@ -1806,6 +1840,7 @@ export default function MaterialPurhcaseReport() {
                       style={{
                         fontSize: "14px",
                       }}
+                      className="dropDownListFont"
                     >
                       {cust}
                     </MenuItem>
@@ -1813,7 +1848,11 @@ export default function MaterialPurhcaseReport() {
                 </Select>
               </FormControl>
 
-              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+              <FormControl
+                size="small"
+                sx={{ width: 150, margin: "0px" }}
+                className="dropDownMainClass"
+              >
                 <Select
                   value={materialPurchase}
                   onChange={(e) => setMaterialPurchase(e.target.value)}
@@ -1827,12 +1866,14 @@ export default function MaterialPurhcaseReport() {
                       padding: "7px !important",
                     },
                   }}
+                  className="dropDownListFont"
                 >
                   <MenuItem
                     value="ALL"
                     style={{
                       fontSize: "14px",
                     }}
+                    className="dropDownListFont"
                   >
                     Voucher Type
                   </MenuItem>
@@ -1841,6 +1882,7 @@ export default function MaterialPurhcaseReport() {
                     style={{
                       fontSize: "14px",
                     }}
+                    className="dropDownListFont"
                   >
                     Material Purchase
                   </MenuItem>
@@ -1849,13 +1891,18 @@ export default function MaterialPurhcaseReport() {
                     style={{
                       fontSize: "14px",
                     }}
+                    className="dropDownListFont"
                   >
                     Old Metal Purchase
                   </MenuItem>
                 </Select>
               </FormControl>
 
-              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+              <FormControl
+                size="small"
+                sx={{ width: 150, margin: "0px" }}
+                className="dropDownMainClass"
+              >
                 <Select
                   value={selectedUser}
                   onChange={(e) => setSelectedUser(e.target.value)}
@@ -1877,12 +1924,14 @@ export default function MaterialPurhcaseReport() {
                       padding: "7px !important",
                     },
                   }}
+                  className="dropDownListFont"
                 >
                   <MenuItem
                     value="ALL Users"
                     style={{
                       fontSize: "14px",
                     }}
+                    className="dropDownListFont"
                   >
                     ALL Users
                   </MenuItem>
@@ -1893,6 +1942,7 @@ export default function MaterialPurhcaseReport() {
                       style={{
                         fontSize: "14px",
                       }}
+                      className="dropDownListFont"
                     >
                       {col["2"]}
                     </MenuItem>
@@ -1900,7 +1950,11 @@ export default function MaterialPurhcaseReport() {
                 </Select>
               </FormControl>
 
-              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+              <FormControl
+                size="small"
+                sx={{ width: 150, margin: "0px" }}
+                className="dropDownMainClass"
+              >
                 <Select
                   value={selectedDateColumn}
                   onChange={(e) => setSelectedDateColumn(e.target.value)}
@@ -1922,6 +1976,7 @@ export default function MaterialPurhcaseReport() {
                       padding: "7px !important",
                     },
                   }}
+                  className="dropDownListFont"
                 >
                   {allCurrencyData?.map((col) => (
                     <MenuItem
@@ -1930,6 +1985,7 @@ export default function MaterialPurhcaseReport() {
                       style={{
                         fontSize: "14px",
                       }}
+                      className="dropDownListFont"
                     >
                       {col?.Currencycode}
                     </MenuItem>
@@ -2093,6 +2149,7 @@ export default function MaterialPurhcaseReport() {
               style={{
                 width: "200px",
               }}
+              className="mainSearchTextBox"
               sx={{
                 "& .MuiInputBase-input": {
                   padding: "4.5px !important",
@@ -2224,6 +2281,10 @@ export default function MaterialPurhcaseReport() {
                   "& .MuiTablePagination-selectLabel": {
                     margin: "0px",
                     padding: "0px",
+                  },
+
+                  "& .MuiDataGrid-selectedRowCount": {
+                    display: 'none'
                   },
 
                   "& .MuiTablePagination-displayedRows": {

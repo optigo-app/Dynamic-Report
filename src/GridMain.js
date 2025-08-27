@@ -193,7 +193,7 @@ const GridMain = () => {
     } else if (pid == 1000) {
       return <ItaskReport />; // 1256 Doc.
     } else if (pid == 18324) {
-      return <NewFirstSample />; 
+      return <NewFirstSample />;
     } else {
       return (
         <div style={{ textAlign: "center", marginTop: "20%" }}>Invalid PID</div>

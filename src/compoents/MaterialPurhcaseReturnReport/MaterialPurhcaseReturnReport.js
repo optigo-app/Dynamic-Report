@@ -167,6 +167,11 @@ function CustomPagination() {
     apiRef.current.setPage(newPage - 1);
     setInputPage(newPage);
   };
+
+  const handlePageSizeChange = (e) => {
+    apiRef.current.setPageSize(Number(e.target.value));
+  };
+
   const startItem = page * pageSize + 1;
   const endItem = Math.min((page + 1) * pageSize, rowCount);
 
@@ -178,9 +183,35 @@ function CustomPagination() {
         justifyContent: "flex-end",
         width: "100%",
         padding: "0 8px",
+        gap: 16,
       }}
     >
+      {/* ✅ Page navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 14 }}>Rows per page:</span>
+        <TextField
+          select
+          size="small"
+          value={pageSize}
+          onChange={handlePageSizeChange}
+          SelectProps={{
+            native: true,
+          }}
+          style={{ width: 60 }}
+          sx={{
+            "& .MuiNativeSelect-select": {
+              padding: "2px 5px!important",
+              fontSize: "14px !important",
+            },
+          }}
+        >
+          {[20, 30, 50, 100].map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </TextField>
+
         <IconButton
           size="small"
           onClick={() => apiRef.current.setPage(0)}
@@ -213,6 +244,7 @@ function CustomPagination() {
           inputProps={{ style: { textAlign: "center", padding: "2px 4px" } }}
         />
         <span style={{ fontSize: 14 }}>of {pageCount}</span>
+
         <IconButton
           size="small"
           onClick={() => apiRef.current.setPage(page + 1)}
@@ -706,7 +738,9 @@ export default function MaterialPurhcaseReturnReport() {
     );
 
     const rate = selectedCurrency?.CurrencyRate || 1;
-    const currencyUpdatedRows = rowsWithSrNo?.map((row) => ({
+    const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
+
+    const currencyUpdatedRows = safeRows.map((row) => ({
       ...row,
       averagerate: row.averagerate
         ? parseFloat((row.averagerate / rate).toFixed(2))
@@ -716,7 +750,11 @@ export default function MaterialPurhcaseReturnReport() {
         : row.amount,
     }));
 
-    setCurrencyAdjustedRows(currencyUpdatedRows);
+    const sorted = [...currencyUpdatedRows].sort((a, b) => {
+      return new Date(b.entrydate) - new Date(a.entrydate);
+    });
+
+    setCurrencyAdjustedRows(sorted);
   }, [
     filters,
     commonSearch,
@@ -1919,6 +1957,10 @@ export default function MaterialPurhcaseReturnReport() {
                 pagination
                 sx={{
                   "& .MuiDataGrid-menuIcon": {
+                    display: "none",
+                  },
+
+                  "& .MuiDataGrid-selectedRowCount": {
                     display: "none",
                   },
 

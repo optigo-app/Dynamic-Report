@@ -52,7 +52,7 @@
     font-weight: 600;
     font-size: 15px;
   }
-  
+
   .FiletrBtnAll:hover {
     background: linear-gradient(
       270deg,
@@ -400,6 +400,34 @@
   }
   .MuiDataGrid-columnHeaderTitleContainer {
     padding: 0px !important;
+  }
+
+  @media only screen and (max-width: 1500px) {
+    .dropDownMainClass {
+      width: 120px !important;
+    }
+
+    .dropDownListFont {
+      font-size: 12px !important;
+    }
+
+    .mainSearchTextBox {
+      width: 160px !important;
+    }
+
+    .PurchaseBtndis {
+      width: 170px !important;
+      font-size: 11px !important;
+    }
+
+    .PurchaseBtn {
+      width: 170px !important;
+      font-size: 11px !important;
+    }
+
+    .simpleGridView{
+      font-size: 12px !important;
+    }
   }
 }
 

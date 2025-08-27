@@ -44,7 +44,7 @@
       "sortable": true
     },
     {
-      "colid": 1,
+      "colid": 2,
       "headerName": "Invoice Date",
       "field": "invoicedate",
       "Width": 140,
