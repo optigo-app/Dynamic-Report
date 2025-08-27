@@ -278,129 +278,122 @@ export default function StockDetailINTemp() {
     }));
   };
 
+  const getItemName = (itemid) => {
+    return masterData.rd.find((x) => x.id === itemid)?.itemname || "";
+  };
+
+  const getShapeName = (itemName, shapeid) => {
+    if (itemName === "DIAMOND") {
+      return (
+        masterData.rd2.find((x) => x.shapeid === shapeid)?.DiamondShape || ""
+      );
+    } else if (itemName === "COLOR STONE") {
+      return (
+        masterData.rd3.find((x) => x.shapeid === shapeid)?.ColorStoneShape || ""
+      );
+    } else if (itemName === "MISC") {
+      return masterData.rd4.find((x) => x.shapeid === shapeid)?.Miscshape || "";
+    } else if (
+      itemName === "MOUNT" ||
+      itemName === "ALLOY" ||
+      itemName === "FINDING"
+    ) {
+      return (
+        masterData.rd19.find((x) => x.metaltypeid === shapeid)?.metaltype || ""
+      );
+    } else if (itemName === "METAL") {
+      return masterData.rd19.find((x) => x.metaltypeid === shapeid)?.metaltype;
+    }
+    return shapeid || "";
+  };
+
+  const getColorName = (itemName, colorid) => {
+    if (itemName === "DIAMOND") {
+      return (
+        masterData.rd5?.find((x) => x.colorid === colorid)?.Diamondcolor || ""
+      );
+    } else if (itemName === "COLOR STONE") {
+      return (
+        masterData.rd6?.find((x) => x.colorid === colorid)?.ColorStonecolor ||
+        ""
+      );
+    } else if (itemName === "MISC") {
+      return (
+        masterData.rd7?.find((x) => x.colorid === colorid)?.Misccolor || ""
+      );
+    } else if (itemName === "MOUNT") {
+      return (
+        masterData.rd18?.find((x) => x.colorid === colorid)?.mountcolor || ""
+      );
+    } else if (
+      itemName === "FINDING" ||
+      itemName === "ALLOY" ||
+      itemName === "METAL"
+    ) {
+      return (
+        masterData.rd17?.find((x) => x.colorid === colorid)?.Metalcolor || ""
+      );
+    }
+    return colorid || "";
+  };
+
+  const getQualityName = (itemName, qualityid) => {
+    if (itemName === "DIAMOND") {
+      return (
+        masterData.rd8?.find((x) => x.qualityid === qualityid)
+          ?.diamondquality || ""
+      );
+    } else if (itemName === "COLOR STONE") {
+      return (
+        masterData.rd9?.find((x) => x.qualityid === qualityid)
+          ?.colorstonequality || ""
+      );
+    } else if (itemName === "MISC") {
+      return (
+        masterData.rd10?.find((x) => x.qualityid === qualityid)?.miscquality ||
+        ""
+      );
+    } else if (
+      itemName === "METAL" ||
+      itemName === "FINDING" ||
+      itemName === "MOUNT" ||
+      itemName === "ALLOY"
+    ) {
+      return (
+        masterData.rd16?.find((x) => x.qualityid === qualityid)?.metalquality ||
+        ""
+      );
+    }
+    return qualityid || "";
+  };
+
+  const getSizeName = (itemName, sizeId) => {
+    if (itemName === "DIAMOND") {
+      return (
+        masterData.rd11?.find((x) => x.sizeid === sizeId)?.diamondsize || ""
+      );
+    } else if (itemName === "COLOR STONE") {
+      return (
+        masterData.rd12?.find((x) => x.sizeid === sizeId)?.colorstonesize || ""
+      );
+    } else if (itemName === "MISC") {
+      return masterData.rd13?.find((x) => x.sizeid === sizeId)?.miscsize || "";
+    }
+    return sizeId || "";
+  };
+
+  const getMaterialName = (qualityid) => {
+    const match = masterData.rd1?.find((x) => x.materialtypeid === qualityid);
+    return match?.materialtypename || qualityid || "";
+  };
+
+  const getUserData = (userID) => {
+    const match = masterData.rd20?.find((x) => x.id === userID);
+    return match?.customercode || userID || "";
+  };
+
   useEffect(() => {
     if (!allColumData || !masterData) return;
-
-    const getItemName = (itemid) => {
-      return masterData.rd.find((x) => x.id === itemid)?.itemname || "";
-    };
-
-    const getShapeName = (itemName, shapeid) => {
-      if (itemName === "DIAMOND") {
-        return (
-          masterData.rd2.find((x) => x.shapeid === shapeid)?.DiamondShape || ""
-        );
-      } else if (itemName === "COLOR STONE") {
-        return (
-          masterData.rd3.find((x) => x.shapeid === shapeid)?.ColorStoneShape ||
-          ""
-        );
-      } else if (itemName === "MISC") {
-        return (
-          masterData.rd4.find((x) => x.shapeid === shapeid)?.Miscshape || ""
-        );
-      } else if (
-        itemName === "METAL" ||
-        itemName === "MOUNT" ||
-        itemName === "ALLOY" ||
-        itemName === "FINDING"
-      ) {
-        return (
-          masterData.rd19.find((x) => x.metaltypeid === shapeid)?.metaltype ||
-          ""
-        );
-      }
-      return shapeid || "";
-    };
-
-    const getColorName = (itemName, colorid) => {
-      if (itemName === "DIAMOND") {
-        return (
-          masterData.rd5?.find((x) => x.colorid === colorid)?.Diamondcolor || ""
-        );
-      } else if (itemName === "COLOR STONE") {
-        return (
-          masterData.rd6?.find((x) => x.colorid === colorid)?.ColorStonecolor ||
-          ""
-        );
-      } else if (itemName === "MISC") {
-        return (
-          masterData.rd7?.find((x) => x.colorid === colorid)?.Misccolor || ""
-        );
-      } else if (itemName === "METAL") {
-        return (
-          masterData.rd7?.find((x) => x.colorid === colorid)?.Misccolor || ""
-        );
-      } else if (itemName === "MOUNT") {
-        return (
-          masterData.rd18?.find((x) => x.colorid === colorid)?.mountcolor || ""
-        );
-      } else if (itemName === "FINDING" || itemName === "ALLOY") {
-        return (
-          masterData.rd17?.find((x) => x.colorid === colorid)?.Metalcolor || ""
-        );
-      }
-      return colorid || "";
-    };
-
-    const getQualityName = (itemName, qualityid) => {
-      if (itemName === "DIAMOND") {
-        return (
-          masterData.rd8?.find((x) => x.qualityid === qualityid)
-            ?.diamondquality || ""
-        );
-      } else if (itemName === "COLOR STONE") {
-        return (
-          masterData.rd9?.find((x) => x.qualityid === qualityid)
-            ?.colorstonequality || ""
-        );
-      } else if (itemName === "MISC") {
-        return (
-          masterData.rd10?.find((x) => x.qualityid === qualityid)
-            ?.miscquality || ""
-        );
-      } else if (
-        itemName === "METAL" ||
-        itemName === "FINDING" ||
-        itemName === "MOUNT" ||
-        itemName === "ALLOY"
-      ) {
-        return (
-          masterData.rd16?.find((x) => x.qualityid === qualityid)
-            ?.metalquality || ""
-        );
-      }
-      return qualityid || "";
-    };
-
-    const getSizeName = (itemName, sizeId) => {
-      if (itemName === "DIAMOND") {
-        return (
-          masterData.rd11?.find((x) => x.sizeid === sizeId)?.diamondsize || ""
-        );
-      } else if (itemName === "COLOR STONE") {
-        return (
-          masterData.rd12?.find((x) => x.sizeid === sizeId)?.colorstonesize ||
-          ""
-        );
-      } else if (itemName === "MISC") {
-        return (
-          masterData.rd13?.find((x) => x.sizeid === sizeId)?.miscsize || ""
-        );
-      }
-      return sizeId || "";
-    };
-
-    const getMaterialName = (qualityid) => {
-      const match = masterData.rd1?.find((x) => x.materialtypeid === qualityid);
-      return match?.materialtypename || qualityid || "";
-    };
-
-    const getUserData = (userID) => {
-      const match = masterData.rd20?.find((x) => x.id === userID);
-      return match?.customercode || userID || "";
-    };
-
     const columnData = Object.values(allColumData)
       .filter((col) => col.ColumShow)
       .map((col) => {
@@ -716,7 +709,16 @@ export default function StockDetailINTemp() {
         return (
           masterData.rd4.find((x) => x.shapeid === shapeid)?.Miscshape || ""
         );
-      }
+      } else if (
+        itemName === "FINDING" ||
+        itemName === "METAL" ||
+        itemName === "MOUNT" ||
+        itemName === "ALLOY"
+      )
+        return (
+          masterData.rd19.find((x) => x.metaltypeid === shapeid)?.metaltype ||
+          ""
+        );
       return shapeid || "";
     };
 
@@ -754,7 +756,12 @@ export default function StockDetailINTemp() {
           masterData.rd10?.find((x) => x.qualityid === qualityid)
             ?.miscquality || ""
         );
-      } else if (itemName === "FINDING") {
+      } else if (
+        itemName === "FINDING" ||
+        itemName === "METAL" ||
+        itemName === "MOUNT" ||
+        itemName === "ALLOY"
+      ) {
         return (
           masterData.rd11?.find((x) => x.qualityid === qualityid)
             ?.FindingQuality || ""
@@ -897,7 +904,7 @@ export default function StockDetailINTemp() {
 
       return isMatch;
     });
-  
+
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
@@ -1313,6 +1320,7 @@ export default function StockDetailINTemp() {
   function mapRowsToHeaders(columns, rows) {
     const isIsoDateTime = (str) =>
       typeof str === "string" && /^\d{4}-\d{2}-\d{2}T/.test(str);
+
     const fieldToHeader = {};
     columns?.forEach((col) => {
       let header = "";
@@ -1328,36 +1336,45 @@ export default function StockDetailINTemp() {
       }
       fieldToHeader[col.field] = header;
     });
+
     return rows?.map((row, idx) => {
       const ordered = {};
       columns?.forEach((col) => {
         const header = fieldToHeader[col.field];
         let value = row[col.field] ?? "";
+
+        switch (col.field) {
+          case "itemid":
+            value = getItemName(row.itemid);
+            break;
+          case "materialtypeid":
+            value = getMaterialName(row.materialtypeid);
+            break;
+          case "shapeid":
+            value = getShapeName(getItemName(row.itemid), row.shapeid);
+            break;
+          case "qualityid":
+            value = getQualityName(getItemName(row.itemid), row.qualityid);
+            break;
+          case "colorid":
+            value = getColorName(getItemName(row.itemid), row.colorid);
+            break;
+          case "sizeid":
+            value = getSizeName(getItemName(row.itemid), row.sizeid);
+            break;
+          case "loginid":
+            value = getUserData(row.loginid);
+            break;
+          default:
+            break;
+        }
+
+        // ✅ Special handling for serial number
         if (header === "Sr#") {
           value = idx + 1;
         }
-        if (col.field === "Venderfgage") {
-          let finalDate = 0;
-          const fgDateStr = row.fgdate;
-          const outsourceDateStr = row.outsourcedate;
-          if (fgDateStr && outsourceDateStr) {
-            const diff =
-              new Date(fgDateStr).getTime() -
-              new Date(outsourceDateStr).getTime();
-            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
-          }
-          value = finalDate;
-        } else if (col.field === "Fgage") {
-          let finalDate = 0;
-          const fgDateStr = row.fgdate;
-          const orderDateStr = row.orderdate;
-          if (fgDateStr && orderDateStr) {
-            const diff =
-              new Date(fgDateStr).getTime() - new Date(orderDateStr).getTime();
-            finalDate = Math.floor(diff / (1000 * 60 * 60 * 24));
-          }
-          value = finalDate;
-        }
+
+        // ✅ Date formatting
         if (isIsoDateTime(value)) {
           const dateObj = new Date(value);
           const day = String(dateObj.getDate()).padStart(2, "0");
@@ -1365,26 +1382,23 @@ export default function StockDetailINTemp() {
           const year = dateObj.getFullYear();
           value = `${day}-${month}-${year}`;
         }
+
         ordered[header] = value;
       });
       return ordered;
     });
   }
-
   const converted = mapRowsToHeaders(columns, filteredRows);
 
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(converted);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
     });
-
     const data = new Blob([excelBuffer], { type: EXCEL_TYPE });
-
     const now = new Date();
     const dateString = now
       .toLocaleString("en-GB", {
@@ -1397,9 +1411,9 @@ export default function StockDetailINTemp() {
         hour12: false,
       })
       .replace(/[/:]/g, "-")
-      .replace(/, /g, "_"); // Format: dd-MM-yyyy_HH-mm-ss
+      .replace(/, /g, "_");
 
-    const fileName = `Job Completion Lead Report_${dateString}.xlsx`;
+    const fileName = `StcokReportIn_${dateString}.xlsx`;
 
     saveAs(data, fileName);
   };

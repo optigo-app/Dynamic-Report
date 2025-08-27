@@ -870,6 +870,7 @@ export default function MaterialPurhcaseReport() {
   const [highlightedIndex, setHighlightedIndex] = useState({});
   const [suggestionVisibility, setSuggestionVisibility] = useState({});
   const suggestionRefs = useRef({});
+
   useEffect(() => {
     function handleClickOutside(event) {
       for (const field in suggestionRefs.current) {
@@ -2274,6 +2275,15 @@ export default function MaterialPurhcaseReport() {
                 className="simpleGridView"
                 pagination
                 sx={{
+                  // "& .MuiDataGrid-cell": {
+                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
+                  // },
+                  // "& .MuiDataGrid-columnHeaders": {
+                  //   borderBottom: "1px solid rgba(224, 224, 224, 1)",
+                  // },
+                  // "& .MuiDataGrid-columnHeader": {
+                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
+                  // },
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
@@ -2284,7 +2294,7 @@ export default function MaterialPurhcaseReport() {
                   },
 
                   "& .MuiDataGrid-selectedRowCount": {
-                    display: 'none'
+                    display: "none",
                   },
 
                   "& .MuiTablePagination-displayedRows": {

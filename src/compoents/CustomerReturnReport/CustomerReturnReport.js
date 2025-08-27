@@ -707,6 +707,33 @@ export default function CustomerReturnReport() {
       return isMatch;
     });
 
+    const parseDate = (dateStr) => {
+      if (!dateStr) return new Date(0); // fallback for null/empty
+      let d = new Date(dateStr);
+      if (!isNaN(d)) return d;
+
+      const parts = dateStr.split(" ");
+      if (parts.length === 3) {
+        const [day, monthStr, year] = parts;
+        const months = {
+          Jan: 0,
+          Feb: 1,
+          Mar: 2,
+          Apr: 3,
+          May: 4,
+          Jun: 5,
+          Jul: 6,
+          Aug: 7,
+          Sep: 8,
+          Oct: 9,
+          Nov: 10,
+          Dec: 11,
+        };
+        return new Date(+year, months[monthStr], +day);
+      }
+      return new Date(0);
+    };
+
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
@@ -715,9 +742,8 @@ export default function CustomerReturnReport() {
     const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
 
     const sorted = [...safeRows].sort((a, b) => {
-      return new Date(b.entrydate) - new Date(a.entrydate);
+      return parseDate(b.entrydate) - parseDate(a.entrydate);
     });
-
     setFilteredRows(sorted);
   }, [
     filters,
@@ -2013,21 +2039,12 @@ export default function CustomerReturnReport() {
                 className="simpleGridView"
                 pagination
                 sx={{
-                  // "& .MuiDataGrid-cell": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeaders": {
-                  //   borderBottom: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeader": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
 
                   "& .MuiDataGrid-selectedRowCount": {
-                    display: 'none'
+                    display: "none",
                   },
 
                   "& .MuiTablePagination-selectLabel": {

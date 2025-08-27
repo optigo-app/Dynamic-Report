@@ -33,6 +33,7 @@ import {
   Paper,
   Select,
   Slide,
+  TextField,
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
@@ -53,7 +54,20 @@ import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, CircleX } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
-
+import {
+  GridPagination,
+  useGridApiContext,
+  useGridSelector,
+  gridPageSelector,
+  gridPageCountSelector,
+} from "@mui/x-data-grid";
+import {
+  FirstPage,
+  LastPage,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+} from "@mui/icons-material";
+import { FaRegFileExcel } from "react-icons/fa";
 let popperPlacement = "bottom-start";
 const ItemType = {
   COLUMN: "COLUMN",
@@ -125,6 +139,136 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
+function CustomPagination() {
+  const apiRef = useGridApiContext();
+  const page = useGridSelector(apiRef, gridPageSelector);
+  const pageCount = useGridSelector(apiRef, gridPageCountSelector);
+  const rowCount = apiRef.current.getRowsCount();
+  const pageSize = apiRef.current.state.pagination.paginationModel.pageSize;
+  const [inputPage, setInputPage] = React.useState(page + 1);
+
+  React.useEffect(() => {
+    setInputPage(page + 1);
+  }, [page]);
+
+  const handleInputChange = (e) => {
+    setInputPage(e.target.value);
+  };
+
+  const handleInputBlur = () => {
+    let newPage = Number(inputPage);
+
+    if (isNaN(newPage) || newPage < 1) {
+      newPage = 1;
+    } else if (newPage > pageCount) {
+      newPage = pageCount;
+    }
+
+    apiRef.current.setPage(newPage - 1);
+    setInputPage(newPage);
+  };
+
+  const handlePageSizeChange = (e) => {
+    apiRef.current.setPageSize(Number(e.target.value));
+  };
+
+  const startItem = page * pageSize + 1;
+  const endItem = Math.min((page + 1) * pageSize, rowCount);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        width: "100%",
+        padding: "0 8px",
+        gap: 16,
+      }}
+    >
+      {/* ✅ Page navigation */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 14 }}>Rows per page:</span>
+        <TextField
+          select
+          size="small"
+          value={pageSize}
+          onChange={handlePageSizeChange}
+          SelectProps={{
+            native: true,
+          }}
+          style={{ width: 60 }}
+          sx={{
+            "& .MuiNativeSelect-select": {
+              padding: "2px 5px!important",
+              fontSize: "14px !important",
+            },
+          }}
+        >
+          {[20, 30, 50, 100].map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </TextField>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(0)}
+          disabled={page === 0}
+        >
+          <FirstPage fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page - 1)}
+          disabled={page === 0}
+        >
+          <KeyboardArrowLeft fontSize="small" />
+        </IconButton>
+
+        <p>Page</p>
+        <TextField
+          value={inputPage}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleInputBlur();
+            }
+          }}
+          size="small"
+          variant="outlined"
+          style={{ width: 60 }}
+          inputProps={{ style: { textAlign: "center", padding: "2px 4px" } }}
+        />
+        <span style={{ fontSize: 14 }}>of {pageCount}</span>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page + 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <KeyboardArrowRight fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(pageCount - 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <LastPage fontSize="small" />
+        </IconButton>
+
+        <span style={{ fontSize: 14 }}>
+          Displaying {rowCount === 0 ? 0 : startItem} to {endItem} of {rowCount}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function Materialmemoreport() {
   const [isLoading, setIsLoading] = useState(false);
   const [toDate, setToDate] = useState(null);
@@ -154,7 +298,9 @@ export default function Materialmemoreport() {
   const [AllFinalData, setFinalData] = useState();
   const [status500, setStatus500] = useState(false);
   const [commonSearch, setCommonSearch] = useState("");
-  const [sortModel, setSortModel] = useState([]);
+  const [sortModel, setSortModel] = React.useState([
+    { field: "voucherdate", sort: "desc" },
+  ]);
   const [allUserNameList, setAllUserNameList] = useState([]);
   const [selectedDateColumn, setSelectedDateColumn] = useState("ALL");
   const [selectedCustomer, setSelectedCustomer] = useState("All");
@@ -168,13 +314,12 @@ export default function Materialmemoreport() {
   });
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    pageSize: 10,
+    pageSize: 20,
   });
 
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
-  const [showAllData, setShowAllData] = useState(false);
   const firstTimeLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -242,16 +387,6 @@ export default function Materialmemoreport() {
 
     try {
       const fetchedData = await GetWorkerData(body, sp);
-      if (showAllData) {
-        setFilterState({
-          ...filterState,
-          dateRange: {
-            startDate: null,
-            endDate: null,
-          },
-        });
-        setShowAllData(false);
-      }
       setAllRowData(fetchedData?.Data?.rd1);
       setAllUserNameList(fetchedData?.Data?.rd3);
       setAllColumIdWiseName(fetchedData?.Data?.rd);
@@ -612,12 +747,45 @@ export default function Materialmemoreport() {
       return isMatch;
     });
 
+      const parseDate = (dateStr) => {
+      if (!dateStr) return new Date(0); // fallback for null/empty
+      let d = new Date(dateStr);
+      if (!isNaN(d)) return d;
+
+      const parts = dateStr.split(" ");
+      if (parts.length === 3) {
+        const [day, monthStr, year] = parts;
+        const months = {
+          Jan: 0,
+          Feb: 1,
+          Mar: 2,
+          Apr: 3,
+          May: 4,
+          Jun: 5,
+          Jul: 6,
+          Aug: 7,
+          Sep: 8,
+          Oct: 9,
+          Nov: 10,
+          Dec: 11,
+        };
+        return new Date(+year, months[monthStr], +day);
+      }
+      return new Date(0);
+    };
+
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
       ...row,
       srNo: index + 1,
     }));
 
-    setFilteredRows(rowsWithSrNo);
+    const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
+
+    const sorted = [...safeRows].sort((a, b) => {
+      return parseDate(b.voucherdate) - parseDate(a.voucherdate);
+    });
+
+    setFilteredRows(sorted);
   }, [
     filters,
     commonSearch,
@@ -1038,7 +1206,6 @@ export default function Materialmemoreport() {
       return columnData?.summary;
     });
 
-
     return (
       <div className="summaryBox">
         {summaryColumns.map((col) => {
@@ -1457,8 +1624,8 @@ export default function Materialmemoreport() {
             padding: "10px 5px",
           }}
         >
-          <div style={{ display: "flex", gap: "10px", alignItems: "end" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
                 <MdOutlineFilterAlt style={{ height: "30px", width: "30px" }} />
               </button>
@@ -1472,14 +1639,19 @@ export default function Materialmemoreport() {
                 />
                 <Button
                   onClick={() => {
+                    fetchData("", "");
                     setFilterState({
                       ...filterState,
                       dateRange: {
-                        startDate: new Date("2000-01-01T18:30:00.000Z"),
-                        endDate: new Date(),
+                        startDate: "",
+                        endDate: "",
                       },
                     });
-                    setShowAllData(true);
+                    setFromDate(null);
+                    setToDate(null);
+                    setCommonSearch("");
+                    setFilters({});
+                    setSelectedDateColumn("ALL");
                   }}
                   className="FiletrBtnAll"
                 >
@@ -1499,37 +1671,80 @@ export default function Materialmemoreport() {
                       },
                     },
                   }}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
                 >
                   {uniqueCustomers?.map((cust, index) => (
-                    <MenuItem key={index} value={cust}>
+                    <MenuItem
+                      key={index}
+                      value={cust}
+                      style={{
+                        fontSize: "14px",
+                      }}
+                      s
+                    >
                       {cust}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-
-              <CustomTextField
-                type="text"
-                placeholder="Search..."
-                value={commonSearch}
-                onChange={(e) => setCommonSearch(e.target.value)}
-                customBorderColor="rgba(47, 43, 61, 0.2)"
-                InputProps={{
-                  endAdornment: commonSearch && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={() => setCommonSearch("")}
-                        aria-label="clear"
-                      >
-                        <CircleX size={20} color="#888" />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                style={{ width: "250px" }}
-              />
+              <FormControl size="small" sx={{ width: 150, margin: "0px" }}>
+                <Select
+                  value={selectedDateColumn}
+                  onChange={(e) => setSelectedDateColumn(e.target.value)}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        overflowY: "auto",
+                      },
+                    },
+                  }}
+                  style={{
+                    fontSize: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  sx={{
+                    "& .MuiSelect-select": {
+                      padding: "7px !important",
+                    },
+                  }}
+                >
+                  <MenuItem
+                    value="ALL"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    ALL
+                  </MenuItem>
+                  <MenuItem
+                    value="pendingmemo"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    Pending Memo
+                  </MenuItem>
+                  <MenuItem
+                    value="pendingmemovoucher"
+                    style={{
+                      fontSize: "14px",
+                    }}
+                  >
+                    Pending Memo Voucher
+                  </MenuItem>
+                </Select>
+              </FormControl>
             </div>
             {columns
               .filter((col) => col.filterable)
@@ -1613,24 +1828,6 @@ export default function Materialmemoreport() {
                 </button>
               </div>
             </div>
-            {/* <div style={{ display: "flex" }}>
-              {masterData?.rd3.map((data) => (
-                <abbr title={data?.name}>
-                  <p
-                    key={data.id}
-                    style={{
-                      backgroundColor: data?.colorcode,
-                      cursor: "pointer",
-                      border: selectedColors.includes(data.id)
-                        ? "2px solid black"
-                        : "none",
-                    }}
-                    className="colorFiled"
-                    onClick={() => toggleColorSelection(data.id)} // Handle color click
-                  ></p>
-                </abbr>
-              ))}
-            </div> */}
           </div>
           <div style={{ display: "flex", alignItems: "end", gap: "10px" }}>
             {masterKeyData?.mailButton && (
@@ -1681,52 +1878,49 @@ export default function Materialmemoreport() {
               </button>
             )}
 
+            <CustomTextField
+              type="text"
+              placeholder="Search..."
+              value={commonSearch}
+              onChange={(e) => setCommonSearch(e.target.value)}
+              customBorderColor="rgba(47, 43, 61, 0.2)"
+              InputProps={{
+                endAdornment: commonSearch && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => setCommonSearch("")}
+                      aria-label="clear"
+                    >
+                      <CircleX size={20} color="#888" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              style={{
+                width: "200px",
+              }}
+              className="mainSearchTextBox"
+              sx={{
+                "& .MuiInputBase-input": {
+                  padding: "4.5px !important",
+                },
+              }}
+            />
+
             {masterKeyData?.ExcelExport && (
               <button onClick={exportToExcel} className="All_exportButton">
-                <svg
-                  stroke="currentColor"
-                  fill="currentColor"
-                  stroke-width="0"
-                  viewBox="0 0 384 512"
-                  height="2em"
-                  width="2em"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm60.1 106.5L224 336l60.1 93.5c5.1 8-.6 18.5-10.1 18.5h-34.9c-4.4 0-8.5-2.4-10.6-6.3C208.9 405.5 192 373 192 373c-6.4 14.8-10 20-36.6 68.8-2.1 3.9-6.1 6.3-10.5 6.3H110c-9.5 0-15.2-10.5-10.1-18.5l60.3-93.5-60.3-93.5c-5.2-8 .6-18.5 10.1-18.5h34.8c4.4 0 8.5 2.4 10.6 6.3 26.1 48.8 20 33.6 36.6 68.5 0 0 6.1-11.7 36.6-68.5 2.1-3.9 6.2-6.3 10.6-6.3H274c9.5-.1 15.2 10.4 10.1 18.4zM384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"></path>
-                </svg>
+                <FaRegFileExcel
+                  style={{
+                    marginRight: "5px",
+                    fontSize: "20px",
+                    color: "green",
+                  }}
+                />
+                Excel
               </button>
             )}
-
-            {/* <FormControl size="small" sx={{ minWidth: 100, margin: "0px" }}>
-              <Select
-                value={selectedDateColumnHyBrid}
-                onChange={(e) => setSelectedDateColumnHyBrid(e.target.value)}
-              >
-                <MenuItem value="ALL">ALL</MenuItem>
-                <MenuItem value="Hybrid">Hybrid</MenuItem>
-              </Select>
-            </FormControl> */}
-
-            <FormControl size="small" sx={{ width: 200, margin: "0px" }}>
-              <Select
-                value={selectedDateColumn}
-                onChange={(e) => setSelectedDateColumn(e.target.value)}
-                MenuProps={{
-                  PaperProps: {
-                    style: {
-                      maxHeight: 300,
-                      overflowY: "auto",
-                    },
-                  },
-                }}
-              >
-                <MenuItem value="ALL">ALL</MenuItem>
-                <MenuItem value="pendingmemo">Pending Memo</MenuItem>
-                <MenuItem value="pendingmemovoucher">
-                  Pending Memo Voucher
-                </MenuItem>
-              </Select>
-            </FormControl>
           </div>
         </div>
         <div
@@ -1788,24 +1982,18 @@ export default function Materialmemoreport() {
                     },
                   },
                 }}
+                slots={{
+                  pagination: CustomPagination,
+                }}
                 sortModel={sortModel}
                 onSortModelChange={(model) => setSortModel(model)}
-                sortingOrder={["asc", "desc"]} // For Sorting.....
+                sortingOrder={["desc", "asc"]}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
                 pageSizeOptions={[10, 20, 50, 100]}
                 className="simpleGridView"
                 pagination
                 sx={{
-                  // "& .MuiDataGrid-cell": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeaders": {
-                  //   borderBottom: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeader": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
@@ -1818,6 +2006,9 @@ export default function Materialmemoreport() {
                   "& .MuiTablePagination-displayedRows": {
                     margin: "0px",
                     padding: "0px",
+                  },
+                  "& .MuiDataGrid-selectedRowCount": {
+                    display: "none",
                   },
 
                   "& .MuiTablePagination-actions .MuiButtonBase-root": {
