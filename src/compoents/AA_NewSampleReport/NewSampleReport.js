@@ -9,7 +9,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import mainButton from "../images/Mail_32.png";
 import printButton from "../images/print.png";
 import gridView from "../images/GriedView.png";
-import imageView from "../images/ImageView2.png";
+import noFoundImg from "../images/noFound.jpg";
 import { RiFullscreenLine } from "react-icons/ri";
 import {
   Accordion,
@@ -50,7 +50,15 @@ import { saveAs } from "file-saver";
 import { AiFillSetting } from "react-icons/ai";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, CircleX, FunnelPlus, FunnelX } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeftToLine,
+  CircleX,
+  FunnelPlus,
+  FunnelX,
+  ImageUp,
+  LayoutGrid,
+} from "lucide-react";
 import SummarizeIcon from "@mui/icons-material/Summarize";
 import { DateRangePicker } from "mui-daterange-picker";
 import DatePicker from "react-datepicker";
@@ -59,12 +67,19 @@ import CustomTextField from "../text-field";
 import DualDatePicker from "../DatePicker/DualDatePicker";
 import { GoCopy } from "react-icons/go";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
-
-let popperPlacement = "bottom-start";
-
-const ItemType = {
-  COLUMN: "COLUMN",
-};
+import {
+  GridPagination,
+  useGridApiContext,
+  useGridSelector,
+  gridPageSelector,
+  gridPageCountSelector,
+} from "@mui/x-data-grid";
+import {
+  FirstPage,
+  LastPage,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+} from "@mui/icons-material";
 
 const EXCEL_TYPE =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8";
@@ -130,7 +145,137 @@ const formatToMMDDYYYY = (date) => {
     .padStart(2, "0")}/${d.getFullYear()}`;
 };
 
-export default function NewSampleReport({ OtherKeyData, mode }) {
+function CustomPagination() {
+  const apiRef = useGridApiContext();
+  const page = useGridSelector(apiRef, gridPageSelector);
+  const pageCount = useGridSelector(apiRef, gridPageCountSelector);
+  const rowCount = apiRef.current.getRowsCount();
+  const pageSize = apiRef.current.state.pagination.paginationModel.pageSize;
+  const [inputPage, setInputPage] = React.useState(page + 1);
+
+  React.useEffect(() => {
+    setInputPage(page + 1);
+  }, [page]);
+
+  const handleInputChange = (e) => {
+    setInputPage(e.target.value);
+  };
+
+  const handleInputBlur = () => {
+    let newPage = Number(inputPage);
+
+    if (isNaN(newPage) || newPage < 1) {
+      newPage = 1;
+    } else if (newPage > pageCount) {
+      newPage = pageCount;
+    }
+
+    apiRef.current.setPage(newPage - 1);
+    setInputPage(newPage);
+  };
+
+  const handlePageSizeChange = (e) => {
+    apiRef.current.setPageSize(Number(e.target.value));
+  };
+
+  const startItem = page * pageSize + 1;
+  const endItem = Math.min((page + 1) * pageSize, rowCount);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        width: "100%",
+        padding: "0 8px",
+        gap: 16,
+      }}
+    >
+      {/* ✅ Page navigation */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 14 }}>Rows per page:</span>
+        <TextField
+          select
+          size="small"
+          value={pageSize}
+          onChange={handlePageSizeChange}
+          SelectProps={{
+            native: true,
+          }}
+          style={{ width: 60 }}
+          sx={{
+            "& .MuiNativeSelect-select": {
+              padding: "2px 5px!important",
+              fontSize: "14px !important",
+            },
+          }}
+        >
+          {[20, 30, 50, 100].map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </TextField>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(0)}
+          disabled={page === 0}
+        >
+          <FirstPage fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page - 1)}
+          disabled={page === 0}
+        >
+          <KeyboardArrowLeft fontSize="small" />
+        </IconButton>
+
+        <p>Page</p>
+        <TextField
+          value={inputPage}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleInputBlur();
+            }
+          }}
+          size="small"
+          variant="outlined"
+          style={{ width: 60 }}
+          inputProps={{ style: { textAlign: "center", padding: "2px 4px" } }}
+        />
+        <span style={{ fontSize: 14 }}>of {pageCount}</span>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page + 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <KeyboardArrowRight fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(pageCount - 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <LastPage fontSize="small" />
+        </IconButton>
+
+        <span style={{ fontSize: 14 }}>
+          Displaying {rowCount === 0 ? 0 : startItem} to {endItem} of {rowCount}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default function NewSampleReport({ OtherKeyData, mode, onBack }) {
   const [isLoading, setIsLoading] = useState(false);
   const [toDate, setToDate] = useState(null);
   const [fromDate, setFromDate] = useState(null);
@@ -359,7 +504,6 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
                 </span>
               );
             } else if (col.copyButton) {
-              
               const handleCopy = () => {
                 navigator.clipboard
                   .writeText(displayValue)
@@ -579,9 +723,7 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
   const [filters, setFilters] = useState({});
 
   useEffect(() => {
-
     const newFilteredRows = originalRows?.filter((row) => {
-
       let isMatch = true;
       for (const filterField of Object.keys(filters)) {
         const filterValue = filters[filterField];
@@ -647,7 +789,6 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
         }
       }
       return isMatch;
-
     });
 
     const rowsWithSrNo = newFilteredRows?.map((row, index) => ({
@@ -661,7 +802,6 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
     } else {
       setFilteredRows(rowsWithSrNo);
     }
-
   }, [
     filters,
     commonSearch,
@@ -724,7 +864,6 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
   const [suggestionVisibility, setSuggestionVisibility] = useState({});
   const suggestionRefs = useRef({});
   useEffect(() => {
-
     function handleClickOutside(event) {
       for (const field in suggestionRefs.current) {
         if (
@@ -743,7 +882,6 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-    
   }, []);
 
   const renderSuggestionFilter = (col) => {
@@ -1274,10 +1412,6 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
 
   const handlePrint = () => {};
 
-  const handleImg = () => {
-    setShowImageView((prevState) => !prevState);
-  };
-
   const handleClickOpenPoup = () => {
     setOpenPopup(true);
   };
@@ -1381,7 +1515,7 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
     rows.forEach((row) => {
       const newRow = { ...row };
       const keyParts = [];
-      for (const [field, checked] of Object.entries(groupCheckBox)) {
+      for (const [field, checked] of Object?.entries(groupCheckBox)) {
         if (checked) {
           keyParts.push(newRow[field]);
         } else {
@@ -1470,6 +1604,7 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
             </div>
           </div>
         </Dialog>
+
         <Drawer
           open={sideFilterOpen}
           onClose={toggleDrawer(false)}
@@ -1636,7 +1771,20 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
         </Dialog>
 
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          {renderSummary()}
+          <div
+            style={{
+              display: "flex",
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={onBack}
+              className="fullScreenButton"
+            >
+              <ArrowLeftToLine />
+            </Button>
+            {renderSummary()}
+          </div>
 
           <div style={{ display: "flex" }}>
             {masterKeyData?.columSettingModel && (
@@ -1863,7 +2011,28 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
               />
             )}
 
-            {masterKeyData?.imageView && (
+            {masterKeyData?.imageView &&
+            masterKeyData?.allGrupDataShowImageViewShow ? (
+              allChecked && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {showImageView ? (
+                    <div onClick={() => setShowImageView(false)}>
+                      <LayoutGrid className="imageViewImgGrid" />
+                    </div>
+                  ) : (
+                    <div onClick={() => setShowImageView(true)}>
+                      <ImageUp className="imageViewImg" />
+                    </div>
+                  )}
+                </div>
+              )
+            ) : (
               <div
                 style={{
                   display: "flex",
@@ -1872,17 +2041,13 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
                 }}
               >
                 {showImageView ? (
-                  <img
-                    src={gridView}
-                    className="imageViewImgGrid"
-                    onClick={handleImg}
-                  />
+                  <div onClick={() => setShowImageView(false)}>
+                    <LayoutGrid className="imageViewImgGrid" />
+                  </div>
                 ) : (
-                  <img
-                    src={imageView}
-                    className="imageViewImg"
-                    onClick={handleImg}
-                  />
+                  <div onClick={() => setShowImageView(true)}>
+                    <ImageUp className="imageViewImg" />
+                  </div>
                 )}
               </div>
             )}
@@ -1911,35 +2076,84 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
           style={{ height: "calc(100vh - 180px)", margin: "5px" }}
         >
           {showImageView ? (
-            <div>
-              <img
-                className="imageViewImgage"
-                src="https://i.etsystatic.com/27743818/r/il/510b96/3776218288/il_1080xN.3776218288_ava6.jpg"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://stardustdiamonds.in/cdn/shop/files/SDLR0231.jpg?v=1747660984&width=1200"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://5.imimg.com/data5/ANDROID/Default/2023/8/334910083/NS/MY/II/194318398/product-jpeg.jpeg"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://i.ebayimg.com/images/g/E-AAAOSwKTNip7K7/s-l1200.jpg"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://cdn.freepixel.com/preview/free-photos-wedding-couple-rings-photo---a-captivating-image-showcases-a-dazzling-diamond-ring-mounted-on-a-fing-preview-1004227194.jpg"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://i.ebayimg.com/images/g/w2wAAOSwlhZZcOgp/s-l1200.jpg"
-              />
-              <img
-                className="imageViewImgage"
-                src="https://images.pexels.com/photos/1457801/pexels-photo-1457801.jpeg?cs=srgb&dl=pexels-enginakyurt-1457801.jpg&fm=jpg"
-              />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+              {filteredRows.map((item, idx) => {
+                const src =
+                  String(item["imageViewkey"] ?? "").trim() || noFoundImg;
+                return (
+                  <div
+                    style={{
+                      width: "200px",
+                      height: "230px",
+                    }}
+                  >
+                    <img
+                      key={idx}
+                      src={src}
+                      alt={`record-${idx}`}
+                      height="auto"
+                      loading="lazy"
+                      style={{
+                        width: "200px",
+                        height: "200px",
+                        border: "1px solid lightgray",
+                      }}
+                    />
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: "10px" }}>
+                        <p
+                          style={{
+                            margin: "0px",
+                            fontWeight: 600,
+                            fontSize: "12px",
+                            lineHeight: "10px",
+                          }}
+                        >
+                          <span>{item?.stockbarcode}</span>
+                        </p>
+                        <p
+                          style={{
+                            margin: "0px",
+                            fontWeight: 600,
+                            fontSize: "12px",
+                            display: "flex",
+                            color: "#CF4F7D",
+                            display: "flex",
+                            flexDirection: "column",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "3px",
+                              lineHeight: "10px",
+                            }}
+                          >
+                            <span>{item?.metaltype}</span>
+                            <span>{item?.metalpurity}</span>
+                          </div>
+                          <span>{item?.metalcolor}</span>
+                        </p>
+                      </div>
+                      <p
+                        style={{
+                          margin: "0px",
+                          fontWeight: 600,
+                          fontSize: "13px",
+                          lineHeight: "10px",
+                        }}
+                      >
+                        {item?.designno}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <Warper>
@@ -1961,19 +2175,20 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
                     },
                   },
                 }}
-                rowsPerPageOptions={[5, 10, 15, 25, 50]}
+                slots={{
+                  pagination: CustomPagination,
+                }}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
-                pageSizeOptions={[20, 30, 50, 100, 200]}
                 className="simpleGridView"
                 pagination
                 sx={{
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
-                  // marginLeft: 2,
-                  // marginRight: 2,
-                  // marginBottom: 2,
+                  "& .MuiDataGrid-selectedRowCount": {
+                    display: "none",
+                  },
                 }}
               />
             </Warper>
@@ -2019,14 +2234,6 @@ export default function NewSampleReport({ OtherKeyData, mode }) {
                   We're sorry, but an unexpected error has occurred. Please try
                   again later.
                 </Typography>
-
-                {/* <Button
-                  variant="contained"
-                  color="error"
-                  sx={{ textTransform: "none", borderRadius: "10px", px: 4 }}
-                >
-                  Try Again
-                </Button> */}
               </Paper>
             </Box>
           </div>

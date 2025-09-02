@@ -747,7 +747,7 @@ export default function Materialmemoreport() {
       return isMatch;
     });
 
-      const parseDate = (dateStr) => {
+    const parseDate = (dateStr) => {
       if (!dateStr) return new Date(0); // fallback for null/empty
       let d = new Date(dateStr);
       if (!isNaN(d)) return d;
@@ -1658,7 +1658,41 @@ export default function Materialmemoreport() {
                   All
                 </Button>
               </div>
-              <FormControl size="small" sx={{ minWidth: 150, margin: "0px" }}>
+
+              <Button
+                className={
+                  selectedDateColumn == "pendingmemo"
+                    ? "PurchaseBtndis"
+                    : "PurchaseBtn"
+                }
+                disabled={selectedDateColumn == "pendingmemo" ? true : false}
+                onClick={() => {
+                  setSelectedDateColumn("pendingmemo");
+                }}
+                style={{
+                  width: "170px",
+                }}
+              >
+                Pending Memo
+              </Button>
+
+              <Button
+                className={
+                  selectedDateColumn == "pendingmemovoucher"
+                    ? "PurchaseBtndis"
+                    : "PurchaseBtn"
+                }
+                disabled={
+                  selectedDateColumn == "pendingmemovoucher" ? true : false
+                }
+                onClick={() => {
+                  setSelectedDateColumn("pendingmemovoucher");
+                }}
+              >
+                Pending Memo Voucher
+              </Button>
+
+              {/* <FormControl size="small" sx={{ minWidth: 150, margin: "0px" }}>
                 <Select
                   value={selectedCustomer}
                   onChange={(e) => setSelectedCustomer(e.target.value)}
@@ -1744,7 +1778,8 @@ export default function Materialmemoreport() {
                     Pending Memo Voucher
                   </MenuItem>
                 </Select>
-              </FormControl>
+              </FormControl> */}
+              
             </div>
             {columns
               .filter((col) => col.filterable)

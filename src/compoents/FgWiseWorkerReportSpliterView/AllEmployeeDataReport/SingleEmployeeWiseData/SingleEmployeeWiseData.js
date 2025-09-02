@@ -38,6 +38,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { GetWorkerData } from "../../../../API/GetWorkerData/GetWorkerData";
 import { IoMdClose, IoMdCloseCircleOutline } from "react-icons/io";
 import { useSearchParams } from "react-router-dom";
+import Warper from "../warper";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -111,7 +112,7 @@ export default function SingleEmployeeWiseData({
   selectedEmployeeBarCode,
   selectedEmployeeName,
   selectedMetalType,
-  showDeatilSelectedLocation
+  showDeatilSelectedLocation,
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -150,7 +151,9 @@ export default function SingleEmployeeWiseData({
     setIsLoading(true);
     const body = {
       con: `{"id":"","mode":"workerwithoutfindingdetail","appuserid":"${AllData?.uid}"}`,
-      p: `{\"fdate\":\"${NewStartDate}",\"tdate\":\"${newEndDate}",\"deptid\":\"${selectedDepartmentId}",\"locationname\":\"${currentLocation ?? showDeatilSelectedLocation}",\"employeecode\":\"${selectedEmployeeCode}"}`,
+      p: `{\"fdate\":\"${NewStartDate}",\"tdate\":\"${newEndDate}",\"deptid\":\"${selectedDepartmentId}",\"locationname\":\"${
+        currentLocation ?? showDeatilSelectedLocation
+      }",\"employeecode\":\"${selectedEmployeeCode}"}`,
       f: "Task Management (taskmaster)",
     };
     // e3tsaXZlMS5vcHRpZ29hcHBzLmNvbX19e3syMH19e3tlbHZlZXN0ZXJ9fXt7aGVubnlzfX0=
@@ -1345,46 +1348,48 @@ export default function SingleEmployeeWiseData({
               />
             </div>
           ) : (
-            <DataGrid
-              rows={filteredRows ?? []}
-              columns={columns}
-              pageSize={pageSize}
-              localeText={{ noRowsLabel: "No Data" }}
-              autoHeight={false}
-              columnBuffer={20}
-              disableColumnVirtualization
-              paginationModel={paginationModel}
-              onPaginationModelChange={setPaginationModel}
-              pageSizeOptions={[10, 20, 50, 100]}
-              onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-              rowsPerPageOptions={[5, 10, 15, 25, 50]}
-              className="simpleGridView"
-              pagination
-              sx={{
-                "& .MuiDataGrid-menuIcon": {
-                  display: "none",
-                },
-                marginLeft: 2,
-                marginRight: 2,
-                marginBottom: 2,
-              }}
-              loading={isLoading}
-              // components={{
-              //   Toolbar: () => null,
-              //   LoadingOverlay: () => (
-              //     <div
-              //       style={{
-              //         display: "flex",
-              //         justifyContent: "center",
-              //         alignItems: "center",
-              //         height: "100%",
-              //       }}
-              //     >
-              //       {/* Loading... */}
-              //     </div>
-              //   ),
-              // }}
-            />
+            <Warper>
+              <DataGrid
+                rows={filteredRows ?? []}
+                columns={columns}
+                pageSize={pageSize}
+                localeText={{ noRowsLabel: "No Data" }}
+                autoHeight={false}
+                columnBuffer={20}
+                disableColumnVirtualization
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={[10, 20, 50, 100]}
+                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
+                rowsPerPageOptions={[5, 10, 15, 25, 50]}
+                className="simpleGridView"
+                pagination
+                sx={{
+                  "& .MuiDataGrid-menuIcon": {
+                    display: "none",
+                  },
+                  marginLeft: 2,
+                  marginRight: 2,
+                  marginBottom: 2,
+                }}
+                loading={isLoading}
+                // components={{
+                //   Toolbar: () => null,
+                //   LoadingOverlay: () => (
+                //     <div
+                //       style={{
+                //         display: "flex",
+                //         justifyContent: "center",
+                //         alignItems: "center",
+                //         height: "100%",
+                //       }}
+                //     >
+                //       {/* Loading... */}
+                //     </div>
+                //   ),
+                // }}
+              />
+            </Warper>
           )}
         </div>
       </div>

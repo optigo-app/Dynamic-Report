@@ -208,8 +208,6 @@ export default function StcokReport() {
       const grupCheckboxMap = (OtherKeyData?.rd1 || [])
         .filter((col) => col?.GrupChekBox)
         .reduce((acc, col) => {
-          console.log("colcolcolcol", col);
-
           if (col.defaultGrupChekBox) {
             acc[col.field] = true;
           } else {
@@ -1298,7 +1296,7 @@ export default function StcokReport() {
                 style={{ display: "flex", alignItems: "center", gap: "20px" }}
               >
                 <button onClick={toggleDrawer(true)} className="FiletrBtnOpen">
-                  Open Filter
+                  Filter
                 </button>
 
                 <div
@@ -1307,13 +1305,13 @@ export default function StcokReport() {
                     gap: "3px",
                   }}
                 >
-                  <DualDatePicker
+                  {/* <DualDatePicker
                     filterState={filterState}
                     setFilterState={setFilterState}
                     validDay={186}
                     validMonth={6}
                     withountDateFilter={true}
-                  />
+                  /> */}
                   <Button
                     onClick={() =>
                       setFilterState({

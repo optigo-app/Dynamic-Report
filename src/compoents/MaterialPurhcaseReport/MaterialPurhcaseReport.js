@@ -2271,7 +2271,7 @@ export default function MaterialPurhcaseReport() {
                 sortingOrder={["desc", "asc"]}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
-                pageSizeOptions={[20, 30, 50, 100, 200]}
+                pageSizeOptions={[20, 30, 50, 100]}
                 className="simpleGridView"
                 pagination
                 sx={{

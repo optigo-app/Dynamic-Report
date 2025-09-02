@@ -218,7 +218,6 @@ export default function Spliter() {
     } else {
       GetTotlaData(metalFilteredData, selectedLocation);
     }
-
     setShowDepartment(!showDepartment);
   };
 
@@ -490,10 +489,12 @@ export default function Spliter() {
     (sum, item) => sum + item.losswt,
     0
   );
+  
   const Location_TotalReturnWt = locationSummaryData.reduce(
     (sum, item) => sum + item.netretunwt,
     0
   );
+
   const Location_TotalIssueWt = locationSummaryData.reduce(
     (sum, item) => sum + item.netissuewt,
     0

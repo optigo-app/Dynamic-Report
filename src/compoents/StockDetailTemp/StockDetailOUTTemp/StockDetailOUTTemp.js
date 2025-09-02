@@ -23,6 +23,8 @@ import {
   Drawer,
   FormControl,
   FormControlLabel,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Modal,
@@ -42,7 +44,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import DualDatePicker from "../../DatePicker/DualDatePicker";
 import { GetWorkerData } from "../../../API/GetWorkerData/GetWorkerData";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CircleX } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
 import { showToast } from "../../../Utils/Tostify/ToastManager";
 import Warper from "../../WorkerReportSpliterView/AllEmployeeDataReport/warper";
@@ -152,7 +154,7 @@ export default function StockDetailOUTTemp() {
   const [filterState, setFilterState] = useState({
     dateRange: { startDate: null, endDate: null },
   });
-  const [selectedMaterial, setSelectedMaterial] = useState("");
+  const [selectedMaterial, setSelectedMaterial] = useState("SelectEvent");
   const [grupEnChekBox, setGrupEnChekBox] = useState({
     empbarcode: true,
     dept: true,
@@ -380,9 +382,16 @@ export default function StockDetailOUTTemp() {
     return sizeId || "";
   };
 
-  const getMaterialName = (qualityid) => {
-    const match = masterData.rd1?.find((x) => x.materialtypeid === qualityid);
-    return match?.materialtypename || qualityid || "";
+  const getMaterialName = (itemName, qualityid, params) => {
+    if (itemName == "FINDING") {
+      const match = masterData.rd1?.find(
+        (x) => x.materialtypeid === params?.row?.findingtypeid
+      );
+      return match?.materialtypename || qualityid || "";
+    } else {
+      const match = masterData.rd1?.find((x) => x.materialtypeid === qualityid);
+      return match?.materialtypename || qualityid || "";
+    }
   };
 
   const getUserData = (userID) => {
@@ -546,7 +555,7 @@ export default function StockDetailOUTTemp() {
                     borderRadius: col.BorderRadius,
                   }}
                 >
-                  {getMaterialName(params.value)}
+                  {getMaterialName(itemName, params.value, params)}
                 </span>
               );
             }
@@ -801,7 +810,6 @@ export default function StockDetailOUTTemp() {
       return match?.materialtypename || qualityid || "";
     };
 
-
     const newFilteredRows = originalRows?.filter((row) => {
       let isMatch = true;
 
@@ -825,7 +833,11 @@ export default function StockDetailOUTTemp() {
         }
       };
 
-      if (selectedMaterial && row.event !== selectedMaterial) {
+      if (
+        selectedMaterial &&
+        selectedMaterial !== "SelectEvent" &&
+        row.event !== selectedMaterial
+      ) {
         isMatch = false;
       }
 
@@ -1360,7 +1372,7 @@ export default function StockDetailOUTTemp() {
           case "sizeid":
             value = getSizeName(getItemName(row.itemid), row.sizeid);
             break;
-          case "loginid": 
+          case "loginid":
             value = getUserData(row.loginid);
             break;
           default:
@@ -1681,6 +1693,7 @@ export default function StockDetailOUTTemp() {
                     },
                   }}
                 >
+                  <MenuItem value="SelectEvent">Select</MenuItem>
                   {uniqueMaterialNames.map((cust, index) => (
                     <MenuItem key={index} value={cust}>
                       {cust}
@@ -1843,8 +1856,31 @@ export default function StockDetailOUTTemp() {
               type="text"
               placeholder="Search..."
               value={commonSearch}
-              customBorderColor="rgba(47, 43, 61, 0.2)"
               onChange={(e) => setCommonSearch(e.target.value)}
+              customBorderColor="rgba(47, 43, 61, 0.2)"
+              InputProps={{
+                endAdornment: commonSearch && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => setCommonSearch("")}
+                      aria-label="clear"
+                    >
+                      <CircleX size={20} color="#888" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              style={{
+                width: "200px",
+              }}
+              className="mainSearchTextBox"
+              sx={{
+                "& .MuiInputBase-input": {
+                  padding: "6.5px !important",
+                },
+              }}
             />
 
             {masterKeyData?.ExcelExport && (
@@ -1863,7 +1899,7 @@ export default function StockDetailOUTTemp() {
               </button>
             )}
 
-            <button onClick={handleClearFilter} className="ClearFilterButton">
+            {/* <button onClick={handleClearFilter} className="ClearFilterButton">
               <svg
                 stroke="currentColor"
                 fill="currentColor"
@@ -1877,7 +1913,7 @@ export default function StockDetailOUTTemp() {
                 <path d="M487.976 0H24.028C2.71 0-8.047 25.866 7.058 40.971L192 225.941V432c0 7.831 3.821 15.17 10.237 19.662l80 55.98C298.02 518.69 320 507.493 320 487.98V225.941l184.947-184.97C520.021 25.896 509.338 0 487.976 0z"></path>
               </svg>
               Clear Filters
-            </button>
+            </button> */}
           </div>
         </div>
         <div
@@ -1936,7 +1972,7 @@ export default function StockDetailOUTTemp() {
                 }}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
-                pageSizeOptions={[20, 30, 50, 100, 200]}
+                pageSizeOptions={[20, 30, 50, 100]}
                 className="simpleGridView bottomNavigate"
                 pagination
                 sx={{

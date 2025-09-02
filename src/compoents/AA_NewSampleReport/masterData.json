@@ -1,4 +1,61 @@
 {
+  "reportMaster": [
+    {
+      "masterSelectionWiseReport": true
+    }
+  ],
+  "company": [
+    {
+      "id": 1,
+      "name": "SigmaGlobal"
+    },
+    {
+      "id": 2,
+      "name": "BetaTech"
+    },
+    {
+      "id": 3,
+      "name": "LambdaSoft"
+    },
+    {
+      "id": 4,
+      "name": "SigmaLabs"
+    },
+    {
+      "id": 5,
+      "name": "OmicronLabs"
+    },
+    {
+      "id": 6,
+      "name": "DeltaGlobal"
+    }
+  ],
+  "department": [
+    {
+      "id": 1,
+      "name": "R&D"
+    },
+    {
+      "id": 2,
+      "name": "Support"
+    },
+    {
+      "id": 3,
+      "name": "HR"
+    },
+    {
+      "id": 4,
+      "name": "IT"
+    },
+    {
+      "id": 5,
+      "name": "Finance"
+    },
+    {
+      "id": 6,
+      "name": "Design"
+    }
+  ],
   "master_UserJob": [
     {
       "id": 1,

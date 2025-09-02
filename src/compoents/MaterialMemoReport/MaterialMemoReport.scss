@@ -248,6 +248,51 @@
     opacity: 0;
   }
 
+  .PurchaseBtndis {
+    height: 30px;
+    width: 230px;
+    min-width: 50px;
+    margin: 0px;
+    padding: 0px;
+    border-radius: 3px;
+    box-shadow: 0 2px 6px 0 #7367f04d !important;
+    color: white !important;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    background: linear-gradient(
+      10deg,
+      rgba(115, 103, 240, 0.7019607843),
+      #c1bbff
+    ) !important;
+  }
+
+  .PurchaseBtn {
+    height: 33px;
+    width: 230px;
+    min-width: 50px;
+    margin: 0px;
+    padding: 0px;
+    border-radius: 3px;
+    background: linear-gradient(270deg, #7367f0b3, #7367f0) !important;
+    box-shadow: 0 2px 6px 0 #7367f04d !important;
+    color: white !important;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .PurchaseBtn:hover {
+    background: linear-gradient(
+      270deg,
+      rgb(69 52 255 / 70%),
+      #6254f9
+    ) !important;
+  }
+
   .All_exportButton {
     font-size: 14px;
     width: 70px;
