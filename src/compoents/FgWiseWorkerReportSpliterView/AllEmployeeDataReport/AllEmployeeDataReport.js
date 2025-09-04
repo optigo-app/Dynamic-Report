@@ -135,6 +135,7 @@ export default function AllEmployeeDataReport({
   const [selectedDepartmentId, setSelectedDepartmentId] = React.useState();
   const [selectedEmployeeCode, setSelectedEmployeeCode] = React.useState();
   const [selectedEmployeeName, setSelectedEmployeeName] = React.useState();
+  const [selectedDateDetail, setSelectedDateDeatil] = React.useState();
   const [showDeatilSelectedLocation, setShowDeatilSelectedLocation] =
     React.useState();
   const [paginationModel, setPaginationModel] = React.useState({
@@ -408,7 +409,18 @@ export default function AllEmployeeDataReport({
   //   }));
 
   const handleCellClick = (params) => {
-    console.log("paramsparams", params);
+    const rawDate = params?.row?.fgdate;
+    let formattedDate = "";
+    if (rawDate) {
+      const date = new Date(rawDate);
+      // Format MM/DD/YYYY
+      formattedDate = date.toLocaleDateString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+      });
+    }
+    setSelectedDateDeatil(formattedDate);
     setShowDeatilSelectedLocation(params?.row?.location);
     setSelectedEmployeeName(params?.row?.employeename);
     setSelectedEmployeeBarCode(params?.row?.barcode);
@@ -1488,6 +1500,7 @@ export default function AllEmployeeDataReport({
               selectedEmployeeName={selectedEmployeeName}
               selectedMetalType={selectedMetalType}
               showDeatilSelectedLocation={showDeatilSelectedLocation}
+              selectedDateDetail={selectedDateDetail}
             />
           </Box>
         </Slide>

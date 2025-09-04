@@ -147,7 +147,7 @@ const GridMain = () => {
       return <FgSpliter />; //fg loss 1553 Doc.
       // return <EmployeeDepartmentReportSpliter />; //fg loss 1553 Doc.
     } else if (pid == 18226) {
-      return <DustCollector />; // 1383 Doc.     ignore setting
+      return <DustCollector />; // 1383 Doc.    
     } else if (pid == 18227) {
       return <ToolReport />; // 1382 Doc.
     } else if (pid == 18228) {
@@ -183,16 +183,17 @@ const GridMain = () => {
     } else if (pid == 18310) {
       return <SignageDisplayList />; // 1256 Doc.
     } else if (pid == 18312) {
-      return <STOCKVALUATION />;     // 1438 Doc.
+      return <STOCKVALUATION />; // 1438 Doc.
     } else if (pid == 18316) {
-      return <StockMain />;          // 1438 Doc.
+      return <StockMain />; // 1438 Doc.
     } else if (pid == 18317) {
-      return <StockDetailINTemp />;  // 1438 Doc.
+      return <StockDetailINTemp />; // 1438 Doc.
     } else if (pid == 18319) {
       return <StockDetailOUTTemp />; // 1438 Doc.
     } else if (pid == 1000) {
       return <ItaskReport />; // 1256 Doc.
-    } else if (pid == 18324) {    //   dyanamic report    -Test Dyanamic
+    } else if (pid == 18324) {
+      //   dyanamic report    -Test Dyanamic
       return <NewFirstSample />;
     } else {
       return (

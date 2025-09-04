@@ -104,6 +104,7 @@ const DualDatePicker = ({
   validDay,
   validMonth,
   withountDateFilter = false,
+  FutureDateAllow = false,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [error, setError] = useState("");
@@ -168,9 +169,11 @@ const DualDatePicker = ({
       return;
     }
 
-    if (endDate > today) {
-      setError("Future dates are not allowed.");
-      return;
+    if (!FutureDateAllow) {
+      if (endDate > today) {
+        setError("Future dates are not allowed.");
+        return;
+      }
     }
 
     if (!withountDateFilter) {
@@ -231,7 +234,7 @@ const DualDatePicker = ({
             "& .MuiInputBase-input": {
               padding: "5px 2px",
               fontSize: "13px",
-              cursor: "pointer", 
+              cursor: "pointer",
             },
             "& .MuiInputBase-root": {
               padding: "3px",
@@ -345,8 +348,6 @@ const DualDatePicker = ({
                 //   endDate: new Date(),
                 // },
               ]}
-
-              
             />
             <Stack
               direction="row"

@@ -1321,6 +1321,7 @@ export default function JobCompletion() {
                 setFilterState={setFilterState}
                 validDay={186}
                 validMonth={6}
+                FutureDateAllow={true}
               />
               {/* <p
                 style={{ fontWeight: 600, color: "#696262", fontSize: "17px" }}

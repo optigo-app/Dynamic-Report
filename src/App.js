@@ -10,7 +10,7 @@ function AppWrapper() {
   return (
     <RecoilRoot>
       <DeviceStatusProvider>
-        <BrowserRouter basename="/testreport">
+        <BrowserRouter>
           <App />
         </BrowserRouter>
       </DeviceStatusProvider>

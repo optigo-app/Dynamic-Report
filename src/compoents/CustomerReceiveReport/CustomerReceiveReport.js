@@ -159,7 +159,7 @@ export default function CustomerReceiveReport() {
   const [selectedCustomer, setSelectedCustomer] = useState("All");
   const [selectedDateColumnHyBrid, setSelectedDateColumnHyBrid] =
     useState("ALL");
-
+  const [selectionModel, setSelectionModel] = useState([]);
   const [grupEnChekBox, setGrupEnChekBox] = useState({
     designation: true,
     dept: true,
@@ -1256,6 +1256,15 @@ export default function CustomerReceiveReport() {
     );
   };
 
+  const handleRowClick = (params) => {
+    const id = params.id;
+    setSelectionModel(
+      (prev) =>
+        prev.includes(id)
+          ? prev.filter((rowId) => rowId !== id) // unselect if already selected
+          : [...prev, id] // add if not selected
+    );
+  };
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
@@ -1716,51 +1725,57 @@ export default function CustomerReceiveReport() {
                 }}
                 sortModel={sortModel}
                 onSortModelChange={(model) => setSortModel(model)}
-                sortingOrder={["asc", "desc"]} // For Sorting.....
+                sortingOrder={["asc", "desc"]}
                 paginationModel={paginationModel}
                 onPaginationModelChange={setPaginationModel}
                 pageSizeOptions={[10, 20, 50, 100]}
                 className="simpleGridView"
                 pagination
+                // ✅ Selection logic
+                selectionModel={selectionModel}
+                onRowClick={handleRowClick}
+                disableRowSelectionOnClick
+                getRowClassName={(params) =>
+                  selectionModel.includes(params.id) ? "Mui-selected" : ""
+                }
+                // ✅ Styles
                 sx={{
-                  // "& .MuiDataGrid-cell": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeaders": {
-                  //   borderBottom: "1px solid rgba(224, 224, 224, 1)",
-                  // },
-                  // "& .MuiDataGrid-columnHeader": {
-                  //   borderRight: "1px solid rgba(224, 224, 224, 1)",
-                  // },
+                  "& .MuiDataGrid-cell:focus": {
+                    outline: "none !important",
+                    borderColor: "rgba(224, 224, 224, 1) !important",
+                  },
                   "& .MuiDataGrid-menuIcon": {
                     display: "none",
                   },
-
                   "& .MuiTablePagination-selectLabel": {
                     margin: "0px",
                     padding: "0px",
                   },
-
                   "& .MuiTablePagination-displayedRows": {
                     margin: "0px",
                     padding: "0px",
                   },
-
                   "& .MuiTablePagination-actions .MuiButtonBase-root": {
                     padding: "0px",
                     margin: "0px",
                   },
-
                   "& .MuiDataGrid-footerContainer": {
                     minHeight: "30px",
                   },
-
                   "& .MuiTablePagination-toolbar": {
                     minHeight: "30px",
                   },
                   marginLeft: 2,
                   marginRight: 2,
                   marginBottom: 2,
+
+                  // ✅ Highlight selected rows
+                  "& .Mui-selected": {
+                    backgroundColor: "rgba(25, 118, 210, 0.12) !important",
+                  },
+                  "& .Mui-selected:hover": {
+                    backgroundColor: "rgba(25, 118, 210, 0.20) !important",
+                  },
                 }}
               />
             </Warper>

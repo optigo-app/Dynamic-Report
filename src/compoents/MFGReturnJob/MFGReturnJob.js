@@ -508,7 +508,14 @@ export default function MFGReturnJob() {
       ...row,
       srNo: index + 1,
     }));
-    setFilteredRows(rowsWithSrNo);
+
+    const safeRows = Array.isArray(rowsWithSrNo) ? rowsWithSrNo : [];
+
+    const sorted = [...safeRows]?.sort((a, b) => {
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    setFilteredRows(sorted);
   }, [
     filters,
     commonSearch,

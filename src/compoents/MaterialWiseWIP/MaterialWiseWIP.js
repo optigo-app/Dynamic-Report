@@ -24,12 +24,14 @@ import {
   Drawer,
   FormControl,
   FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Modal,
   Paper,
   Select,
   Slide,
+  TextField,
   Typography,
 } from "@mui/material";
 import emailjs from "emailjs-com";
@@ -46,6 +48,20 @@ import { AlertTriangle, ImageUp, LayoutGrid } from "lucide-react";
 import { IoMdClose } from "react-icons/io";
 import noFoundImg from "../images/noFound.jpg";
 import Warper from "../WorkerReportSpliterView/AllEmployeeDataReport/warper";
+import {
+  GridPagination,
+  useGridApiContext,
+  useGridSelector,
+  gridPageSelector,
+  gridPageCountSelector,
+} from "@mui/x-data-grid";
+import {
+  FirstPage,
+  LastPage,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+} from "@mui/icons-material";
+import { FaRegFileExcel } from "react-icons/fa";
 
 let popperPlacement = "bottom-start";
 const ItemType = {
@@ -65,6 +81,136 @@ const style = {
   boxShadow: 24,
   p: 4,
 };
+
+function CustomPagination() {
+  const apiRef = useGridApiContext();
+  const page = useGridSelector(apiRef, gridPageSelector);
+  const pageCount = useGridSelector(apiRef, gridPageCountSelector);
+  const rowCount = apiRef.current.getRowsCount();
+  const pageSize = apiRef.current.state.pagination.paginationModel.pageSize;
+  const [inputPage, setInputPage] = React.useState(page + 1);
+
+  React.useEffect(() => {
+    setInputPage(page + 1);
+  }, [page]);
+
+  const handleInputChange = (e) => {
+    setInputPage(e.target.value);
+  };
+
+  const handleInputBlur = () => {
+    let newPage = Number(inputPage);
+
+    if (isNaN(newPage) || newPage < 1) {
+      newPage = 1;
+    } else if (newPage > pageCount) {
+      newPage = pageCount;
+    }
+
+    apiRef.current.setPage(newPage - 1);
+    setInputPage(newPage);
+  };
+
+  const handlePageSizeChange = (e) => {
+    apiRef.current.setPageSize(Number(e.target.value));
+  };
+
+  const startItem = page * pageSize + 1;
+  const endItem = Math.min((page + 1) * pageSize, rowCount);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        width: "100%",
+        padding: "0 8px",
+        gap: 16,
+      }}
+    >
+      {/* ✅ Page navigation */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 14 }}>Rows per page:</span>
+        <TextField
+          select
+          size="small"
+          value={pageSize}
+          onChange={handlePageSizeChange}
+          SelectProps={{
+            native: true,
+          }}
+          style={{ width: 60 }}
+          sx={{
+            "& .MuiNativeSelect-select": {
+              padding: "2px 5px!important",
+              fontSize: "14px !important",
+            },
+          }}
+        >
+          {[20, 30, 50, 100].map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </TextField>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(0)}
+          disabled={page === 0}
+        >
+          <FirstPage fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page - 1)}
+          disabled={page === 0}
+        >
+          <KeyboardArrowLeft fontSize="small" />
+        </IconButton>
+
+        <p>Page</p>
+        <TextField
+          value={inputPage}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleInputBlur();
+            }
+          }}
+          size="small"
+          variant="outlined"
+          style={{ width: 60 }}
+          inputProps={{ style: { textAlign: "center", padding: "2px 4px" } }}
+        />
+        <span style={{ fontSize: 14 }}>of {pageCount}</span>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(page + 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <KeyboardArrowRight fontSize="small" />
+        </IconButton>
+
+        <IconButton
+          size="small"
+          onClick={() => apiRef.current.setPage(pageCount - 1)}
+          disabled={page >= pageCount - 1}
+        >
+          <LastPage fontSize="small" />
+        </IconButton>
+
+        <span style={{ fontSize: 14 }}>
+          Displaying {rowCount === 0 ? 0 : startItem} to {endItem} of {rowCount}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 const DraggableColumn = ({ col, index, checkedColumns, setCheckedColumns }) => {
   return (
@@ -152,7 +298,7 @@ export default function MaterialWiseWIP() {
   const [grupEnChekBox, setGrupEnChekBox] = useState({});
   const [paginationModel, setPaginationModel] = React.useState({
     page: 0,
-    pageSize: 10,
+    pageSize: 20,
   });
 
   const firstTimeLoadedRef = useRef(false);
@@ -298,7 +444,7 @@ export default function MaterialWiseWIP() {
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               {col.GrupChekBox && (
                 <Checkbox
-                  checked={grupEnChekBox[col.field] ?? true} 
+                  checked={grupEnChekBox[col.field] ?? true}
                   onChange={() => handleGrupEnChekBoxChange(col.field)}
                   size="small"
                   sx={{ p: 0 }}
@@ -1736,7 +1882,6 @@ export default function MaterialWiseWIP() {
                 sortModel={sortModel}
                 onSortModelChange={(model) => setSortModel(model)}
                 localeText={{ noRowsLabel: "No Data" }}
-                paginationModel={paginationModel}
                 initialState={{
                   columns: {
                     columnVisibilityModel: {
@@ -1746,13 +1891,17 @@ export default function MaterialWiseWIP() {
                   },
                   pagination: {
                     paginationModel: {
-                      pageSize: 10,
+                      pageSize: 20,
                       page: 0,
                     },
                   },
                 }}
-                onPageSizeChange={(newPageSize) => setPageSize(newPageSize)}
-                rowsPerPageOptions={[5, 10, 15, 25, 50]}
+                slots={{
+                  pagination: CustomPagination, // ✅ custom pagination
+                }}
+                paginationModel={paginationModel}
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={[20, 30, 50, 100]}
                 className="simpleGridView"
                 pagination
                 sx={{

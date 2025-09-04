@@ -113,6 +113,7 @@ export default function SingleEmployeeWiseData({
   selectedEmployeeName,
   selectedMetalType,
   showDeatilSelectedLocation,
+  selectedDateDetail
 }) {
   const [commonSearch, setCommonSearch] = React.useState("");
   const [toDate, setToDate] = React.useState(null);
@@ -151,7 +152,7 @@ export default function SingleEmployeeWiseData({
     setIsLoading(true);
     const body = {
       con: `{"id":"","mode":"workerwithoutfindingdetail","appuserid":"${AllData?.uid}"}`,
-      p: `{\"fdate\":\"${NewStartDate}",\"tdate\":\"${newEndDate}",\"deptid\":\"${selectedDepartmentId}",\"locationname\":\"${
+      p: `{\"fdate\":\"${selectedDateDetail}",\"tdate\":\"${selectedDateDetail}",\"deptid\":\"${selectedDepartmentId}",\"locationname\":\"${
         currentLocation ?? showDeatilSelectedLocation
       }",\"employeecode\":\"${selectedEmployeeCode}"}`,
       f: "Task Management (taskmaster)",

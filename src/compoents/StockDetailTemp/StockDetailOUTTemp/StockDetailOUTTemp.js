@@ -238,6 +238,7 @@ export default function StockDetailOUTTemp() {
         setAllRowDataAll(fetchedData?.Data?.rd1);
         setAllColumIdWiseName(fetchedData?.Data?.rd);
         setAllColumIdWiseNameAll(fetchedData?.Data?.rd);
+        console.log("fetchedDatafetchedData", fetchedData);
         setMasterKeyData(OtherKeyData?.rd);
         setAllColumData(OtherKeyData?.rd1);
         setStatus500(false);
@@ -383,15 +384,15 @@ export default function StockDetailOUTTemp() {
   };
 
   const getMaterialName = (itemName, qualityid, params) => {
-    if (itemName == "FINDING") {
-      const match = masterData.rd1?.find(
-        (x) => x.materialtypeid === params?.row?.findingtypeid
-      );
-      return match?.materialtypename || qualityid || "";
-    } else {
+    // if (itemName == "FINDING") {
+    //   const match = masterData.rd1?.find(
+    //     (x) => x.materialtypeid === params?.row?.findingtypeid
+    //   );
+    //   return match?.materialtypename || qualityid || "";
+    // } else {
       const match = masterData.rd1?.find((x) => x.materialtypeid === qualityid);
       return match?.materialtypename || qualityid || "";
-    }
+    // }
   };
 
   const getUserData = (userID) => {
@@ -441,6 +442,7 @@ export default function StockDetailOUTTemp() {
           ...col,
           renderCell: (params) => {
             const itemName = getItemName(params.row.itemid);
+            const eventName = params.row.event;
             if (col.field === "itemid") {
               return (
                 <span
@@ -521,7 +523,9 @@ export default function StockDetailOUTTemp() {
                     borderRadius: col.BorderRadius,
                   }}
                 >
-                  {getSizeName(itemName, params.value)}
+                  {eventName === "GradingOut"
+                    ? params?.row?.size
+                    : getSizeName(itemName, params.value)}
                 </span>
               );
             }
@@ -1358,7 +1362,11 @@ export default function StockDetailOUTTemp() {
             value = getItemName(row.itemid);
             break;
           case "materialtypeid":
-            value = getMaterialName(row.materialtypeid);
+            value = getMaterialName(
+              getItemName(row.itemid), // itemName
+              row.materialtypeid,
+              { row }
+            );
             break;
           case "shapeid":
             value = getShapeName(getItemName(row.itemid), row.shapeid);

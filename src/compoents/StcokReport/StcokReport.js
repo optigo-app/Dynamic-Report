@@ -1159,6 +1159,7 @@ export default function StcokReport() {
     () => Object.values(grupEnChekBox).every((val) => val === true),
     [grupEnChekBox]
   );
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div
@@ -1196,6 +1197,7 @@ export default function StcokReport() {
             </div>
           </div>
         </Dialog>
+        
         <Drawer
           open={sideFilterOpen}
           onClose={toggleDrawer(false)}
@@ -1260,6 +1262,7 @@ export default function StcokReport() {
               ))}
           </div>
         </Drawer>
+
         <div
           style={{
             position: showImageView && "fixed",

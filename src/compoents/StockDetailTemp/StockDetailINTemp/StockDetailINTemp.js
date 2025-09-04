@@ -129,7 +129,6 @@ export default function StockDetailINTemp() {
   const [showImageView, setShowImageView] = useState(false);
   const [selectedColors, setSelectedColors] = useState([]);
   const [openPopup, setOpenPopup] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
   const [columns, setColumns] = useState([]);
   const [openPDate, setOpenPDate] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -164,7 +163,6 @@ export default function StockDetailINTemp() {
     page: 0,
     pageSize: 20,
   });
-
   const firstTimeLoadedRef = useRef(false);
 
   const uniqueMaterialNames = useMemo(() => {
@@ -206,9 +204,7 @@ export default function StockDetailINTemp() {
   const fetchData = async (stat, end) => {
     let AllData = JSON.parse(sessionStorage.getItem("AuthqueryParams"));
     const sp = searchParams.get("sp");
-
     setIsLoading(true);
-
     const body = {
       con: `{"id":"","mode":"STOCK_VALUATION_IN","appuserid":"${AllData?.uid}"}`,
       p: "",
@@ -386,15 +382,15 @@ export default function StockDetailINTemp() {
   };
 
   const getMaterialName = (itemName, qualityid, params) => {
-    if (itemName == "FINDING") {
-      const match = masterData.rd1?.find(
-        (x) => x.materialtypeid === params?.row?.findingtypeid
-      );
-      return match?.materialtypename || qualityid || "";
-    } else {
+    // if (itemName == "FINDING") {
+    //   const match = masterData.rd1?.find(
+    //     (x) => x.materialtypeid === params?.row?.findingtypeid
+    //   );
+    //   return match?.materialtypename || qualityid || "";
+    // } else {
       const match = masterData.rd1?.find((x) => x.materialtypeid === qualityid);
       return match?.materialtypename || qualityid || "";
-    }
+    // }
   };
 
   const getUserData = (userID) => {
@@ -1360,8 +1356,13 @@ export default function StockDetailINTemp() {
             value = getItemName(row.itemid);
             break;
           case "materialtypeid":
-            value = getMaterialName(row.materialtypeid);
+            value = getMaterialName(
+              getItemName(row.itemid), // itemName
+              row.materialtypeid, // qualityid (actually id)
+              { row } 
+            );
             break;
+
           case "shapeid":
             value = getShapeName(getItemName(row.itemid), row.shapeid);
             break;
@@ -1426,7 +1427,6 @@ export default function StockDetailINTemp() {
       .replace(/, /g, "_");
 
     const fileName = `StcokReportIn_${dateString}.xlsx`;
-
     saveAs(data, fileName);
   };
 

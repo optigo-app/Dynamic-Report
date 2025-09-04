@@ -455,7 +455,7 @@ export default function MaterialPurhcaseReport() {
               {col.GrupChekBox && (
                 <Checkbox
                   checked={grupEnChekBox[col.field] ?? true} // 👉 Correct binding to grupEnChekBox
-                  onChange={() => handleGrupEnChekBoxChange(col.field)} // 👉 Correct handler
+                  onChange={() => handleGrupEnChekBoxChange(col.field)} 
                   size="small"
                   sx={{ p: 0 }}
                 />
@@ -618,31 +618,6 @@ export default function MaterialPurhcaseReport() {
 
     setColumns([srColumn, ...columnData]);
   }, [allColumData, grupEnChekBox, sortModel, paginationModel]);
-
-  //  if (params?.field === "ratecolum") {
-  //           const totalWt = parseFloat(params?.row?.totalwt) || 0;
-  //           const tunchWeight = parseFloat(params?.row?.tunchweight) || 0;
-  //           const totalPrice = parseFloat(params?.row?.totalprice) || 0;
-
-  //           const calculatedWeight = (totalWt * tunchWeight) / 100;
-  //           const finalValue =
-  //             calculatedWeight > 0 ? totalPrice / calculatedWeight : null;
-
-  //           return (
-  //             <span
-  //               style={{
-  //                 color: col.Color || "inherit",
-  //                 backgroundColor: col.BackgroundColor || "inherit",
-  //                 fontSize: col.FontSize || "inherit",
-  //                 textTransform: col.ColumTitleCapital ? "uppercase" : "none",
-  //                 padding: "0px",
-  //                 borderRadius: col.BorderRadius,
-  //               }}
-  //             >
-  //               {finalValue ? finalValue.toFixed(col.ToFixedValue ?? 2) : "-"}
-  //             </span>
-  //           );
-  //         }
 
   const handleCellClick = (params) => {
     setSelectedDepartmentId(params?.row?.deptid);
@@ -808,7 +783,7 @@ export default function MaterialPurhcaseReport() {
     fromDate,
     toDate,
     columns,
-    originalRows,
+    // originalRows,
     selectedColors,
     selectedDateColumn,
     selectedUser,
@@ -1391,15 +1366,15 @@ export default function MaterialPurhcaseReport() {
 
         // Custom Supplier column logic
         if (col.field === "istorecust_customercode1") {
-          if (value && String(value).trim() !== "") {
-            // keep as is
-          } else if (
+          // if (value && String(value).trim() !== "") {
+          // } else
+          if (
             row.istorecust_customercode &&
             String(row.istorecust_customercode).trim() !== ""
           ) {
             value = row.istorecust_customercode;
           } else {
-            value = ""; // keep blank if both empty
+            value = "";
           }
         }
 
@@ -1444,11 +1419,43 @@ export default function MaterialPurhcaseReport() {
     });
   }
   const converted = mapRowsToHeaders(columns, filteredRows);
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(converted);
-    const workbook = XLSX.utils.book_new();
+  const parseCustomDate = (dateStr) => {
+    if (!dateStr) return new Date(0); 
+    const [day, monthStr, year] = dateStr.split(" ");
+    const monthMap = {
+      Jan: 0,
+      Feb: 1,
+      Mar: 2,
+      Apr: 3,
+      May: 4,
+      Jun: 5,
+      Jul: 6,
+      Aug: 7,
+      Sep: 8,
+      Oct: 9,
+      Nov: 10,
+      Dec: 11,
+    };
+    return new Date(year, monthMap[monthStr], parseInt(day, 10));
+  };
 
+  const exportToExcel = () => {
+    let sortedData = [...converted].sort((a, b) => {
+      const dateA = parseCustomDate(a.Date);
+      const dateB = parseCustomDate(b.Date);
+      return dateB - dateA; // latest first
+    });
+    sortedData = sortedData.map((row, index) => ({
+      ...row,
+      "Sr#": index + 1,
+    }));
+
+    console.log("sortedData", sortedData);
+
+    const worksheet = XLSX.utils.json_to_sheet(sortedData);
+    const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
     const excelBuffer = XLSX.write(workbook, {
       bookType: "xlsx",
       type: "array",
@@ -1546,33 +1553,23 @@ export default function MaterialPurhcaseReport() {
   };
 
   const onDragEnd = () => {};
-
   const groupRows = (rows, groupCheckBox) => {
     const grouped = {};
 
     rows?.forEach((row) => {
       const newRow = { ...row };
-
       const deptChecked = groupCheckBox["dept"];
       const designationChecked = groupCheckBox["designation"];
       const empnameChecked = groupCheckBox["empname"];
-
       if (!deptChecked) newRow.dept = "-";
       if (!designationChecked) newRow.designation = "-";
       if (!empnameChecked) newRow.empname = "-";
-
       let keyParts = [];
-
-      // 🔥 Always group by item at least
       if (deptChecked) keyParts.push(newRow.dept);
       if (designationChecked) keyParts.push(newRow.designation);
       if (empnameChecked) keyParts.push(newRow.empname);
-
-      // 👉 Always push item into keyParts even if itemChecked is false
       keyParts.push(newRow.item);
-
       const groupKey = keyParts.join("|");
-
       if (!grouped[groupKey]) {
         grouped[groupKey] = { ...newRow };
       } else {
